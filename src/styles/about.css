@@ -1,0 +1,175 @@
+/* =====================================================================
+   WAI-ME About - "The Climb" (v3) page styles
+   Built on tokens.css + the same primitives/motion as home.css. Only the
+   About-specific sections live here; shared bits (eyebrow, buttons, chips,
+   concept mark, reveal, nav, footer, join band) come from home.css.
+   Locks: real logo asset only; gold is recognition-only; every dash is a
+   regular hyphen (no em-dashes anywhere, by design).
+   ===================================================================== */
+
+/* gradient-clipped accent must never disappear */
+@supports not ((-webkit-background-clip:text) or (background-clip:text)){
+  .about-hero h1 .accent{ background:none; color:var(--sky-glow); -webkit-text-fill-color:currentColor; }
+}
+@media (forced-colors: active){
+  .about-hero h1 .accent{ background:none; color:CanvasText; -webkit-text-fill-color:CanvasText; }
+}
+
+/* ============================================================
+   1 · ABOUT HERO  (dark "climb" opener)
+   ============================================================ */
+.about-hero{
+  position:relative; overflow:hidden; isolation:isolate;
+  padding-block:clamp(150px,18vw,220px) clamp(64px,9vw,110px);
+  background:var(--ink);
+}
+.about-hero .dawn{
+  position:absolute; inset-inline:-10%; inset-block-end:-22%; block-size:60%; z-index:-2;
+  background:radial-gradient(60% 100% at 50% 100%, rgba(255,142,138,.4), rgba(255,193,116,.22) 40%, transparent 72%);
+  filter:blur(8px);
+}
+.about-hero .glow-orb{ position:absolute; z-index:-2; border-radius:50%; filter:blur(60px); opacity:.5; }
+.about-hero .glow-orb.a{ inline-size:380px; block-size:380px; inset-block-start:6%; inset-inline-end:-6%;
+  background:radial-gradient(circle, rgba(42,164,239,.55), transparent 70%); }
+.about-hero .flight-svg{ position:absolute; inset:0; z-index:-1; inline-size:100%; block-size:100%; pointer-events:none; opacity:.6; }
+
+.about-hero .inner{ position:relative; width:100%; max-width:var(--maxw); margin-inline:auto; padding-inline:var(--gutter); }
+.about-hero .over{ margin-block-end:26px; }
+.about-hero h1{
+  font-size:clamp(40px,7.4vw,96px);
+  font-weight:800; letter-spacing:-0.035em; color:#fff; max-width:18ch;
+}
+.about-hero h1 .accent{
+  background:linear-gradient(100deg, var(--dawn-1), var(--dawn-2) 50%, var(--sky-glow));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.about-hero h1 .accent em{ font-style:italic; }
+.about-hero .lede{ margin-block-start:30px; max-width:64ch; display:flex; flex-direction:column; gap:20px; }
+.about-hero .lede p{ font-size:clamp(16px,1.9vw,20px); color:var(--mist); line-height:1.62; }
+
+/* ============================================================
+   2 · OUR STORY  (PAPER, breaking into daylight)
+   ============================================================ */
+.about-story{
+  position:relative; background:var(--paper); color:var(--paper-ink);
+  padding-block:clamp(72px,10vw,130px);
+  border-radius:40px 40px 0 0; margin-block-start:-20px;
+}
+.about-story .prose{ max-width:74ch; display:flex; flex-direction:column; gap:22px; }
+.about-story .prose p{ font-size:clamp(17px,2vw,21px); line-height:1.66; color:var(--paper-ink); }
+
+/* ============================================================
+   3 · MISSION + VISION + BELIEF  (PAPER)
+   ============================================================ */
+.mission-vision{ background:var(--paper); color:var(--paper-ink); padding-block:clamp(20px,4vw,56px) clamp(72px,10vw,130px); }
+.mission-vision .grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.mv-card{
+  border-radius:var(--r-card); padding:clamp(28px,3.4vw,42px);
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
+}
+.mv-card .eyebrow{ margin-block-end:22px; }
+.mission .intro{ font-family:var(--display); font-weight:700; font-size:clamp(20px,2.4vw,26px);
+  color:var(--paper-ink); letter-spacing:-0.01em; margin-block-end:22px; }
+.mv-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:16px; }
+.mv-list li{ position:relative; padding-inline-start:30px; font-size:16px; line-height:1.6; color:var(--paper-mut); }
+.mv-list li::before{
+  content:""; position:absolute; inset-inline-start:0; inset-block-start:.5em;
+  inline-size:14px; block-size:14px; border-radius:50%;
+  background:rgba(1,139,225,.12); border:1px solid rgba(1,139,225,.4);
+}
+.mv-list li::after{
+  content:""; position:absolute; inset-inline-start:5px; inset-block-start:calc(.5em + 4px);
+  inline-size:5px; block-size:5px; border-radius:50%; background:var(--sky-core);
+}
+.vision .vision-q{ font-family:var(--display); font-weight:600; font-size:clamp(20px,2.5vw,28px);
+  line-height:1.3; letter-spacing:-0.015em; color:var(--paper-ink); }
+
+.belief{ margin-block-start:clamp(36px,5vw,64px); max-width:80ch; margin-inline:auto;
+  text-align:center; font-size:clamp(16px,1.9vw,20px); line-height:1.66; color:var(--paper-mut); }
+
+/* ============================================================
+   4 · LEADERSHIP  (PAPER, glass-panel cards)
+   ============================================================ */
+.leadership{ background:var(--paper); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
+.leadership .head{ max-width:70ch; margin-block-end:50px; }
+.leadership h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block:18px 18px; }
+.leadership .intro{ color:var(--paper-mut); font-size:clamp(16px,1.8vw,19px); max-width:62ch; }
+
+.board-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.board-card{
+  display:flex; gap:18px; align-items:center;
+  border-radius:var(--r-card); padding:24px;
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
+  transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
+}
+@media (hover:hover){ .board-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+.board-card .avatar{
+  flex:0 0 auto; inline-size:60px; block-size:60px; border-radius:50%;
+  display:grid; place-items:center;
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(42,164,239,.22), transparent 60%),
+    linear-gradient(160deg,#0c2a4d,#091a36);
+  color:#fff; border:1px solid var(--hair-l);
+}
+.board-card .avatar .monogram{ font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:-0.02em; }
+.board-card .info{ min-width:0; }
+.board-card .name{ font-size:19px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.15; }
+.board-card .role{ font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--paper-mut); margin-block:8px 12px; }
+.board-card .li{
+  display:inline-flex; align-items:center; gap:7px;
+  font-size:13px; font-weight:600; color:var(--sky-core);
+  transition:color .25s var(--ease-out);
+}
+.board-card .li svg{ inline-size:16px; block-size:16px; }
+@media (hover:hover){ .board-card .li:hover{ color:var(--sky-deep); } }
+
+/* Ambassadors: clear coming-soon placeholder, no names */
+.ambassadors{ margin-block-start:46px; }
+.ambassadors .eyebrow{ margin-block-end:20px; }
+.amb-slot{
+  border-radius:var(--r-card); padding:clamp(28px,4vw,40px);
+  background:#fff; border:1px dashed rgba(15,35,63,.28);
+  box-shadow:0 30px 60px -50px rgba(15,35,63,.5);
+}
+.amb-slot .coming{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--sky-core); background:rgba(1,139,225,.08); border:1px solid rgba(1,139,225,.24);
+  padding:7px 13px; border-radius:var(--r-chip);
+}
+
+/* ============================================================
+   5 · IMPACT  (PAPER, pillar-card visual weight)
+   ============================================================ */
+.impact{ background:var(--paper-2); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
+.impact .head{ margin-block-end:46px; }
+.impact h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block-start:18px; max-width:16ch; }
+.impact-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.impact-card{
+  border-radius:var(--r-card); padding:30px;
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
+  transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
+}
+@media (hover:hover){ .impact-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+.impact-card h3{ font-size:22px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.14; margin-block-end:14px; }
+.impact-card p{ font-size:15px; color:var(--paper-mut); line-height:1.6; }
+
+/* ============================================================
+   6 · RESPONSIVE
+   ============================================================ */
+@media (max-width:1024px){
+  .board-grid{ grid-template-columns:1fr 1fr; }
+  .impact-grid{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:880px){
+  .mission-vision .grid{ grid-template-columns:1fr; }
+}
+@media (max-width:680px){
+  :root{ --gutter:20px; }
+  .board-grid{ grid-template-columns:1fr; }
+  .impact-grid{ grid-template-columns:1fr; }
+}

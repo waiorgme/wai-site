@@ -1,0 +1,45 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Impact: "What this adds up to." Pillar-card visual weight (short heading in display
+// type, body in muted text), matching the home What-we-do pillars (Open Question 5).
+// Lock 2: the ATPL line is NOT gold-treated. Lock 10: academies stay plural + unnamed.
+const items = [
+  {
+    h: 'A full pilot licence, funded.',
+    p: 'At the Riyadh General Assembly in December 2025, WAI-ME and its partners delivered a scholarship initiative worth more than USD 150,000, including a complete ATPL (a full commercial pilot licence, worth over USD 130,000) awarded to Rahaf Kaddoura.',
+  },
+  {
+    h: 'A cornerstone regional conference.',
+    p: 'Our annual conference, co-located with the Airport Show in Dubai and held under the patronage of His Highness Sheikh Ahmed bin Saeed Al Maktoum, grew to more than 750 attendees, 26 international speakers, and a dozen sponsors by 2019.',
+  },
+  {
+    h: 'A community that spans the region.',
+    p: 'More than 1,300 members across more than forty countries, with most in their twenties and thirties, the generation entering the industry now.',
+  },
+  {
+    h: "More than a decade at the industry's table.",
+    p: "Present at the region's major aviation events every year since 2013, from Dubai and Abu Dhabi to Kuwait and Riyadh.",
+  },
+  {
+    h: 'Partner training academies.',
+    p: 'Partnerships with regional flight academies give members a route to discounted and funded training.',
+  },
+];
+---
+<section class="impact" id="impact" aria-labelledby="imp-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>Impact</Eyebrow>
+      <h2 id="imp-h">What this adds up to.</h2>
+    </div>
+    <div class="impact-grid">
+      {items.map((it, i) => (
+        <article class="impact-card reveal" style={`--i:${i % 3}`}>
+          <h3>{it.h}</h3>
+          <p>{it.p}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

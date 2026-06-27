@@ -1,0 +1,27 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// About hero: dark "climb" opener. Mono overline + Bricolage headline, "opens doors."
+// in typographic italic per the NewsAbout.jsx reference. Body copy ("Who we are")
+// renders directly under the heading with no visible overline (Open Question 1).
+---
+<section class="about-hero" aria-labelledby="about-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb a" aria-hidden="true"></div>
+  <svg class="flight-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="flightline draw" d="M-40 760 C 360 720, 620 560, 880 380 S 1280 120, 1520 40" pathLength="1" stroke-opacity="0.55"/>
+  </svg>
+
+  <div class="inner">
+    <Eyebrow class="over reveal">// About WAI-ME</Eyebrow>
+    <h1 id="about-h">
+      <span class="line-mask"><span>A regional aviation community that</span></span>
+      <span class="line-mask"><span class="accent"><em>opens doors.</em></span></span>
+    </h1>
+
+    <div class="lede reveal" style="--i:2">
+      <p>Women in Aviation Middle East (WAI-ME) is the Middle East chapter of Women in Aviation International, the global network for women in the industry. We connect and support women across every part of aviation and aerospace in the region: students and cadets, pilots and engineers, cabin crew, air-traffic controllers, airport and ground staff, executives, and the educators and sponsors who back them.</p>
+      <p>Our hub is Dubai, and our members live and work across more than forty countries. We are run by volunteers, led by women who have built their own careers in the industry and now spend their time opening the door for the next ones.</p>
+    </div>
+  </div>
+</section>

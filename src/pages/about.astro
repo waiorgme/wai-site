@@ -1,0 +1,53 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/home.css';
+import '../styles/about.css';
+
+import Nav from '../components/home/Nav.astro';
+import Footer from '../components/home/Footer.astro';
+
+import AboutHero from '../components/about/AboutHero.astro';
+import AboutFlightData from '../components/about/AboutFlightData.astro';
+import Story from '../components/about/Story.astro';
+import MissionVision from '../components/about/MissionVision.astro';
+import Leadership from '../components/about/Leadership.astro';
+import Impact from '../components/about/Impact.astro';
+import ClosingCta from '../components/about/ClosingCta.astro';
+---
+
+<Base
+  title="About Women in Aviation Middle East"
+  description="Women in Aviation Middle East (WAI-ME) is the Middle East chapter of Women in Aviation International, run by volunteers opening doors for women across aviation and aerospace."
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:site_name" content="Women in Aviation Middle East" />
+    <meta property="og:title" content="A regional aviation community that opens doors." />
+    <meta property="og:description" content="Women in Aviation Middle East (WAI-ME) is the Middle East chapter of Women in Aviation International, run by volunteers opening doors for women across aviation and aerospace." />
+    <meta property="og:image" content="/assets/wai-me-logo-on-dark.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="A regional aviation community that opens doors." />
+    <meta name="twitter:description" content="Women in Aviation Middle East (WAI-ME) is the Middle East chapter of Women in Aviation International, run by volunteers opening doors for women across aviation and aerospace." />
+    <meta name="twitter:image" content="/assets/wai-me-logo-on-dark.png" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <AboutHero />
+    <AboutFlightData />
+    <Story />
+    <MissionVision />
+    <Leadership />
+    <Impact />
+    <ClosingCta />
+  </main>
+
+  <Footer />
+
+  <script src="../scripts/home-motion.js"></script>
+</Base>

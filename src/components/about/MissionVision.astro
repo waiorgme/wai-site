@@ -1,0 +1,30 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Our mission (bullets, locked wording) + Our vision, on paper. The mission list is a
+// real <ul>. The Arabic/English belief renders as a plain body paragraph with no
+// standalone heading (Open Question 2).
+---
+<section class="mission-vision" aria-label="Our mission and vision">
+  <div class="wrap">
+    <div class="grid">
+      <div class="mv-card mission reveal">
+        <Eyebrow onPaper>Our mission</Eyebrow>
+        <p class="intro">At Women in Aviation Middle East, our mission is:</p>
+        <ul class="mv-list">
+          <li>To encourage women in the Middle East to seek empowering careers and education in aviation and aerospace.</li>
+          <li>To give women the resources and support they need to build successful aviation careers.</li>
+          <li>To be the regional home where women in aviation come together for help and support.</li>
+          <li>To bring successful women in the industry forward as mentors and role models for those just starting out.</li>
+        </ul>
+      </div>
+
+      <div class="mv-card vision reveal" style="--i:1">
+        <Eyebrow onPaper>Our vision</Eyebrow>
+        <p class="vision-q">We see a region where women's contributions are celebrated, where women are treated as equals, and where the women already inside aviation reach back to bring the next ones in. Our job is to give every woman the tools to reach her potential.</p>
+      </div>
+    </div>
+
+    <p class="belief reveal" style="--i:2">WAI-ME welcomes you in Arabic and equips you in English. Arabic is our mother tongue and part of who we are, so our front-door pages speak it. Aviation, though, works in English, from training to operations to safety, so our member programmes run in English to prepare you for the industry as it really is. Arabic welcomes and explains. English trains and equips.</p>
+  </div>
+</section>

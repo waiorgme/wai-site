@@ -1,0 +1,21 @@
+---
+import Button from '../primitives/Button.astro';
+
+// Closing call to action. Reuses the home join-band "dawn" treatment (the one emotional
+// gradient beat). Copy is verbatim from the About spec; button labels match the home
+// join band (Become a member -> /membership ; Support as a partner -> /get-involved).
+---
+<section class="join" id="join" aria-labelledby="cta-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="inner">
+      <h2 id="cta-h" class="reveal">There is room for you in this.</h2>
+      <p class="reveal" style="--i:1">Become a member, it is free, or back the next generation as a corporate partner.</p>
+      <div class="cta-row reveal" style="--i:2">
+        <Button href="/membership" magnetic>Become a member</Button>
+        <Button href="/get-involved" ghost>Support as a partner</Button>
+      </div>
+    </div>
+  </div>
+</section>
