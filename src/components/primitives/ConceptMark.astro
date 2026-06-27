@@ -1,0 +1,10 @@
+---
+// Honest concept-image marker (no em-dash, by design). Verbatim marker text per slot.
+interface Props {
+  corner?: boolean;
+  text: string;
+}
+const { corner = false, text } = Astro.props;
+const classes = ['concept-mark', corner ? 'corner' : ''].filter(Boolean).join(' ');
+---
+<span class={classes}>{text}</span>

@@ -1,0 +1,69 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+import Photo from '../primitives/Photo.astro';
+---
+<section class="events" id="events" aria-labelledby="ev-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <div>
+        <Eyebrow>Recent highlights</Eyebrow>
+        <h2 id="ev-h">Where we've been.</h2>
+      </div>
+      <p class="intro">Members attend WAI-ME events free. Many are open to everyone.</p>
+    </div>
+
+    <div class="ev-grid">
+      <article class="ev-card reveal">
+        <div class="ph">
+          <Photo
+            src="https://images.unsplash.com/photo-1474302770737-173ee21bab63?w=1200&q=80&auto=format&fit=crop"
+            alt="Concept image: aircraft on display at an air show against a clear sky. Placeholder, real event photography will replace it."
+            scrim
+            mark="Concept image, real event photo to follow"
+          />
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip free">Members free</span></div>
+          <div class="when">2025</div>
+          <h3>2025 Dubai Airshow</h3>
+          <p>One of the region's defining gatherings, where WAI-ME brings members into the room.</p>
+        </div>
+      </article>
+
+      <article class="ev-card reveal" style="--i:1">
+        <div class="ph">
+          <Photo
+            src="https://images.unsplash.com/photo-1521295121783-8a321d551ad2?w=1200&q=80&auto=format&fit=crop"
+            alt="Concept image: a conference hall set for a major aviation assembly. Placeholder, real event photography will replace it."
+            scrim
+            mark="Concept image, real event photo to follow"
+          />
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip free">Members free</span></div>
+          <div class="when">2025</div>
+          <h3>2025 Riyadh General Assembly</h3>
+          <p>Where a scholarship initiative worth more than USD 150,000 included a full ATPL.</p>
+        </div>
+      </article>
+
+      <article class="ev-card reveal" style="--i:2">
+        <div class="ph">
+          <Photo
+            src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80&auto=format&fit=crop"
+            alt="Concept image: an awards stage at an annual conference. Placeholder, real event photography will replace it."
+            scrim
+            mark="Concept image, real event photo to follow"
+          />
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip free">Members free</span></div>
+          <div class="when">2024</div>
+          <h3>2024 Annual Conference and Awards</h3>
+          <p>Co-located with the Airport Show in Dubai, under the patronage of His Highness Sheikh Ahmed bin Saeed Al Maktoum.</p>
+        </div>
+      </article>
+    </div>
+    <p class="more reveal"><b>More dates coming.</b> Join to hear first.</p>
+  </div>
+</section>

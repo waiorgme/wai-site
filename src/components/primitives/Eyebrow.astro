@@ -1,0 +1,9 @@
+---
+interface Props {
+  onPaper?: boolean;
+  class?: string;
+}
+const { onPaper = false, class: cls = '' } = Astro.props;
+const classes = ['eyebrow', onPaper ? 'on-paper' : '', cls].filter(Boolean).join(' ');
+---
+<span class={classes}><slot /></span>

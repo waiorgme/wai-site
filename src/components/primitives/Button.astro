@@ -1,0 +1,25 @@
+---
+import ArrowIcon from './ArrowIcon.astro';
+
+interface Props {
+  href: string;
+  ghost?: boolean;
+  magnetic?: boolean;
+  class?: string;
+}
+const { href, ghost = false, magnetic = false, class: cls = '' } = Astro.props;
+const classes = ['btn', ghost ? 'ghost' : '', cls].filter(Boolean).join(' ');
+---
+{magnetic ? (
+  <span class="magnetic">
+    <a class={classes} href={href}>
+      <slot />
+      <span class="ico" aria-hidden="true"><ArrowIcon /></span>
+    </a>
+  </span>
+) : (
+  <a class={classes} href={href}>
+    <slot />
+    <span class="ico" aria-hidden="true"><ArrowIcon /></span>
+  </a>
+)}

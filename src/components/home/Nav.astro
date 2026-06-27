@@ -1,0 +1,39 @@
+---
+import Button from '../primitives/Button.astro';
+
+// Floating glass-pill nav + full-screen mobile menu (focus-trapped via home-motion.js).
+// Real logo asset only: /assets/wai-me-logo-on-dark.png. Full site nav reaches About + Membership.
+---
+<header class="site">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="/" aria-label="Women in Aviation Middle East, home">
+      <img src="/assets/wai-me-logo-on-dark.png" alt="Women in Aviation Middle East" />
+    </a>
+    <div class="links">
+      <a href="/about">About</a>
+      <a href="/membership">Membership</a>
+      <a href="#what">What we do</a>
+      <a href="#impact">Impact</a>
+      <a href="#events">Events</a>
+      <a href="#partners">Partners</a>
+      <a href="mailto:support@waiorg.me">Contact</a>
+    </div>
+    <div class="cta-d">
+      <Button href="/membership" magnetic>Become a member</Button>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<div class="mobile-menu" id="mobileMenu" role="dialog" aria-modal="true" aria-label="Site menu">
+  <a class="m-link" href="/about">About</a>
+  <a class="m-link" href="/membership">Membership</a>
+  <a class="m-link" href="#what">What we do</a>
+  <a class="m-link" href="#events">Events</a>
+  <a class="m-link" href="#partners">Partners</a>
+  <div class="m-cta">
+    <Button href="/membership">Become a member</Button>
+  </div>
+</div>

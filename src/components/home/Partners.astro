@@ -1,0 +1,33 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Partners strip kept with text-name placeholders (staging) until real logos land.
+const partners = [
+  'Etihad Airways',
+  'Dubai Aerospace Enterprise (DAE)',
+  'dnata logistics',
+  'Air BP',
+  'Alpha Aviation Academy UAE',
+  'Akademikka',
+  'TIC Aerospace',
+  'Verve Management',
+  'Fujairah Natural Gas',
+  'GIFAS',
+  'MEBAA',
+  'On Board Women',
+];
+---
+<section class="partners" id="partners" aria-labelledby="pt-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow>Backed by the industry</Eyebrow>
+      <h2 id="pt-h">Organizations we've worked with.</h2>
+      <p class="intro">We are grateful to the companies and academies that have supported WAI-ME over the years.</p>
+    </div>
+    <div class="logo-grid reveal" role="list" aria-label="Corporate partners">
+      {partners.map((name) => (
+        <div class="logo-cell" role="listitem"><span>{name}</span></div>
+      ))}
+    </div>
+  </div>
+</section>

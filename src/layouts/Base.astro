@@ -16,6 +16,7 @@ const dir = lang === 'ar' ? 'rtl' : 'ltr';
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#060d1c" />
@@ -28,6 +29,7 @@ const dir = lang === 'ar' ? 'rtl' : 'ltr';
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+Arabic:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
+    <slot name="head" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>

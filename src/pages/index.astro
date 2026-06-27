@@ -1,22 +1,55 @@
 ---
 import Base from '../layouts/Base.astro';
+import '../styles/home.css';
+
+import Nav from '../components/home/Nav.astro';
+import Hero from '../components/home/Hero.astro';
+import FlightData from '../components/home/FlightData.astro';
+import StatBand from '../components/home/StatBand.astro';
+import Pillars from '../components/home/Pillars.astro';
+import Mission from '../components/home/Mission.astro';
+import Spotlight from '../components/home/Spotlight.astro';
+import EventsGrid from '../components/home/EventsGrid.astro';
+import Partners from '../components/home/Partners.astro';
+import JoinBand from '../components/home/JoinBand.astro';
+import Footer from '../components/home/Footer.astro';
 ---
 
 <Base
-  title="WAI-ME - site build in progress"
-  description="The new Women in Aviation Middle East website, built page-by-page from the adopted v3 design."
+  title="Women in Aviation Middle East, across the region"
+  description="The Middle East community for women building careers in aviation and aerospace. We open doors to training, mentors, scholarships, and each other."
 >
-  <main id="main" class="wrap" style="min-height:100dvh; display:flex; flex-direction:column; justify-content:center; gap:24px; padding-block:120px;">
-    <span style="font-family:var(--mono); font-size:12px; letter-spacing:0.22em; text-transform:uppercase; color:var(--sky-glow);">
-      WAI-ME · build harness ready
-    </span>
-    <h1 style="font-size:clamp(40px,7vw,84px); color:#fff; max-width:16ch; letter-spacing:-0.03em;">
-      Women in aviation, <span style="background:linear-gradient(100deg,var(--dawn-1),var(--dawn-2) 50%,var(--sky-glow)); -webkit-background-clip:text; background-clip:text; color:transparent;">across the region.</span>
-    </h1>
-    <p style="max-width:54ch; color:var(--mist); font-size:18px;">
-      Scaffold only. The real pages are built one at a time through the harness:
-      run <code style="font-family:var(--mono); color:var(--sky-glow);">/build-page home</code> to assemble the adopted v3 home for real,
-      then About, Membership, Get Involved, Events, and Contact, then the Arabic mirror under <code style="font-family:var(--mono); color:var(--sky-glow);">/ar</code>.
-    </p>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:site_name" content="Women in Aviation Middle East" />
+    <meta property="og:title" content="Women in aviation, across the region." />
+    <meta property="og:description" content="The Middle East community for women building careers in aviation and aerospace. We open doors to training, mentors, scholarships, and each other." />
+    <meta property="og:image" content="/assets/wai-me-logo-on-dark.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Women in aviation, across the region." />
+    <meta name="twitter:description" content="The Middle East community for women building careers in aviation and aerospace. We open doors to training, mentors, scholarships, and each other." />
+    <meta name="twitter:image" content="/assets/wai-me-logo-on-dark.png" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <Hero />
+    <FlightData />
+    <StatBand />
+    <Pillars />
+    <Mission />
+    <Spotlight />
+    <EventsGrid />
+    <Partners />
+    <JoinBand />
   </main>
+
+  <Footer />
+
+  <script src="../scripts/home-motion.js"></script>
 </Base>

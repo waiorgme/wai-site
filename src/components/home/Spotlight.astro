@@ -1,0 +1,27 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+import Photo from '../primitives/Photo.astro';
+
+// Member spotlight kept in its placeholder "Awaiting a real member" staging state.
+---
+<section class="spotlight" id="spotlight" aria-labelledby="spot-h">
+  <div class="wrap">
+    <div class="grid">
+      <div class="text reveal">
+        <Eyebrow onPaper>Member spotlight</Eyebrow>
+        <h2 id="spot-h">Meet the women shaping the region's skies.</h2>
+        <div class="slot">
+          <span class="awaiting">Awaiting a real member, with her own words</span>
+        </div>
+      </div>
+      <div class="portrait reveal" style="--i:1">
+        <Photo
+          src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=1200&q=80&auto=format&fit=crop"
+          alt="Concept image: a portrait of a woman aviation professional, looking ahead with confidence. Placeholder, a real featured member will replace it."
+          scrim
+          mark="Concept image, real member photo to follow"
+        />
+      </div>
+    </div>
+  </div>
+</section>

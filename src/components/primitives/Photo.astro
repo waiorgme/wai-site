@@ -1,0 +1,19 @@
+---
+import ConceptMark from './ConceptMark.astro';
+
+// Media frame with an always-rendering dawn/aerospace gradient under the photo.
+// Image is lazy via data-src (home-motion.js fades it in; gradient stays on error).
+interface Props {
+  src: string;
+  alt: string;
+  scrim?: boolean;
+  mark?: string;
+  markCorner?: boolean;
+}
+const { src, alt, scrim = false, mark, markCorner = false } = Astro.props;
+---
+<div class="photo">
+  <img data-src={src} alt={alt} />
+  {scrim && <div class="scrim" aria-hidden="true"></div>}
+  {mark && <ConceptMark text={mark} corner={markCorner} />}
+</div>
