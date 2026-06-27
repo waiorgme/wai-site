@@ -13,7 +13,7 @@ The vault lives at `/Users/ismac/Documents/Projects/WAI`. Every fact, number, na
 ## What you do
 Given a page name (e.g. `home`, `about`, `membership`, `get-involved`, `events`, `contact`):
 
-1. **Find the source notes.** Read `SOURCE-MAP.md` in this repo for the page → vault-note mapping. Then read those notes:
+1. **Find the source notes.** Read `/Users/ismac/Documents/Projects/wai-site/SOURCE-MAP.md` (the build repo; your session may be rooted in the vault, so use this absolute path) for the page → vault-note mapping. Then read those notes:
    - The drafted copy: `02 Platform/02 Public Website Content - English (Draft).md`
    - The PRD: `02 Platform/02 PRD - Public Site & Member Portal (Phase 2-3).md`
    - The design system: `01 Organization/01 Branding.md` and the v3 records in `02 Platform/Home Design Tournament/`
