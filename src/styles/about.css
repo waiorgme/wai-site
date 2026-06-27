@@ -7,6 +7,20 @@
    regular hyphen (no em-dashes anywhere, by design).
    ===================================================================== */
 
+/* About flight-data strip carries FOUR cells (home .fd-panel defaults to 3). */
+.fd-panel.fd-4{ grid-template-columns:repeat(4,1fr); }
+@media (max-width:1024px){ .fd-panel.fd-4{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:640px){ .fd-panel.fd-4{ grid-template-columns:1fr; } }
+/* keep cell dividers correct once it reflows to 2-up / 1-up */
+@media (max-width:1024px){
+  .fd-panel.fd-4 .fd-cell:nth-child(odd){ border-inline-start:none; }
+  .fd-panel.fd-4 .fd-cell:nth-child(n+3){ border-block-start:1px solid var(--hair-d); }
+}
+@media (max-width:640px){
+  .fd-panel.fd-4 .fd-cell{ border-inline-start:none; border-block-start:1px solid var(--hair-d); }
+  .fd-panel.fd-4 .fd-cell:first-child{ border-block-start:none; }
+}
+
 /* gradient-clipped accent must never disappear */
 @supports not ((-webkit-background-clip:text) or (background-clip:text)){
   .about-hero h1 .accent{ background:none; color:var(--sky-glow); -webkit-text-fill-color:currentColor; }
@@ -69,7 +83,7 @@
   box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
 }
 .mv-card .eyebrow{ margin-block-end:22px; }
-.mission .intro{ font-family:var(--display); font-weight:700; font-size:clamp(20px,2.4vw,26px);
+.mv-mission .intro{ font-family:var(--display); font-weight:700; font-size:clamp(20px,2.4vw,26px);
   color:var(--paper-ink); letter-spacing:-0.01em; margin-block-end:22px; }
 .mv-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:16px; }
 .mv-list li{ position:relative; padding-inline-start:30px; font-size:16px; line-height:1.6; color:var(--paper-mut); }
