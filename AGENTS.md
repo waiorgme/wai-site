@@ -16,6 +16,17 @@ Pages are built one at a time through four gates. Run `/build-page <name>`:
 
 Then a human approves and the result is written back to the vault + the handoff log.
 
+## Git workflow (branch per page, part of the harness)
+`main` only ever holds pages that cleared all four gates and human approval. No page work is ever
+committed directly to `main`, and `main` is never force-pushed.
+
+- **Gate 0 (start of `/build-page <name>`):** branch off main with `git switch -c build/<name>`.
+- **During the gates:** commit gate work and fix loops on `build/<name>` (conventional commits).
+- **Gate 5 (only after approval + `/handoff`):** `git switch main && git merge --ff-only build/<name> && git branch -d build/<name>`. If the fast-forward is refused, stop and ask rather than forcing.
+
+The repo is local-only today; when it gains a GitHub remote, `build/<name>` branches become pull
+requests with no change to the habit. (The vault itself is not yet under version control — separate task.)
+
 ## The brand locks (every page)
 - Real logo asset only — never redraw or CSS-fake it.
 - Gold (`--gold`) = recognition only, never a generic accent.

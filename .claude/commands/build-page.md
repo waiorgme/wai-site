@@ -8,6 +8,12 @@ not skip or collapse the two independent gates (design review, source-of-truth a
 
 First load the `wai-source-of-truth` skill so the vault path and the brand locks are in context.
 
+**Gate 0 — Branch (never build on `main`).** From the repo root, branch off `main` before any
+gate work: `git switch -c build/$1` (if the branch already exists from an earlier attempt, switch
+to it). All gate work and fix loops are committed on this branch. `main` only ever holds pages
+that cleared all four gates and human approval. Never commit page work directly to `main`; never
+force-push.
+
 **Gate 1 — Spec (Stop-the-Line).** Launch the `wai-spec` agent for `$1`. If it returns
 `BLOCKED`, stop here, report exactly what vault note is missing, and ask the user — do not
 invent requirements.
@@ -36,3 +42,12 @@ not run). **Do not copy/paste anything** — read the verdict file yourself and 
 **Human gate.** Summarise both verdicts plainly for Issam/Mervat and ask for approval. Only on a
 yes: run `/handoff` to log it in the vault (attach the verdict path as evidence). Report the page
 route and how to preview it.
+
+**Gate 5 — Merge.** Only after approval and the `/handoff` entry: commit any remaining work on
+`build/$1`, then fast-forward it into `main` and delete the branch:
+```
+git switch main && git merge --ff-only build/$1 && git branch -d build/$1
+```
+If `main` has moved on and a fast-forward is refused, stop and tell the user rather than forcing a
+merge. If the user did **not** approve (requested changes), stay on `build/$1`, loop the relevant
+gate, and do not merge.
