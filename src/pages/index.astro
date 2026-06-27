@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="WAI-ME - site build in progress"
+  description="The new Women in Aviation Middle East website, built page-by-page from the adopted v3 design."
+>
+  <main id="main" class="wrap" style="min-height:100dvh; display:flex; flex-direction:column; justify-content:center; gap:24px; padding-block:120px;">
+    <span style="font-family:var(--mono); font-size:12px; letter-spacing:0.22em; text-transform:uppercase; color:var(--sky-glow);">
+      WAI-ME · build harness ready
+    </span>
+    <h1 style="font-size:clamp(40px,7vw,84px); color:#fff; max-width:16ch; letter-spacing:-0.03em;">
+      Women in aviation, <span style="background:linear-gradient(100deg,var(--dawn-1),var(--dawn-2) 50%,var(--sky-glow)); -webkit-background-clip:text; background-clip:text; color:transparent;">across the region.</span>
+    </h1>
+    <p style="max-width:54ch; color:var(--mist); font-size:18px;">
+      Scaffold only. The real pages are built one at a time through the harness:
+      run <code style="font-family:var(--mono); color:var(--sky-glow);">/build-page home</code> to assemble the adopted v3 home for real,
+      then About, Membership, Get Involved, Events, and Contact, then the Arabic mirror under <code style="font-family:var(--mono); color:var(--sky-glow);">/ar</code>.
+    </p>
+  </main>
+</Base>

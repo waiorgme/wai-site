@@ -1,0 +1,23 @@
+{
+  "extraKnownMarketplaces": {
+    "impeccable": {
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "impeccable@impeccable": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npm run check)",
+      "Bash(npm install)",
+      "Bash(codex exec:*)",
+      "Read(//Users/ismac/Documents/Projects/WAI/**)"
+    ]
+  }
+}
