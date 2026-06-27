@@ -27,20 +27,27 @@ For the page you are given (its built HTML in `dist/` or the Astro source in `sr
 5. **No orphan claims** — if a sentence asserts something with no vault source, it is a
    **FAIL**, even if it sounds true.
 
-## How to run (from the wai-site repo)
-```
-codex exec --full-auto "Read .codex/source-of-truth-audit.md and audit the <page> page. Output the verdict block."
-```
+## How you are invoked
+You are launched automatically by the harness, not by a human typing prompts. The wrapper
+`scripts/codex-audit.sh <page>` runs you with `codex exec`, read-only, and pins your final
+message to the JSON schema in `.codex/verdict.schema.json`. You run, audit, and return — Claude
+(the orchestrator) reads your verdict and acts on it. No copy/paste, ever.
 
-## Output
-```
-AUDIT VERDICT: PASS | FAIL
-PAGE: <name>
-TRACE TABLE: claim → vault note (path:line) → match? (verbatim/paraphrase/missing)
-LOCK CHECK: logo / gold / em-dash / concept-marker — each pass/fail
-ORPHAN CLAIMS: any sentence with no vault source (these block PASS)
-REQUIRED FIXES: precise, for the Builder
-```
-On FAIL, leave a short pointer entry in the vault handoff log
-(`05 Operations/05 Agent Handoff - Log.md`) addressed to Claude, then stop.
-Only the page with zero orphan claims and all locks passing earns PASS.
+## Output contract (strict)
+Your **final message must be a single JSON object** matching `.codex/verdict.schema.json`:
+- `verdict`: `"PASS"` or `"FAIL"`.
+- `page`: the page name you audited.
+- `trace_table`: one row per material claim — `{ claim, vault_source, match }` where `match` is
+  `verbatim` | `paraphrase` | `missing`.
+- `lock_check`: booleans for `real_logo`, `gold_recognition_only`, `no_em_dashes`,
+  `concept_images_marked` (true = lock holds).
+- `orphan_claims`: any sentence with no vault source. **A non-empty list forces `verdict: FAIL`.**
+- `required_fixes`: precise, Builder-ready fixes.
+- `summary`: one or two plain sentences.
+
+`verdict` is `PASS` only when `orphan_claims` is empty, every `lock_check` field is true, and no
+`trace_table` row is `missing`.
+
+## Do not write files
+You are read-only. Do **not** edit the site, the vault, or the handoff log. Claude records the
+result and writes the vault handoff entry from your returned verdict. Just audit and return the JSON.

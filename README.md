@@ -26,6 +26,20 @@ Codex audits) for genuine cross-model independence. This is a right-sized adapta
 (Stop-the-Line, independent non-collapsible gates, evidence-based chain of custody) without the
 SWE-team bulk.
 
+### Gate 4 is automated — no copy/paste between models
+Claude runs Codex directly via `scripts/codex-audit.sh <page>`. That wrapper calls `codex exec`
+read-only, forces the reply to match `.codex/verdict.schema.json`, and writes a structured verdict
+to `.codex/audits/<page>.verdict.json`:
+
+```bash
+scripts/codex-audit.sh home   # exit 0 = PASS, 1 = FAIL, 2 = could not run
+```
+
+Claude reads the verdict, and on FAIL feeds `required_fixes` back to the Builder, rebuilds, and
+re-audits until PASS. You never relay findings by hand. Codex is read-only; Claude records results
+and writes the vault handoff entry. Audit verdicts are kept under `.codex/audits/` as the evidence
+trail (logs are gitignored).
+
 ## Structure
 ```
 src/styles/tokens.css     The Climb (v3) design tokens, extracted from the adopted home

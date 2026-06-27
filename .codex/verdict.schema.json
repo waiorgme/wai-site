@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "verdict": { "type": "string", "enum": ["PASS", "FAIL"] },
+    "page": { "type": "string" },
+    "trace_table": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim": { "type": "string" },
+          "vault_source": { "type": "string" },
+          "match": { "type": "string", "enum": ["verbatim", "paraphrase", "missing"] }
+        },
+        "required": ["claim", "vault_source", "match"]
+      }
+    },
+    "lock_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "real_logo": { "type": "boolean" },
+        "gold_recognition_only": { "type": "boolean" },
+        "no_em_dashes": { "type": "boolean" },
+        "concept_images_marked": { "type": "boolean" }
+      },
+      "required": ["real_logo", "gold_recognition_only", "no_em_dashes", "concept_images_marked"]
+    },
+    "orphan_claims": { "type": "array", "items": { "type": "string" } },
+    "required_fixes": { "type": "array", "items": { "type": "string" } },
+    "summary": { "type": "string" }
+  },
+  "required": ["verdict", "page", "trace_table", "lock_check", "orphan_claims", "required_fixes", "summary"]
+}

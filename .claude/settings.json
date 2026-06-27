@@ -17,6 +17,8 @@
       "Bash(npm run check)",
       "Bash(npm install)",
       "Bash(codex exec:*)",
+      "Bash(bash scripts/codex-audit.sh:*)",
+      "Bash(./scripts/codex-audit.sh:*)",
       "Read(//Users/ismac/Documents/Projects/WAI/**)"
     ]
   }

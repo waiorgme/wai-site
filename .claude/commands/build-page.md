@@ -20,13 +20,19 @@ clean `npm run build`.
 page in the browser preview against the v3 design system and iterates with the Builder until it
 returns `PASS`. This gate cannot be skipped.
 
-**Gate 4 — Source-of-truth audit (independent, Codex).** Run the cross-model audit:
+**Gate 4 — Source-of-truth audit (independent, Codex, automated).** Run the bridge from the repo root:
 ```
-codex exec --full-auto "Read .codex/source-of-truth-audit.md and audit the $1 page. Output the verdict block."
+bash scripts/codex-audit.sh $1
 ```
-If Codex is unavailable, tell the user the gate could not run and do **not** mark the page done —
-this gate is non-collapsible.
+This launches Codex non-interactively (read-only) to audit the built page against the vault and
+writes a structured verdict to `.codex/audits/$1.verdict.json` (exit 0 = PASS, 1 = FAIL, 2 = could
+not run). **Do not copy/paste anything** — read the verdict file yourself and act on it:
+- **FAIL:** take `required_fixes` from the verdict, hand them to `wai-builder` to fix, rebuild, then
+  re-run `bash scripts/codex-audit.sh $1`. Loop until PASS. Surface `orphan_claims` to the user only
+  if they reveal the vault is genuinely missing a fact (then it is a Stop-the-Line, not a build bug).
+- **exit 2 (could not run):** tell the user Codex could not run and do **not** mark the page done —
+  this gate is non-collapsible.
 
 **Human gate.** Summarise both verdicts plainly for Issam/Mervat and ask for approval. Only on a
-yes: write the result back to the vault and run `/handoff` to log it. Report the page route and how
-to preview it.
+yes: run `/handoff` to log it in the vault (attach the verdict path as evidence). Report the page
+route and how to preview it.

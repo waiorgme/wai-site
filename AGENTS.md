@@ -28,6 +28,11 @@ Astro, static output (the decided "Option A": a static site updated by talking t
 English-first with an Arabic RTL mirror under `/ar`. Design tokens are in `src/styles/tokens.css`,
 extracted from the adopted `winner-home-v3.html`. See `SOURCE-MAP.md` for page → vault-note mapping.
 
-## Codex ↔ Claude
+## Codex ↔ Claude (automated, no copy/paste)
 Claude builds and runs the design gate; Codex runs the independent source-of-truth audit.
-Hand off through the vault log: `05 Operations/05 Agent Handoff - Log.md`.
+Claude drives Codex directly through `scripts/codex-audit.sh <page>`, which runs `codex exec`
+read-only, pins the reply to `.codex/verdict.schema.json`, and writes a structured verdict to
+`.codex/audits/<page>.verdict.json` (exit 0 = PASS, 1 = FAIL, 2 = could not run). Claude reads that
+verdict and loops fixes back to the Builder until PASS — nothing is hand-relayed between the two
+models. Codex is read-only; Claude records the result and writes the vault handoff entry
+(`05 Operations/05 Agent Handoff - Log.md`) as the evidence trail.
