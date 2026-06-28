@@ -12,23 +12,30 @@ import HowSupportWorks from '../components/involved/HowSupportWorks.astro';
 import PartnerTiers from '../components/involved/PartnerTiers.astro';
 import PartnerReceives from '../components/involved/PartnerReceives.astro';
 import HowToJoin from '../components/involved/HowToJoin.astro';
-import SponsorMember from '../components/involved/SponsorMember.astro';
+// SponsorMember intentionally NOT rendered: its only vault source is marked
+// [CONFIRM: keep this option public, and the contact route.] in the content draft,
+// so it is not a settled decision and cannot ship. Component file kept on disk unused.
+
+// Meta description: composed ONLY of complete, unaltered verbatim sentences from this
+// page's vault copy - the page heading sentence followed by the verbatim opening sentence
+// of "How the support works". No rewording, merging, or trimming.
+const metaDescription = "Back the women who will run the region's aviation. WAI-ME handles no cash.";
 ---
 
 <Base
   title="Get involved - Women in Aviation Middle East"
-  description="Companies can back the women who will run the region's aviation. WAI-ME handles no cash: a partner commits support each year and delivers it directly."
+  description={metaDescription}
 >
   <Fragment slot="head">
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en" />
     <meta property="og:site_name" content="Women in Aviation Middle East" />
     <meta property="og:title" content="Back the women who will run the region's aviation." />
-    <meta property="og:description" content="Companies can back the women who will run the region's aviation. WAI-ME handles no cash: a partner commits support each year and delivers it directly." />
+    <meta property="og:description" content={metaDescription} />
     <meta property="og:image" content="/assets/wai-me-logo-on-dark.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Back the women who will run the region's aviation." />
-    <meta name="twitter:description" content="Companies can back the women who will run the region's aviation. WAI-ME handles no cash: a partner commits support each year and delivers it directly." />
+    <meta name="twitter:description" content={metaDescription} />
     <meta name="twitter:image" content="/assets/wai-me-logo-on-dark.png" />
   </Fragment>
 
@@ -44,7 +51,6 @@ import SponsorMember from '../components/involved/SponsorMember.astro';
     <PartnerTiers />
     <PartnerReceives />
     <HowToJoin />
-    <SponsorMember />
   </main>
 
   <Footer />
