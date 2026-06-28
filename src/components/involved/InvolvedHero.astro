@@ -1,0 +1,28 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+import Button from '../primitives/Button.astro';
+
+// Get Involved hero: dark "climb" opener, same typographic treatment as the
+// Membership hero (no background photo, so no concept-image marker needed).
+// Headline is verbatim from the spec (S1). The primary CTA is a mailto link
+// (email is the only path; no form anywhere on this page).
+---
+<section class="inv-hero" aria-labelledby="inv-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb a" aria-hidden="true"></div>
+  <svg class="flight-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="flightline draw" d="M-40 760 C 360 720, 620 560, 880 380 S 1280 120, 1520 40" pathLength="1" stroke-opacity="0.55"/>
+  </svg>
+
+  <div class="inner">
+    <Eyebrow class="over reveal">// Get involved</Eyebrow>
+    <h1 id="inv-h">
+      <span class="line-mask"><span>Back the women who will run</span></span>
+      <span class="line-mask"><span class="accent">the region's aviation.</span></span>
+    </h1>
+
+    <div class="cta-row reveal" style="--i:3">
+      <Button href="mailto:support@waiorg.me" magnetic>Talk to us about partnering</Button>
+    </div>
+  </div>
+</section>

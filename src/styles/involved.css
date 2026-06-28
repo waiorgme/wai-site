@@ -1,0 +1,163 @@
+/* =====================================================================
+   WAI-ME Get Involved - "The Climb" (v3) page styles
+   Built on tokens.css + the same primitives/motion as home.css. Only the
+   Get-Involved-specific sections live here; shared bits (eyebrow, buttons,
+   join band, reveal, line-mask) come from home.css.
+   Locks: real logo asset only; NO gold anywhere on this page (no awards or
+   certificates, so --gold must not appear); every dash is a regular hyphen;
+   no AED figures; email is the only partner path.
+   ===================================================================== */
+
+/* gradient-clipped accent must never disappear */
+@supports not ((-webkit-background-clip:text) or (background-clip:text)){
+  .inv-hero h1 .accent{ background:none; color:var(--sky-glow); -webkit-text-fill-color:currentColor; }
+}
+@media (forced-colors: active){
+  .inv-hero h1 .accent{ background:none; color:CanvasText; -webkit-text-fill-color:CanvasText; }
+}
+
+/* ============================================================
+   1 · HERO  (dark "climb" opener, typographic)
+   ============================================================ */
+.inv-hero{
+  position:relative; overflow:hidden; isolation:isolate;
+  padding-block:clamp(150px,18vw,220px) clamp(64px,9vw,110px);
+  background:var(--ink);
+}
+.inv-hero .dawn{
+  position:absolute; inset-inline:-10%; inset-block-end:-22%; block-size:60%; z-index:-2;
+  background:radial-gradient(60% 100% at 50% 100%, rgba(255,142,138,.4), rgba(255,193,116,.22) 40%, transparent 72%);
+  filter:blur(8px);
+}
+.inv-hero .glow-orb{ position:absolute; z-index:-2; border-radius:50%; filter:blur(60px); opacity:.5; }
+.inv-hero .glow-orb.a{ inline-size:380px; block-size:380px; inset-block-start:6%; inset-inline-end:-6%;
+  background:radial-gradient(circle, rgba(42,164,239,.55), transparent 70%); }
+.inv-hero .flight-svg{ position:absolute; inset:0; z-index:-1; inline-size:100%; block-size:100%; pointer-events:none; opacity:.6; }
+
+.inv-hero .inner{ position:relative; width:100%; max-width:var(--maxw); margin-inline:auto; padding-inline:var(--gutter); }
+.inv-hero .over{ margin-block-end:26px; }
+.inv-hero h1{
+  font-size:clamp(40px,7.4vw,96px);
+  font-weight:800; letter-spacing:-0.035em; color:#fff; max-width:18ch;
+}
+.inv-hero h1 .accent{
+  background:linear-gradient(100deg, var(--dawn-1), var(--dawn-2) 50%, var(--sky-glow));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.inv-hero .cta-row{ margin-block-start:38px; display:flex; flex-wrap:wrap; gap:14px; }
+
+/* ============================================================
+   2 · WHY PARTNER  (PAPER, breaking into daylight)
+   ============================================================ */
+.inv-why{
+  position:relative; background:var(--paper); color:var(--paper-ink);
+  padding-block:clamp(72px,10vw,130px);
+  border-radius:40px 40px 0 0; margin-block-start:-20px;
+}
+.inv-why .head{ margin-block-end:34px; }
+.inv-why h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block-start:18px; max-width:18ch; }
+.why-body{ display:grid; gap:26px; max-width:68ch; }
+.why-body p{ font-size:clamp(16px,1.95vw,20px); line-height:1.66; color:var(--paper-mut); }
+
+/* ============================================================
+   3 · HOW THE SUPPORT WORKS  (PAPER, statement beat)
+   ============================================================ */
+.inv-how-works{ background:var(--paper-2); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
+.inv-how-works .head{ margin-block-end:24px; }
+.inv-how-works h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block-start:18px; max-width:18ch; }
+.inv-how-works .hsw-body{
+  max-width:66ch;
+  font-family:var(--display); font-weight:600;
+  font-size:clamp(20px,2.6vw,30px); line-height:1.36; letter-spacing:-0.015em;
+  color:var(--paper-ink);
+}
+
+/* ============================================================
+   4 · THE THREE TIERS  (PAPER, data-style cards, NO gold, NO AED)
+   ============================================================ */
+.inv-tiers{ background:var(--paper); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
+.inv-tiers .head{ margin-block-end:46px; }
+.inv-tiers h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block-start:18px; max-width:16ch; }
+.tier-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:start; }
+.tier-card{
+  position:relative; display:flex; flex-direction:column; gap:14px;
+  border-radius:var(--r-card); padding:clamp(26px,3vw,34px);
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
+  transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
+}
+/* visual climb: each tier sits a little higher than the last */
+.tier-card{ transform:translateY(calc((2 - var(--i)) * 14px)); }
+@media (hover:hover){ .tier-card:hover{ transform:translateY(calc((2 - var(--i)) * 14px - 6px)); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+.tier-card .tier-label{
+  font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--sky-core);
+}
+.tier-card .tier-name{
+  font-family:var(--display); font-weight:700; font-size:clamp(22px,2.4vw,28px);
+  letter-spacing:-0.015em; color:var(--paper-ink); line-height:1.1;
+}
+.tier-card p{ font-size:16px; color:var(--paper-mut); line-height:1.62; }
+.inv-tiers .tier-closing{
+  margin-block-start:clamp(40px,5vw,60px); max-width:64ch;
+  font-family:var(--display); font-weight:600; font-size:clamp(18px,2.2vw,24px);
+  letter-spacing:-0.015em; line-height:1.4; color:var(--paper-ink);
+}
+
+/* ============================================================
+   5 · WHAT A PARTNER RECEIVES  (PAPER, numbered cards)
+   ============================================================ */
+.inv-receives{ background:var(--paper-2); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
+.inv-receives .head{ margin-block-end:46px; }
+.inv-receives h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block-start:18px; max-width:16ch; }
+.receive-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.receive-card{
+  position:relative; border-radius:var(--r-card); padding:clamp(26px,3vw,34px);
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
+  transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
+}
+@media (hover:hover){ .receive-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+.receive-card .num{
+  display:block; font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.14em;
+  color:var(--sky-core); margin-block-end:16px;
+}
+.receive-card p{ font-size:16px; color:var(--paper-mut); line-height:1.62; }
+
+/* ============================================================
+   6 · HOW TO JOIN  (DARK join band, reuses .join from home.css)
+   Only the dark wrapper sits around the shared band so the Sponsor note can
+   share the same continuous dark surface beneath it.
+   ============================================================ */
+.inv-join{ background:var(--ink); }
+.inv-join .inner{ text-align:center; }
+
+/* ============================================================
+   7 · SPONSOR A MEMBER  (DARK, quiet closing note, no extra CTA)
+   ============================================================ */
+.inv-sponsor{ background:var(--ink); color:var(--mist); padding-block:0 clamp(80px,11vw,140px); }
+.inv-sponsor .inner{
+  max-width:760px; margin-inline:auto; text-align:center;
+  padding-block-start:clamp(40px,6vw,72px); border-block-start:1px solid var(--hair-d);
+}
+.inv-sponsor h2{ font-size:clamp(28px,4vw,46px); color:#fff; margin-block-start:16px; }
+.inv-sponsor p{ margin-block-start:20px; max-width:56ch; margin-inline:auto;
+  color:var(--mist-mut); font-size:clamp(16px,1.9vw,20px); line-height:1.62; }
+
+/* ============================================================
+   8 · RESPONSIVE
+   ============================================================ */
+@media (max-width:1024px){
+  .tier-grid{ grid-template-columns:1fr; }
+  .tier-card{ transform:none; }
+  @media (hover:hover){ .tier-card:hover{ transform:translateY(-6px); } }
+}
+@media (max-width:880px){
+  .receive-grid{ grid-template-columns:1fr; }
+}
+@media (max-width:680px){
+  :root{ --gutter:20px; }
+}
+@media (prefers-reduced-motion: reduce){
+  .tier-card{ transform:none; }
+}

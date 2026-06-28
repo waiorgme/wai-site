@@ -1,32 +1,53 @@
 ---
 import Base from '../layouts/Base.astro';
 import '../styles/home.css';
+import '../styles/involved.css';
 
 import Nav from '../components/home/Nav.astro';
 import Footer from '../components/home/Footer.astro';
 
-// Minimal stub: the shared JoinBand "Support as a partner" CTA (used on home, about, and
-// membership) links here so it does not 404. The real partner page is built later.
+import InvolvedHero from '../components/involved/InvolvedHero.astro';
+import WhyPartner from '../components/involved/WhyPartner.astro';
+import HowSupportWorks from '../components/involved/HowSupportWorks.astro';
+import PartnerTiers from '../components/involved/PartnerTiers.astro';
+import PartnerReceives from '../components/involved/PartnerReceives.astro';
+import HowToJoin from '../components/involved/HowToJoin.astro';
+import SponsorMember from '../components/involved/SponsorMember.astro';
 ---
+
 <Base
   title="Get involved - Women in Aviation Middle East"
-  description="Support Women in Aviation Middle East. Companies that want to back the next generation can join as corporate partners."
+  description="Companies can back the women who will run the region's aviation. WAI-ME handles no cash: a partner commits support each year and delivers it directly."
 >
-  <Nav />
-  <main id="main" class="stub">
-    <span id="top"></span>
-    <section class="stub-sec">
-      <div class="wrap">
-        <h1>Partner page coming soon</h1>
-        <p>Companies that want to back the next generation can join as corporate partners. Details are on their way.</p>
-      </div>
-    </section>
-  </main>
-  <Footer />
-</Base>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:site_name" content="Women in Aviation Middle East" />
+    <meta property="og:title" content="Back the women who will run the region's aviation." />
+    <meta property="og:description" content="Companies can back the women who will run the region's aviation. WAI-ME handles no cash: a partner commits support each year and delivers it directly." />
+    <meta property="og:image" content="/assets/wai-me-logo-on-dark.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Back the women who will run the region's aviation." />
+    <meta name="twitter:description" content="Companies can back the women who will run the region's aviation. WAI-ME handles no cash: a partner commits support each year and delivers it directly." />
+    <meta name="twitter:image" content="/assets/wai-me-logo-on-dark.png" />
+  </Fragment>
 
-<style>
-  .stub-sec{ background:var(--ink); padding-block:clamp(150px,18vw,220px) clamp(72px,10vw,130px); }
-  .stub-sec h1{ font-size:clamp(36px,6vw,72px); color:#fff; letter-spacing:-0.03em; }
-  .stub-sec p{ margin-block-start:24px; max-width:56ch; color:var(--mist); font-size:clamp(16px,1.9vw,20px); line-height:1.62; }
-</style>
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <InvolvedHero />
+    <WhyPartner />
+    <HowSupportWorks />
+    <PartnerTiers />
+    <PartnerReceives />
+    <HowToJoin />
+    <SponsorMember />
+  </main>
+
+  <Footer />
+
+  <script src="../scripts/home-motion.js"></script>
+</Base>

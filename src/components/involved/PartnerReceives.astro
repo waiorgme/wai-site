@@ -1,0 +1,31 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// What a partner receives (S5): four verbatim bullets, numbered card grid in the
+// same paper-card weight as the Membership "What you get" benefits. The exact seal
+// name "WAI Middle East Corporate Partner" (LOCK 10) is reproduced verbatim,
+// including its embedded quotation marks. No gold (LOCK 2): this is a deliverables
+// list, not a recognition tier.
+const items = [
+  'The "WAI Middle East Corporate Partner" seal for the year, for your website, annual report, and channels.',
+  'A partner page and named recognition at our flagship event and in our communications.',
+  'Access to an opt-in talent pipeline of members who have agreed to be discoverable.',
+  'A yearly impact report showing exactly what your support delivered.',
+];
+---
+<section class="inv-receives" id="what-you-receive" aria-labelledby="rec-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>What a partner receives</Eyebrow>
+      <h2 id="rec-h">What a partner receives</h2>
+    </div>
+    <ol class="receive-grid">
+      {items.map((b, i) => (
+        <li class="receive-card reveal" style={`--i:${i % 2}`}>
+          <span class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <p>{b}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>

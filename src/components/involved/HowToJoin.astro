@@ -1,0 +1,21 @@
+---
+import Button from '../primitives/Button.astro';
+
+// How to join as a partner (S6): the page's emotional CTA beat, reusing the shared
+// home "join" band markup, classes, and "dawn" treatment. Body copy is verbatim.
+// LOCK 7: email is the only path, so the single CTA is a mailto link (no form).
+// LOCK 9: MOU framing only ("no binding contract"), reproduced verbatim.
+---
+<section class="join inv-join" id="join" aria-labelledby="join-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="inner">
+      <h2 id="join-h" class="reveal">How to join <span class="accent">as a partner.</span></h2>
+      <p class="reveal" style="--i:1">Partnerships are agreed by a simple Memorandum of Understanding, signed by our President. There is no binding contract and no money paid to WAI-ME. To start a conversation, email us and we will walk you through it.</p>
+      <div class="cta-row reveal" style="--i:2">
+        <Button href="mailto:support@waiorg.me" magnetic>Talk to us about partnering</Button>
+      </div>
+    </div>
+  </div>
+</section>

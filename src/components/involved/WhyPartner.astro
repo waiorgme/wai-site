@@ -1,0 +1,23 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Why partner with WAI-ME: two verbatim paragraphs on paper (breaking into daylight).
+// No facts added; both paragraphs are reproduced exactly from the spec (S2).
+const paras = [
+  'A company that partners with WAI-ME gets credible, third-party proof that it backs women in aviation, issued through a chapter of an internationally recognised body, not its own marketing. It gets early access to a growing pool of regional talent. And it gets a yearly impact story it can show its own board, its people, and the public.',
+  "WAI-ME is the Middle East chapter of Women in Aviation International, operating since 2013 in association with The Emirates Aerosports Federation. A company is not backing an unknown local group. It is partnering with the regional arm of a global name, in step with the UAE's own priorities on advancing women and national talent.",
+];
+---
+<section class="inv-why" id="why" aria-labelledby="why-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>Why partner with WAI-ME</Eyebrow>
+      <h2 id="why-h">Why partner with WAI-ME</h2>
+    </div>
+    <div class="why-body">
+      {paras.map((p, i) => (
+        <p class="reveal" style={`--i:${i + 1}`}>{p}</p>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,44 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// The three tiers (S4): Supporter / Partner / Champion. Benefit copy is verbatim.
+// LOCK 6: no AED figures anywhere (the tier amounts are internal only and never
+// rendered). LOCK 2: gold is recognition-only and this
+// page has no awards, so the tiers carry NO gold, no certificate accents; the
+// data-style tier labels use JetBrains Mono on the brand sky, not gold.
+// The closing line under the tiers is verbatim.
+const tiers = [
+  {
+    name: 'Supporter',
+    body: 'A company beginning its commitment to women in aviation: the partner seal for the year, named recognition, and a share in the yearly impact report.',
+  },
+  {
+    name: 'Partner',
+    body: 'A company backing real outcomes: everything in Supporter, plus a larger role at events and in the talent pipeline.',
+  },
+  {
+    name: 'Champion',
+    body: 'A company funding life-changing access: everything in Partner, plus headline recognition and enough support to fund a complete pilot licence for one woman, or to spread the same amount across several scholarships at our partner academies.',
+  },
+];
+---
+<section class="inv-tiers" id="tiers" aria-labelledby="tiers-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>The tiers</Eyebrow>
+      <h2 id="tiers-h">Three ways to back the work.</h2>
+    </div>
+
+    <ol class="tier-grid">
+      {tiers.map((t, i) => (
+        <li class="tier-card reveal" style={`--i:${i}`}>
+          <span class="tier-label" aria-hidden="true">{String(i + 1).padStart(2, '0')} / {t.name}</span>
+          <h3 class="tier-name">{t.name}</h3>
+          <p>{t.body}</p>
+        </li>
+      ))}
+    </ol>
+
+    <p class="tier-closing reveal" style="--i:3">Every tier carries an internship commitment, so partners help build the pipeline, not just fund it.</p>
+  </div>
+</section>
