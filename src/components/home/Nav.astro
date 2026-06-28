@@ -2,17 +2,16 @@
 import Button from '../primitives/Button.astro';
 
 // Floating glass-pill nav + full-screen mobile menu (focus-trapped via home-motion.js).
-// Real logo asset only: /assets/wai-me-logo-on-dark.png. Full site nav reaches About + Membership.
+// Real logo asset only: /assets/wai-me-logo-on-dark.png. Canonical site nav (matches the
+// footer route set in the vault content draft): About, Membership, Get Involved, Events, Contact.
 // Active page gets aria-current + a gliding pill indicator (design-system Tabs "pill" variant,
 // wired in home-motion.js). The indicator rests behind the current page and glides on hover.
 const links = [
   { href: '/about', label: 'About' },
   { href: '/membership', label: 'Membership' },
-  { href: '#what', label: 'What we do' },
-  { href: '#impact', label: 'Impact' },
-  { href: '#events', label: 'Events' },
-  { href: '#partners', label: 'Partners' },
-  { href: 'mailto:support@waiorg.me', label: 'Contact' },
+  { href: '/get-involved', label: 'Get Involved' },
+  { href: '/events', label: 'Events' },
+  { href: '/contact', label: 'Contact' },
 ];
 const path = (Astro.url.pathname.replace(/\/+$/, '') || '/');
 const isActive = (href: string) => href.startsWith('/') && path === href.replace(/\/+$/, '');
@@ -40,9 +39,9 @@ const isActive = (href: string) => href.startsWith('/') && path === href.replace
 <div class="mobile-menu" id="mobileMenu" role="dialog" aria-modal="true" aria-label="Site menu">
   <a class="m-link" href="/about">About</a>
   <a class="m-link" href="/membership">Membership</a>
-  <a class="m-link" href="#what">What we do</a>
-  <a class="m-link" href="#events">Events</a>
-  <a class="m-link" href="#partners">Partners</a>
+  <a class="m-link" href="/get-involved">Get Involved</a>
+  <a class="m-link" href="/events">Events</a>
+  <a class="m-link" href="/contact">Contact</a>
   <div class="m-cta">
     <Button href="/membership">Become a member</Button>
   </div>
