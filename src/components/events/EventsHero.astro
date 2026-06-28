@@ -1,0 +1,26 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Events hero: dark "climb" opener, pure aerospace-ink typographic section (no
+// background photo, so no concept-image marker is needed). Headline + intro are
+// verbatim from the spec. No invented dates, countdowns, or "register" controls.
+---
+<section class="ev-hero" aria-labelledby="ev-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb a" aria-hidden="true"></div>
+  <svg class="flight-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="flightline draw" d="M-40 760 C 360 720, 620 560, 880 380 S 1280 120, 1520 40" pathLength="1" stroke-opacity="0.55"/>
+  </svg>
+
+  <div class="inner">
+    <Eyebrow class="over reveal">// Events</Eyebrow>
+    <h1 id="ev-h">
+      <span class="line-mask"><span>What's been happening,</span></span>
+      <span class="line-mask"><span class="accent">and what's next.</span></span>
+    </h1>
+
+    <div class="lede reveal" style="--i:2">
+      <p>WAI-ME shows up where the industry gathers and brings members into the room. Conferences, workshops, scholarship announcements, and meet-ups, across the region and online. Members attend free. Many events are open to everyone.</p>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,20 @@
+---
+import Button from '../primitives/Button.astro';
+
+// Events empty-state / Join CTA band. Same "dawn" treatment, classes, and primary
+// CTA route (/join) as the shared home/membership join band. Copy is the verbatim
+// empty-state line from the spec. This is the honest "no confirmed dates" framing:
+// no calendar, countdown, RSVP, or "register" control anywhere on the page.
+---
+<section class="join" id="join" aria-labelledby="join-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="inner">
+      <h2 id="join-h" class="reveal">More dates are coming. Join WAI-ME and you will be the first to hear.</h2>
+      <div class="cta-row reveal" style="--i:1">
+        <Button href="/join" magnetic>Join WAI-ME</Button>
+      </div>
+    </div>
+  </div>
+</section>

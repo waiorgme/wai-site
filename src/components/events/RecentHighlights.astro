@@ -1,0 +1,33 @@
+---
+// Recent highlights: first paper section after the dark strip, so it carries the
+// "climb into daylight" rounded top edge. Three real, named events, rendered as a
+// typographic treatment (no stock imagery, per the build directive: prefer
+// typographic/archive treatment over placeholder photos). Copy is verbatim.
+// The figure "USD 150,000" is set in mono tabular figures. Gold is NOT used here:
+// "Conference and Awards" is an event name in text, not a recognition surface.
+const items = [
+  { name: '2025 Dubai Airshow', when: '2025' },
+  { name: '2025 Riyadh General Assembly', when: '2025', detail: { pre: 'where a scholarship initiative worth more than ', fig: 'USD 150,000', post: ' included a full ATPL' } },
+  { name: '2024 Annual Conference and Awards', when: '2024', detailText: 'co-located with the Airport Show in Dubai, under the patronage of His Highness Sheikh Ahmed bin Saeed Al Maktoum' },
+];
+---
+<section class="ev-recent" aria-labelledby="recent-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2 id="recent-h" class="section-label">Recent highlights</h2>
+    </div>
+
+    <ul class="recent-grid">
+      {items.map((it, i) => (
+        <li class="recent-card reveal" style={`--i:${i}`}>
+          <span class="when">{it.when}</span>
+          <h3>{it.name}</h3>
+          {it.detail && (
+            <p>{it.detail.pre}<span class="fig">{it.detail.fig}</span>{it.detail.post}.</p>
+          )}
+          {it.detailText && (<p>{it.detailText}.</p>)}
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

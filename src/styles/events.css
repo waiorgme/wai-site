@@ -1,0 +1,139 @@
+/* =====================================================================
+   WAI-ME Events - "The Climb" (v3) page styles
+   Built on tokens.css + the same primitives/motion as home.css. Only the
+   Events-specific sections live here; shared bits (eyebrow, buttons, join
+   band, reveal, line-mask, flight-svg) come from home.css.
+   Locks: real logo asset only (shared Nav/Footer); gold is recognition-only
+   and therefore appears NOWHERE on this page; every dash is a regular hyphen.
+   No invented dates, countdowns, or RSVP/register controls.
+   ===================================================================== */
+
+/* gradient-clipped accent must never disappear */
+@supports not ((-webkit-background-clip:text) or (background-clip:text)){
+  .ev-hero h1 .accent{ background:none; color:var(--sky-glow); -webkit-text-fill-color:currentColor; }
+}
+@media (forced-colors: active){
+  .ev-hero h1 .accent{ background:none; color:CanvasText; -webkit-text-fill-color:CanvasText; }
+}
+
+/* ============================================================
+   1 · EVENTS HERO  (dark "climb" opener, typographic)
+   ============================================================ */
+.ev-hero{
+  position:relative; overflow:hidden; isolation:isolate;
+  padding-block:clamp(150px,18vw,220px) clamp(64px,9vw,110px);
+  background:var(--ink);
+}
+.ev-hero .dawn{
+  position:absolute; inset-inline:-10%; inset-block-end:-22%; block-size:60%; z-index:-2;
+  background:radial-gradient(60% 100% at 50% 100%, rgba(255,142,138,.4), rgba(255,193,116,.22) 40%, transparent 72%);
+  filter:blur(8px);
+}
+.ev-hero .glow-orb{ position:absolute; z-index:-2; border-radius:50%; filter:blur(60px); opacity:.5; }
+.ev-hero .glow-orb.a{ inline-size:380px; block-size:380px; inset-block-start:6%; inset-inline-end:-6%;
+  background:radial-gradient(circle, rgba(42,164,239,.55), transparent 70%); }
+.ev-hero .flight-svg{ position:absolute; inset:0; z-index:-1; inline-size:100%; block-size:100%; pointer-events:none; opacity:.6; }
+
+.ev-hero .inner{ position:relative; width:100%; max-width:var(--maxw); margin-inline:auto; padding-inline:var(--gutter); }
+.ev-hero .over{ margin-block-end:26px; }
+.ev-hero h1{
+  font-size:clamp(40px,7.4vw,96px);
+  font-weight:800; letter-spacing:-0.035em; color:#fff; max-width:16ch;
+}
+.ev-hero h1 .accent{
+  background:linear-gradient(100deg, var(--dawn-1), var(--dawn-2) 50%, var(--sky-glow));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.ev-hero .lede{ margin-block-start:30px; max-width:64ch; }
+.ev-hero .lede p{ font-size:clamp(16px,1.9vw,20px); color:var(--mist); line-height:1.62; }
+
+/* ============================================================
+   2 · RECENT HIGHLIGHTS  (PAPER, breaking into daylight)
+   Typographic treatment, no imagery. Section heading is the verbatim
+   label "Recent highlights" (no invented headline).
+   ============================================================ */
+.ev-recent{
+  position:relative; background:var(--paper); color:var(--paper-ink);
+  padding-block:clamp(72px,10vw,130px);
+  border-radius:40px 40px 0 0; margin-block-start:-20px;
+}
+.ev-recent .head{ margin-block-end:46px; }
+.section-label{
+  font-family:var(--mono); font-weight:700; text-transform:uppercase;
+  letter-spacing:0.2em; font-size:clamp(13px,1.4vw,15px);
+  color:var(--sky-core); line-height:1.2;
+}
+.recent-grid{
+  list-style:none; margin:0; padding:0;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:18px;
+}
+.recent-card{
+  position:relative; display:flex; flex-direction:column; gap:14px;
+  border-radius:var(--r-card); padding:clamp(26px,3vw,34px);
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
+  transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
+}
+@media (hover:hover){ .recent-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+.recent-card .when{
+  font-family:var(--mono); font-weight:700; font-variant-numeric:tabular-nums;
+  font-size:13px; letter-spacing:0.16em; color:var(--sky-core);
+}
+.recent-card h3{
+  font-family:var(--display); font-weight:700; letter-spacing:-0.015em;
+  font-size:clamp(20px,2.3vw,26px); color:var(--paper-ink); line-height:1.12;
+}
+.recent-card p{ font-size:clamp(15px,1.7vw,17px); line-height:1.6; color:var(--paper-mut); }
+.recent-card p .fig{ font-family:var(--mono); font-weight:700; font-variant-numeric:tabular-nums; color:var(--paper-ink); }
+
+/* ============================================================
+   3 · ARCHIVE TIMELINE  (PAPER-2, "The story so far")
+   Year-grouped real history. Year labels + embedded figures in mono
+   tabular figures. No gold.
+   ============================================================ */
+.ev-archive{ background:var(--paper-2); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
+.ev-archive .head{
+  margin-block-end:clamp(40px,5vw,60px);
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 20px;
+}
+.ev-archive h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); max-width:16ch; }
+.ev-archive .span{
+  font-family:var(--mono); font-weight:500; font-variant-numeric:tabular-nums;
+  font-size:clamp(14px,1.6vw,16px); letter-spacing:0.14em; color:var(--paper-mut);
+}
+
+.timeline{
+  list-style:none; margin:0; padding:0;
+  position:relative;
+}
+.tl-item{
+  position:relative;
+  display:grid; grid-template-columns:minmax(160px,1fr) 3fr; gap:clamp(20px,4vw,56px);
+  padding-block:clamp(26px,3.4vw,40px);
+  border-block-start:1px solid var(--hair-l);
+}
+.tl-item:last-child{ border-block-end:1px solid var(--hair-l); }
+.tl-year{
+  font-family:var(--mono); font-weight:700; font-variant-numeric:tabular-nums;
+  font-size:clamp(22px,3vw,40px); letter-spacing:-0.01em;
+  color:var(--paper-ink); line-height:1; white-space:nowrap;
+}
+.tl-text{
+  font-family:var(--display); font-weight:500;
+  font-size:clamp(17px,2vw,23px); line-height:1.42; letter-spacing:-0.01em;
+  color:var(--paper-ink);
+  font-variant-numeric:tabular-nums; /* keeps the embedded figures aligned */
+}
+
+/* ============================================================
+   4 · RESPONSIVE
+   ============================================================ */
+@media (max-width:1024px){
+  .recent-grid{ grid-template-columns:1fr; }
+}
+@media (max-width:760px){
+  .tl-item{ grid-template-columns:1fr; gap:12px; }
+}
+@media (max-width:680px){
+  :root{ --gutter:20px; }
+}
