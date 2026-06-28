@@ -29,8 +29,14 @@ Before writing any component, check `src/components/` for an existing one. The v
 ## How you build
 1. Create/reuse components under `src/components/`.
 2. Assemble the page under `src/pages/` (English) using `Base.astro` as the layout.
-3. Keep the page static (Option A: static site). No client JS beyond the calm progressive-enhancement motion v3 already uses, gated on `prefers-reduced-motion`.
+3. Keep the page static (Option A: static site). Client JS is allowed where the spec needs interactivity (filters, pagination, forms, members-area flows), but it must be **progressive enhancement** — the content is server-rendered and usable with JS off — keyboard-accessible, and any motion stays gated on `prefers-reduced-motion`. When you show/hide elements by toggling the `hidden` attribute, confirm no author `display` rule overrides the UA `[hidden]{display:none}`; if the element has its own `display`, add `selector[hidden]{display:none}` so hidden actually hides (this exact gap once shipped a filter that set `hidden` but kept painting).
 4. Run `npm --prefix /Users/ismac/Documents/Projects/wai-site run build` and fix any error before handing off.
 
+## Tests — every interactive feature ships its own
+If you add or change any behaviour (filter, pagination, tabs, form, multi-step flow), you also write Playwright end-to-end tests for it under `tests/e2e/<feature>.spec.ts`:
+- Assert on what the browser **renders** — `expect(locator).toBeVisible()/toBeHidden()`, visible counts, the resulting URL — never on internal state or the mere presence of an attribute. A control that sets `hidden` but still paints must FAIL your test, not pass it.
+- Cover the real states: default, each filter/branch, the empty state, pagination boundaries, and that the no-JS server output still contains the content.
+- Run `npm --prefix /Users/ismac/Documents/Projects/wai-site run test:e2e` and get the **whole** suite green (yours plus every earlier page's) before handing off. If an older test now fails, you broke something — fix the code, not the test.
+
 ## Output
-End with a short build report: files created/changed, components reused vs newly created, the `npm run build` result, and "Ready for design review + source-of-truth audit." Do not self-approve — gates 3 and 4 are independent.
+End with a short build report: files created/changed, components reused vs newly created, the `npm run build` result, any E2E tests you added with the `npm run test:e2e` result, and "Ready for design review + source-of-truth audit." Do not self-approve — the independent gates (design review, source-of-truth, interaction tests) follow.

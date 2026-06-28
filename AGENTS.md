@@ -7,22 +7,23 @@ in the vault, never only in a model's memory. If the vault is silent on somethin
 ask** — never invent.
 
 ## The harness (a right-sized SAFe agentic workflow)
-Pages are built one at a time through four gates. Run `/build-page <name>`:
+Pages are built one at a time through five gates. Run `/build-page <name>`:
 
 1. **Spec** (`wai-spec`, Claude) — reads the vault, writes acceptance criteria. **Stop-the-Line:** no vault source → halt.
-2. **Build** (`wai-builder`, Claude) — builds the page as Astro components, reusing the adopted v3 design. Adds nothing.
+2. **Build** (`wai-builder`, Claude) — builds the page as Astro components, reusing the adopted v3 design. Adds nothing. Writes Playwright tests for any interactive behaviour it adds.
 3. **Design review** (`wai-design-review`, Claude) — independent design-system gate. Iterates to PASS. Cannot be skipped.
 4. **Source-of-truth audit** (Codex, see `.codex/source-of-truth-audit.md`) — independent, cross-model. Every claim traces to a vault note. Cannot be skipped.
+5. **Interaction tests** (`npm run test:e2e`, Playwright) — independent, automated, deterministic. The full accumulated suite drives a real browser and asserts on **rendered** state (visibility, counts, navigation), so behaviour actually works and new work cannot silently break old. Cannot be skipped.
 
 Then a human approves and the result is written back to the vault + the handoff log.
 
 ## Git workflow (branch per page, part of the harness)
-`main` only ever holds pages that cleared all four gates and human approval. No page work is ever
+`main` only ever holds pages that cleared all five gates and human approval. No page work is ever
 committed directly to `main`, and `main` is never force-pushed.
 
-- **Gate 0 (start of `/build-page <name>`):** branch off main with `git switch -c build/<name>`.
+- **Branch (start of `/build-page <name>`):** branch off main with `git switch -c build/<name>`.
 - **During the gates:** commit gate work and fix loops on `build/<name>` (conventional commits).
-- **Gate 5 (only after approval + `/handoff`):** `git switch main && git merge --ff-only build/<name> && git branch -d build/<name>`. If the fast-forward is refused, stop and ask rather than forcing.
+- **Merge (only after approval + `/handoff`):** the full test suite must be green (`npm run test:e2e`), then `git switch main && git merge --ff-only build/<name> && git branch -d build/<name>`. If the fast-forward is refused, stop and ask rather than forcing.
 
 The repo is local-only today; when it gains a GitHub remote, `build/<name>` branches become pull
 requests with no change to the habit. (The vault itself is not yet under version control — separate task.)
