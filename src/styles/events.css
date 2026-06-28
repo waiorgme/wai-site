@@ -194,6 +194,9 @@
   display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(18px,2.2vw,26px);
 }
 .ev-arch-card{ display:flex; }
+/* JS filter/pagination toggles the [hidden] attribute; an author display rule
+   would otherwise override the UA [hidden]{display:none}, so enforce it here. */
+.ev-arch-card[hidden]{ display:none; }
 .ev-arch-card > article{
   display:flex; flex-direction:column;
   inline-size:100%;
