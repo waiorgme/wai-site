@@ -130,4 +130,41 @@
       });
     });
   }
+
+  /* ---- nav pill indicator: glides behind the active page link, follows hover/focus ---- */
+  var navLinks = document.querySelector(".nav .links");
+  if(navLinks){
+    var ind = navLinks.querySelector(".nav-ind");
+    var anchors = navLinks.querySelectorAll("a");
+    var activeLink = navLinks.querySelector('a[aria-current="page"]');
+    if(ind){
+      var place = function(el, animate){
+        if(!el){ ind.style.opacity = "0"; return; }
+        if(!animate){
+          var prev = ind.style.transition;
+          ind.style.transition = "none";
+        }
+        ind.style.insetInlineStart = el.offsetLeft + "px";
+        ind.style.inlineSize = el.offsetWidth + "px";
+        ind.style.opacity = "1";
+        if(!animate){ void ind.offsetWidth; ind.style.transition = prev; }
+      };
+      place(activeLink, false);
+      if(canHover){
+        anchors.forEach(function(a){
+          a.addEventListener("mouseenter", function(){ place(a, true); });
+        });
+        navLinks.addEventListener("mouseleave", function(){ place(activeLink, true); });
+      }
+      anchors.forEach(function(a){
+        a.addEventListener("focus", function(){ place(a, true); });
+      });
+      navLinks.addEventListener("focusout", function(){ place(activeLink, true); });
+      var rt;
+      window.addEventListener("resize", function(){
+        clearTimeout(rt);
+        rt = setTimeout(function(){ place(activeLink, false); }, 120);
+      });
+    }
+  }
 })();

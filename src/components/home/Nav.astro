@@ -3,6 +3,19 @@ import Button from '../primitives/Button.astro';
 
 // Floating glass-pill nav + full-screen mobile menu (focus-trapped via home-motion.js).
 // Real logo asset only: /assets/wai-me-logo-on-dark.png. Full site nav reaches About + Membership.
+// Active page gets aria-current + a gliding pill indicator (design-system Tabs "pill" variant,
+// wired in home-motion.js). The indicator rests behind the current page and glides on hover.
+const links = [
+  { href: '/about', label: 'About' },
+  { href: '/membership', label: 'Membership' },
+  { href: '#what', label: 'What we do' },
+  { href: '#impact', label: 'Impact' },
+  { href: '#events', label: 'Events' },
+  { href: '#partners', label: 'Partners' },
+  { href: 'mailto:support@waiorg.me', label: 'Contact' },
+];
+const path = (Astro.url.pathname.replace(/\/+$/, '') || '/');
+const isActive = (href: string) => href.startsWith('/') && path === href.replace(/\/+$/, '');
 ---
 <header class="site">
   <nav class="nav" aria-label="Primary">
@@ -10,13 +23,10 @@ import Button from '../primitives/Button.astro';
       <img src="/assets/wai-me-logo-on-dark.png" alt="Women in Aviation Middle East" />
     </a>
     <div class="links">
-      <a href="/about">About</a>
-      <a href="/membership">Membership</a>
-      <a href="#what">What we do</a>
-      <a href="#impact">Impact</a>
-      <a href="#events">Events</a>
-      <a href="#partners">Partners</a>
-      <a href="mailto:support@waiorg.me">Contact</a>
+      <span class="nav-ind" aria-hidden="true"></span>
+      {links.map((l) => (
+        <a href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>{l.label}</a>
+      ))}
     </div>
     <div class="cta-d">
       <Button href="/membership" magnetic>Become a member</Button>

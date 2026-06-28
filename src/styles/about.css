@@ -9,6 +9,15 @@
 
 /* About flight-data strip carries FOUR cells (home .fd-panel defaults to 3). */
 .fd-panel.fd-4{ grid-template-columns:repeat(4,1fr); }
+/* Tighter 4-up columns: keep the number big, drop the unit to its own smaller line
+   so long words (e.g. "attendees") never overflow and clip against the panel edge. */
+.fd-panel.fd-4 .fd-cell{ min-inline-size:0; }
+.fd-panel.fd-4 .fd-cell .val{ font-size:clamp(32px,4.2vw,52px); }
+.fd-panel.fd-4 .fd-cell .val .unit{
+  display:block; margin-block-start:4px;
+  font-size:clamp(16px,1.7vw,22px); font-weight:600; letter-spacing:-0.01em;
+  color:var(--mist);
+}
 @media (max-width:1024px){ .fd-panel.fd-4{ grid-template-columns:repeat(2,1fr); } }
 @media (max-width:640px){ .fd-panel.fd-4{ grid-template-columns:1fr; } }
 /* keep cell dividers correct once it reflows to 2-up / 1-up */
@@ -69,8 +78,31 @@
   padding-block:clamp(72px,10vw,130px);
   border-radius:40px 40px 0 0; margin-block-start:-20px;
 }
-.about-story .prose{ max-width:74ch; display:flex; flex-direction:column; gap:22px; }
+.about-story .story-grid{
+  display:grid; grid-template-columns:1.05fr 0.95fr; gap:clamp(32px,5vw,72px); align-items:start;
+}
+.about-story .prose{ max-width:58ch; display:flex; flex-direction:column; gap:22px; }
 .about-story .prose p{ font-size:clamp(17px,2vw,21px); line-height:1.66; color:var(--paper-ink); }
+.about-story .story-media{ display:flex; flex-direction:column; gap:clamp(20px,2.4vw,30px); }
+.about-story .story-figure{ margin:0; }
+.about-story .story-figure .photo{
+  border:1px solid var(--hair-l);
+  box-shadow:0 50px 90px -55px rgba(15,35,63,.6);
+}
+.about-story .story-figure .photo-tag{
+  position:absolute; inset-block-end:12px; inset-inline-start:12px; z-index:3;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase;
+  padding:7px 12px; border-radius:var(--r-chip);
+  background:rgba(6,13,28,.72); color:rgba(255,255,255,.92);
+  border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(8px);
+}
+.about-story .story-figure figcaption{
+  margin-block-start:14px; font-size:13.5px; color:var(--paper-mut); line-height:1.5;
+}
+@media (max-width:880px){
+  .about-story .story-grid{ grid-template-columns:1fr; gap:36px; }
+  .about-story .prose{ max-width:68ch; }
+}
 
 /* ============================================================
    3 · MISSION + VISION + BELIEF  (PAPER)
@@ -120,6 +152,7 @@
 }
 @media (hover:hover){ .board-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
 .board-card .avatar{
+  position:relative; overflow:hidden;
   flex:0 0 auto; inline-size:60px; block-size:60px; border-radius:50%;
   display:grid; place-items:center;
   background:
@@ -128,6 +161,8 @@
   color:#fff; border:1px solid var(--hair-l);
 }
 .board-card .avatar .monogram{ font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:-0.02em; }
+/* Real (but dated) board portrait sits over the monogram fallback. See SA-ABOUT-BOARD-PHOTOS. */
+.board-card .avatar .portrait{ position:absolute; inset:0; inline-size:100%; block-size:100%; object-fit:cover; }
 .board-card .info{ min-width:0; }
 .board-card .name{ font-size:19px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.15; }
 .board-card .role{ font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
@@ -140,9 +175,13 @@
 .board-card .li svg{ inline-size:16px; block-size:16px; }
 @media (hover:hover){ .board-card .li:hover{ color:var(--sky-deep); } }
 
-/* Ambassadors: STAGING TEST DATA (see STAGING-CHECKLIST.md SA-ABOUT-AMBASSADORS) */
-.ambassadors{ margin-block-start:46px; }
+/* Ambassadors: STAGING TEST DATA (see STAGING-CHECKLIST.md SA-ABOUT-AMBASSADORS).
+   Mirrors the Leadership head (eyebrow + heading + intro) so the two read as siblings. */
+.ambassadors{ margin-block-start:clamp(56px,7vw,90px); padding-block-start:clamp(48px,6vw,72px); border-block-start:1px solid var(--hair-l); }
+.ambassadors .head{ max-width:70ch; margin-block-end:34px; }
 .ambassadors .eyebrow{ margin-block-end:14px; }
+.ambassadors h2{ font-size:clamp(28px,4vw,46px); color:var(--paper-ink); margin-block:16px 16px; letter-spacing:-0.01em; line-height:1.05; }
+.ambassadors .intro{ color:var(--paper-mut); font-size:clamp(16px,1.8vw,19px); max-width:62ch; line-height:1.6; }
 .staging-mark{
   display:inline-flex; align-items:center; gap:8px;
   font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;

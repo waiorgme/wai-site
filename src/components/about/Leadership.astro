@@ -1,17 +1,18 @@
 ---
 import Eyebrow from '../primitives/Eyebrow.astro';
 
-// Leadership: the board. Cards render name + title + LinkedIn only. Bio and photo slots
-// exist in the markup for the pre-launch fill but are NOT rendered publicly: they sit in
-// a hidden <template> per card so nothing placeholder shows on the live page
-// (locks 5, Open Question 3). No invented bios, no invented photos.
+// Leadership: the board. Cards render name + title + LinkedIn + photo. The photos are REAL
+// board members but harvested from the previous live site, so they are DATED: a staging
+// allowance (see STAGING-CHECKLIST.md SA-ABOUT-BOARD-PHOTOS), flagged on the page and to be
+// replaced with refreshed, consented portraits before launch. Monogram stays as fallback if
+// an image fails. Bios remain a pre-launch fill slot (no invented bios).
 const board = [
-  { name: 'Ms. Mervat Sultan', title: 'President', linkedin: 'https://www.linkedin.com/in/mervat-sultan-61950639/' },
-  { name: 'Ms. Dina Bel Jaflah', title: 'Vice President', linkedin: 'https://www.linkedin.com/in/dina-beljaflah-1951082a/' },
-  { name: 'Captain Kristina Tervo', title: 'Board Member', linkedin: 'https://www.linkedin.com/in/kristina-tervo-fraes-a861372/' },
-  { name: 'Ms. Farah Al Ansari', title: 'Board Member', linkedin: 'https://ae.linkedin.com/in/farah-al-ansari-5034815a' },
-  { name: 'Eng. Suaad Al Shamsi', title: 'Board Member', linkedin: 'https://ae.linkedin.com/in/dr-eng-suaad-alshamsi-35410b3b' },
-  { name: 'Ms. Heba Hussain', title: 'Board Member', linkedin: 'https://www.linkedin.com/in/heba-hussain-mahmood-08597048/' },
+  { name: 'Ms. Mervat Sultan', title: 'President', linkedin: 'https://www.linkedin.com/in/mervat-sultan-61950639/', photo: '/assets/team/mervat.webp' },
+  { name: 'Ms. Dina Bel Jaflah', title: 'Vice President', linkedin: 'https://www.linkedin.com/in/dina-beljaflah-1951082a/', photo: '/assets/team/dina.webp' },
+  { name: 'Captain Kristina Tervo', title: 'Board Member', linkedin: 'https://www.linkedin.com/in/kristina-tervo-fraes-a861372/', photo: '/assets/team/kristina.webp' },
+  { name: 'Ms. Farah Al Ansari', title: 'Board Member', linkedin: 'https://ae.linkedin.com/in/farah-al-ansari-5034815a', photo: '/assets/team/farah.webp' },
+  { name: 'Eng. Suaad Al Shamsi', title: 'Board Member', linkedin: 'https://ae.linkedin.com/in/dr-eng-suaad-alshamsi-35410b3b', photo: '/assets/team/suaad.webp' },
+  { name: 'Ms. Heba Hussain', title: 'Board Member', linkedin: 'https://www.linkedin.com/in/heba-hussain-mahmood-08597048/', photo: '/assets/team/heba.webp' },
 ];
 
 // Ambassadors: STAGING TEST DATA ONLY (see STAGING-CHECKLIST.md SA-ABOUT-AMBASSADORS).
@@ -30,17 +31,18 @@ const ambassadorsTest = [
       <Eyebrow onPaper>Leadership</Eyebrow>
       <h2 id="lead-h">Meet the team.</h2>
       <p class="intro">WAI-ME is run by a volunteer team of women who have built their own careers in aviation and now spend their time opening the door for the next ones.</p>
+      <p class="staging-mark" role="note">Board photos are from the current site and will be refreshed before launch.</p>
     </div>
 
     <ul class="board-grid" role="list">
       {board.map((m, i) => (
         <li class="board-card reveal" style={`--i:${i % 3}`}>
-          {/* Pre-launch fill slots, intentionally NOT rendered publicly (locks 5). */}
-          <template data-slot="photo">Real board portrait to follow (supplied pre-launch).</template>
+          {/* Bio remains a pre-launch fill slot, not rendered publicly (lock 5, no invented bios). */}
           <template data-slot="bio">Bio to follow (supplied pre-launch by Mervat).</template>
 
           <div class="avatar" aria-hidden="true">
             <span class="monogram">{m.name.replace(/^(Ms\.|Mr\.|Eng\.|Dr\.|Captain)\s+/, '').charAt(0)}</span>
+            <img class="portrait" src={m.photo} alt={`${m.name}, ${m.title} of WAI-ME`} loading="lazy" decoding="async" width="60" height="60" />
           </div>
           <div class="info">
             <h3 class="name">{m.name}</h3>
@@ -54,9 +56,13 @@ const ambassadorsTest = [
       ))}
     </ul>
 
-    <div class="ambassadors reveal">
-      <Eyebrow onPaper>Ambassadors</Eyebrow>
-      <p class="staging-mark" role="note">Test data - not real members. Real Ambassadors to follow.</p>
+    <div class="ambassadors">
+      <div class="head reveal">
+        <Eyebrow onPaper>Ambassadors</Eyebrow>
+        <h2>The members who help run it.</h2>
+        <p class="intro">Beyond the board, WAI-ME is carried by its Ambassadors: active members across the region who help run the community, host and mentor, and open the door for the women coming up behind them. Ambassadors are invited from within the community as members step forward to help.</p>
+        <p class="staging-mark" role="note">Sample cards below - real Ambassadors to follow.</p>
+      </div>
       <ul class="amb-grid" role="list">
         {ambassadorsTest.map((a, i) => (
           <li class="amb-card" style={`--i:${i % 3}`}>
