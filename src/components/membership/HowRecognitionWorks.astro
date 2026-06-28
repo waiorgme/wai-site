@@ -1,14 +1,21 @@
 ---
 import Eyebrow from '../primitives/Eyebrow.astro';
 
-// How recognition works: verbatim explainer paragraph only. The standalone four-rung
-// label ladder was REMOVED per the Codex source-of-truth audit: the recognition lock
-// (01.02 Recognition Thresholds (Decision), "What this locks for the Phase 2 PRD")
-// requires a short, jargon-free on-screen explanation wherever Member / Active Member /
-// Ambassador / Leadership Circle appear as labels, and the vault supplies no such hint
-// copy. The level names remain ONLY inline within this contextualised sentence. Gold
-// (recognition-only) therefore has no vault-sourced element to attach to here, so it is
-// correctly absent from this page.
+// How recognition works: verbatim explainer paragraph + a recognition ladder of the
+// four public level names, each carrying its member-facing "what it unlocks" hint line.
+// The hints come verbatim from the vault (01.02 Individual Membership - Decision &
+// Handoff, "What it unlocks" column), with semicolons turned to commas and no facts,
+// point totals, thresholds, or "how you reach it" mechanics added. This satisfies the
+// plain-language lock (01.02 Recognition Thresholds (Decision), line 224): every place
+// the level names appear as labels, a jargon-free on-screen explanation appears with them.
+// Lock 2 (gold = recognition only): gold is applied SOLELY to Ambassador and Leadership
+// Circle, which are genuine recognition tiers; Member and Active Member stay paper/ink.
+const levels = [
+  { name: 'Member', hint: 'Receives all the core value.', gold: false },
+  { name: 'Active Member', hint: 'Directory visibility, opportunity eligibility, and priority RSVP to workshops.', gold: false },
+  { name: 'Ambassador', hint: 'A badge, a voice, early access, and the right to vouch for others.', gold: true },
+  { name: 'Leadership Circle', hint: 'Top recognition, an advisory role, and anchoring events.', gold: true },
+];
 ---
 <section class="mbr-recognition" id="recognition" aria-labelledby="rec-h">
   <div class="wrap">
@@ -17,5 +24,14 @@ import Eyebrow from '../primitives/Eyebrow.astro';
       <h2 id="rec-h">How recognition works</h2>
     </div>
     <p class="rec-body reveal" style="--i:1">As you take part, host, mentor, and help others, you earn standing in the community, from Member to Active Member to Ambassador, and a small Leadership Circle at the top. Standing is earned only by contribution, never bought, because we handle no money. It is how we say thank you, and how members supporting members becomes the engine that grows WAI-ME.</p>
+
+    <ol class="ladder reveal" style="--i:2" aria-label="Recognition levels, from Member to Leadership Circle">
+      {levels.map((l, i) => (
+        <li class={`rung${l.gold ? ' is-gold' : ''}`} style={`--i:${i}`}>
+          <span class="rung-hint">{l.hint}</span>
+          <span class="rung-name">{l.name}</span>
+        </li>
+      ))}
+    </ol>
   </div>
 </section>

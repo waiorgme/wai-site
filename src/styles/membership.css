@@ -89,10 +89,10 @@
 .get-card p{ font-size:16px; color:var(--paper-mut); line-height:1.6; }
 
 /* ============================================================
-   4 · HOW RECOGNITION WORKS  (PAPER, verbatim explainer paragraph)
-   The standalone rung-label ladder was removed per the Codex audit; the level
-   names now appear only inline within .rec-body. So this section gives the
-   paragraph an emphasised lead-paragraph treatment and carries no gold.
+   4 · HOW RECOGNITION WORKS  (PAPER, explainer paragraph + ladder)
+   Verbatim paragraph, then the four level names each with their vault-sourced
+   "what it unlocks" hint line. Gold (recognition-only) on the Ambassador and
+   Leadership Circle rungs only. No point totals or qualification mechanics.
    ============================================================ */
 .mbr-recognition{ background:var(--paper); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
 .mbr-recognition .head{ margin-block-end:24px; }
@@ -103,6 +103,32 @@
   font-size:clamp(20px,2.6vw,30px); line-height:1.36; letter-spacing:-0.015em;
   color:var(--paper-ink);
 }
+
+.ladder{
+  list-style:none; margin-block-start:clamp(40px,5vw,64px); padding:0;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:14px;
+}
+.rung{
+  position:relative; display:flex; flex-direction:column; gap:12px;
+  border-radius:var(--r-card); padding:26px 24px;
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
+}
+/* visual climb: each rung sits a little higher than the last */
+.rung{ transform:translateY(calc((3 - var(--i)) * 10px)); }
+.rung .rung-hint{
+  font-size:14px; line-height:1.5; color:var(--paper-mut);
+}
+.rung .rung-name{
+  font-family:var(--display); font-weight:700; font-size:clamp(18px,2vw,22px);
+  letter-spacing:-0.01em; color:var(--paper-ink); line-height:1.12;
+}
+/* Lock 2: gold = recognition only. Applied solely to Ambassador + Leadership Circle. */
+.rung.is-gold{
+  background:radial-gradient(120% 120% at 90% 10%, rgba(212,162,76,.16), transparent 55%), #fff;
+  border-color:rgba(212,162,76,.4);
+}
+.rung.is-gold .rung-name{ color:var(--gold); }
 
 /* ============================================================
    5 · HOW TO JOIN  (DARK, steps)
@@ -138,6 +164,8 @@
 @media (max-width:1024px){
   .get-grid{ grid-template-columns:1fr 1fr; }
   .steps{ grid-template-columns:1fr; }
+  .ladder{ grid-template-columns:1fr 1fr; }
+  .rung{ transform:none; }
 }
 @media (max-width:880px){
   .who-grid{ grid-template-columns:1fr; }
@@ -145,4 +173,8 @@
 @media (max-width:680px){
   :root{ --gutter:20px; }
   .get-grid{ grid-template-columns:1fr; }
+  .ladder{ grid-template-columns:1fr; }
+}
+@media (prefers-reduced-motion: reduce){
+  .rung{ transform:none; }
 }
