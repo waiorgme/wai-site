@@ -1,0 +1,40 @@
+/* =====================================================================
+   Arabic front-door — RTL adjustments (preview build)
+   Scoped entirely to [dir="rtl"] so the six live English pages are untouched.
+   The /ar pages set dir="rtl" via Base (lang="ar").
+   ===================================================================== */
+
+/* All text renders in IBM Plex Sans Arabic. The front-door pages carry no
+   tabular/numeric strips, so remapping --mono here is safe. */
+[dir="rtl"] {
+  --display: var(--arabic);
+  --body:    var(--arabic);
+  --mono:    var(--arabic);
+}
+
+/* Arabic joins cursively and has no letter case: neutralise the Latin scale's
+   tracking and uppercasing, which would otherwise break the glyph joins. */
+[dir="rtl"] :where(h1, h2, h3, h4, p, a, span, cite, li, em, strong, div, button, blockquote) {
+  letter-spacing: normal;
+}
+[dir="rtl"] .eyebrow { font-family: var(--arabic); letter-spacing: normal; text-transform: none; }
+
+/* Bricolage's typographic italic ("opens doors.") has no Arabic cut. */
+[dir="rtl"] em { font-style: normal; }
+
+/* A touch more leading for Arabic ascenders/descenders on big display lines. */
+[dir="rtl"] h1, [dir="rtl"] h2 { line-height: 1.2; }
+
+/* "The Climb" flight-path ascends left-to-right; mirror it for RTL reading. */
+[dir="rtl"] .flight-svg { transform: scaleX(-1); }
+
+/* Latin brand names (partners) and the email keep their LTR run inside RTL. */
+[dir="rtl"] .logo-cell span,
+[dir="rtl"] a[href^="mailto"] { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+/* "This continues in English" note at the handoff to the English /join form. */
+.crossover-note {
+  display: block; margin-block-start: 16px;
+  font-family: var(--arabic); font-size: 13.5px; line-height: 1.6;
+  color: var(--mist-mut); max-inline-size: 52ch;
+}

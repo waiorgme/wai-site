@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/home.css';
+import '../../styles/contact.css';
+import '../../styles/ar.css';
+
+import Nav from '../../components/ar/Nav.astro';
+import Footer from '../../components/ar/Footer.astro';
+
+import ContactHero from '../../components/ar/ContactHero.astro';
+import ContactChannels from '../../components/ar/ContactChannels.astro';
+
+const metaDescription = 'سواءٌ أردتِ الانضمام، أو الشراكة معنا، أو مجرّد طرح سؤال، إليكِ كيف تصلين إلى المرأة في الطيران – الشرق الأوسط.';
+---
+
+<Base
+  lang="ar"
+  title="تواصل معنا — المرأة في الطيران – الشرق الأوسط"
+  description={metaDescription}
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ar" />
+    <meta property="og:site_name" content="المرأة في الطيران – الشرق الأوسط" />
+    <link rel="alternate" hreflang="en" href="/contact/" />
+    <link rel="alternate" hreflang="ar" href="/ar/contact/" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <ContactHero />
+    <ContactChannels />
+  </main>
+
+  <Footer />
+
+  <script src="../../scripts/home-motion.js"></script>
+</Base>

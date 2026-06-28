@@ -1,0 +1,30 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// How recognition works: explainer + a ladder of the four public level names with hints.
+// Gold applies only to Ambassador and Leadership Circle (recognition tiers).
+const levels = [
+  { name: 'عضوة', hint: 'تحصل على كلّ القيمة الأساسية.', gold: false },
+  { name: 'عضوة فاعلة', hint: 'الظهور في الدليل، وأهليّة الفرص، وأولويّة الحجز في ورش العمل.', gold: false },
+  { name: 'سفيرة', hint: 'شارةٌ وصوتٌ ووصولٌ مبكر، وحقّ التزكية للأخريات.', gold: true },
+  { name: 'حلقة القيادة', hint: 'أعلى تكريم، ودورٌ استشاري، وريادة الفعاليات.', gold: true },
+];
+---
+<section class="mbr-recognition" id="recognition" aria-labelledby="rec-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>كيف يعمل التكريم</Eyebrow>
+      <h2 id="rec-h">كيف يعمل التكريم</h2>
+    </div>
+    <p class="rec-body reveal" style="--i:1">كلّما شاركتِ واستضفتِ وأرشدتِ وساعدتِ غيركِ، اكتسبتِ مكانةً في المجتمع، من عضوة إلى عضوة فاعلة إلى سفيرة، وصولاً إلى حلقة قيادةٍ صغيرة في القمّة. تُكتَسب المكانة بالإسهام وحده، ولا تُشترى أبداً، لأننا لا نتعامل بأي أموال. هكذا نقول شكراً، وهكذا يصبح دعم العضوات بعضهنّ لبعض المحرّك الذي تنمو به المرأة في الطيران – الشرق الأوسط.</p>
+
+    <ol class="ladder reveal" style="--i:2" aria-label="مستويات التكريم، من عضوة إلى حلقة القيادة">
+      {levels.map((l, i) => (
+        <li class={`rung${l.gold ? ' is-gold' : ''}`} style={`--i:${i}`}>
+          <span class="rung-hint">{l.hint}</span>
+          <span class="rung-name">{l.name}</span>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>

@@ -1,0 +1,48 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/home.css';
+import '../../styles/events.css';
+import '../../styles/ar.css';
+
+import Nav from '../../components/ar/Nav.astro';
+import Footer from '../../components/ar/Footer.astro';
+
+import EventsHero from '../../components/ar/EventsHero.astro';
+import RecentHighlights from '../../components/ar/RecentHighlights.astro';
+import ArchiveTimeline from '../../components/ar/ArchiveTimeline.astro';
+import EventsArchive from '../../components/ar/EventsArchive.astro';
+import EventsJoinBand from '../../components/ar/EventsJoinBand.astro';
+
+const metaDescription = 'تحضر المرأة في الطيران – الشرق الأوسط حيث يجتمع القطاع، وتُدخل عضواتها إلى قلب الحدث. تحضر العضوات مجّاناً.';
+---
+
+<Base
+  lang="ar"
+  title="الفعاليات — المرأة في الطيران – الشرق الأوسط"
+  description={metaDescription}
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ar" />
+    <meta property="og:site_name" content="المرأة في الطيران – الشرق الأوسط" />
+    <link rel="alternate" hreflang="en" href="/events/" />
+    <link rel="alternate" hreflang="ar" href="/ar/events/" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <EventsHero />
+    <RecentHighlights />
+    <ArchiveTimeline />
+    <EventsArchive />
+    <EventsJoinBand />
+  </main>
+
+  <Footer />
+
+  <script src="../../scripts/home-motion.js"></script>
+</Base>

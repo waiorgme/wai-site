@@ -1,0 +1,20 @@
+---
+// EN / عربي language toggle. Default site language is English; each page links to its
+// counterpart. English pages always have a counterpart; Arabic exists only for the mirrored
+// set, so unknown Arabic targets fall back to the Arabic home.
+interface Props {
+  lang?: 'en' | 'ar';
+}
+const { lang = 'en' } = Astro.props;
+
+const path = (Astro.url.pathname.replace(/\/+$/, '') || '/');
+const isAr = path === '/ar' || path.startsWith('/ar/');
+const enPath = isAr ? (path.replace(/^\/ar/, '') || '/') : path;
+const arCandidate = '/ar' + (enPath === '/' ? '' : enPath);
+const KNOWN_AR = new Set(['/ar', '/ar/about', '/ar/membership', '/ar/get-involved', '/ar/events', '/ar/contact']);
+const arPath = KNOWN_AR.has(arCandidate) ? arCandidate : '/ar';
+---
+<div class="lang-toggle" role="group" aria-label="Language / اللغة">
+  <a class="lt-opt" href={enPath} lang="en" hreflang="en" aria-current={lang === 'en' ? 'true' : undefined}>EN</a>
+  <a class="lt-opt" href={arPath} lang="ar" hreflang="ar" aria-current={lang === 'ar' ? 'true' : undefined}>عربي</a>
+</div>

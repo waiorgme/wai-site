@@ -1,0 +1,28 @@
+---
+// Recent highlights: three real, named events, typographic treatment. Figures stay Latin.
+const items = [
+  { name: 'معرض دبي للطيران 2025', when: '2025' },
+  { name: 'الجمعية العمومية في الرياض 2025', when: '2025', detail: { pre: 'حيث تضمّنت مبادرة منحٍ دراسية تتجاوز قيمتها ', fig: 'USD 150,000', post: ' رخصةً كاملة لطيّار النقل الجوي (ATPL)' } },
+  { name: 'المؤتمر والجوائز السنوية 2024', when: '2024', detailText: 'بالاشتراك مع معرض المطارات في دبي، تحت رعاية سمو الشيخ أحمد بن سعيد آل مكتوم' },
+];
+---
+<section class="ev-recent" aria-labelledby="recent-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2 id="recent-h" class="section-label">أبرز المحطّات الأخيرة</h2>
+    </div>
+
+    <ul class="recent-grid">
+      {items.map((it, i) => (
+        <li class="recent-card reveal" style={`--i:${i}`}>
+          <span class="when">{it.when}</span>
+          <h3>{it.name}</h3>
+          {it.detail && (
+            <p>{it.detail.pre}<span class="fig">{it.detail.fig}</span>{it.detail.post}.</p>
+          )}
+          {it.detailText && (<p>{it.detailText}.</p>)}
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

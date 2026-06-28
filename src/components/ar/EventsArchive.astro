@@ -1,0 +1,94 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+import events from '../../data/events-archive-ar.json';
+
+// Full Arabic events archive. Category VALUES stay English in the data + data-attributes
+// so the shared events-archive.js filter keeps working; only the visible labels are Arabic.
+const filters = ['All', 'Conference', 'Exhibition', 'Networking', 'Convention', 'Meeting'];
+const CAT_AR: Record<string, string> = {
+  All: 'الكل', Conference: 'مؤتمر', Exhibition: 'معرض', Networking: 'تواصل', Convention: 'ملتقى', Meeting: 'اجتماع',
+};
+
+const counts: Record<string, number> = { All: events.length };
+for (const f of filters.slice(1)) counts[f] = events.filter((e) => e.category === f).length;
+
+const PAGE_SIZE = 9;
+---
+<section class="ev-archive-full" aria-labelledby="archive-full-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow>الأرشيف الكامل</Eyebrow>
+      <h2 id="archive-full-h">اثنتا عشرة سنةً في قلب الحدث.</h2>
+      <p class="intro">
+        <span class="lead-stat">32</span> فعالية في أنحاء المنطقة وخارجها، من
+        <span class="lead-num">2013</span> إلى <span class="lead-num">2024</span>. صفِّي حسب النوع،
+        أو واصلي التمرير عبر التاريخ.
+      </p>
+    </div>
+
+    <div
+      class="ev-filters reveal"
+      role="group"
+      aria-label="تصفية الفعاليات حسب النوع"
+      data-events-filters
+      style="--i:1"
+    >
+      {filters.map((f, i) => (
+        <button
+          type="button"
+          class="ev-filter"
+          data-filter={f}
+          aria-pressed={i === 0 ? 'true' : 'false'}
+        >
+          <span class="ev-filter-label">{CAT_AR[f]}</span>
+          <span class="ev-filter-count" aria-hidden="true">{counts[f]}</span>
+        </button>
+      ))}
+    </div>
+
+    <p class="ev-empty" data-events-empty hidden>لا فعاليات في هذه الفئة بعد.</p>
+
+    <ul class="ev-arch-grid" data-events-grid data-page-size={PAGE_SIZE}>
+      {events.map((e, i) => (
+        <li
+          class="ev-arch-card reveal"
+          data-category={e.category}
+          data-index={i}
+          style={`--i:${i % 3}`}
+        >
+          <article>
+            <div class="ev-arch-ph">
+              <img
+                src={e.img}
+                alt={e.name}
+                loading="lazy"
+                decoding="async"
+                width="640"
+                height="420"
+              />
+            </div>
+            <div class="ev-arch-body">
+              <div class="ev-arch-meta">
+                <span class="ev-arch-when">{e.month} {e.year}</span>
+                <span class="ev-arch-tag">{CAT_AR[e.category]}</span>
+              </div>
+              <h3 class="ev-arch-name">{e.name}</h3>
+              <p class="ev-arch-excerpt">{e.excerpt}</p>
+            </div>
+          </article>
+        </li>
+      ))}
+    </ul>
+
+    <div class="ev-more-row" data-events-more-row hidden>
+      <button type="button" class="ev-more" data-events-more>
+        <span>عرض المزيد من الفعاليات</span>
+        <span class="ev-more-count" data-events-remaining aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/events-archive.js';
+</script>

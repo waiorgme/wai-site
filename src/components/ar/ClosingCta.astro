@@ -1,0 +1,19 @@
+---
+import Button from '../primitives/Button.astro';
+
+// Closing call to action. Reuses the home join-band "dawn" treatment.
+---
+<section class="join" id="join" aria-labelledby="cta-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="inner">
+      <h2 id="cta-h" class="reveal">في هذا المكان متّسعٌ لكِ.</h2>
+      <p class="reveal" style="--i:1">كوني عضوة، فالعضوية مجّانية، أو ادعمي الجيل القادم كشريكٍ مؤسسي.</p>
+      <div class="cta-row reveal" style="--i:2">
+        <Button href="/membership" magnetic>انضمّي إلينا</Button>
+        <Button href="/ar/get-involved" ghost>ادعمينا كشريك</Button>
+      </div>
+    </div>
+  </div>
+</section>

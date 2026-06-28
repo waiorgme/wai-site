@@ -137,6 +137,7 @@
     var ind = navLinks.querySelector(".nav-ind");
     var anchors = navLinks.querySelectorAll("a");
     var activeLink = navLinks.querySelector('a[aria-current="page"]');
+    var isRTL = getComputedStyle(navLinks).direction === "rtl";
     if(ind){
       var place = function(el, animate){
         if(!el){ ind.style.opacity = "0"; return; }
@@ -144,7 +145,12 @@
           var prev = ind.style.transition;
           ind.style.transition = "none";
         }
-        ind.style.insetInlineStart = el.offsetLeft + "px";
+        // offsetLeft is always measured from the LEFT edge; inset-inline-start is the
+        // RIGHT edge under RTL, so mirror the offset there.
+        var start = isRTL
+          ? navLinks.clientWidth - el.offsetLeft - el.offsetWidth
+          : el.offsetLeft;
+        ind.style.insetInlineStart = start + "px";
         ind.style.inlineSize = el.offsetWidth + "px";
         ind.style.opacity = "1";
         if(!animate){ void ind.offsetWidth; ind.style.transition = prev; }

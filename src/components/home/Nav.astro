@@ -1,5 +1,6 @@
 ---
 import Button from '../primitives/Button.astro';
+import LangToggle from '../primitives/LangToggle.astro';
 
 // Floating glass-pill nav + full-screen mobile menu (focus-trapped via home-motion.js).
 // Real logo asset only: /assets/wai-me-logo-on-dark.png. Canonical site nav (matches the
@@ -27,6 +28,7 @@ const isActive = (href: string) => href.startsWith('/') && path === href.replace
         <a href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>{l.label}</a>
       ))}
     </div>
+    <LangToggle lang="en" />
     <div class="cta-d">
       <Button href="/membership" magnetic>Become a member</Button>
     </div>

@@ -87,3 +87,22 @@ p { margin: 0; }
 
 /* Arabic RTL helper - the /ar mirror sets dir="rtl" on <html>. */
 [dir="rtl"] body { font-family: var(--arabic); }
+
+/* Language toggle (EN / عربي) - sits in the glass nav, works on light + dark. */
+.lang-toggle {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 3px; border-radius: var(--r-chip);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12);
+}
+.lang-toggle .lt-opt {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-inline-size: 34px; padding: 6px 11px;
+  border-radius: var(--r-chip);
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  letter-spacing: .04em; line-height: 1; color: var(--mist-mut);
+  transition: color .2s var(--ease-out), background .2s var(--ease-out);
+}
+.lang-toggle .lt-opt[lang="ar"] { font-family: var(--arabic); letter-spacing: 0; font-size: 13px; }
+.lang-toggle .lt-opt[aria-current="true"] { background: var(--sky-core); color: #fff; }
+@media (hover: hover) { .lang-toggle .lt-opt:not([aria-current]):hover { color: #fff; } }
