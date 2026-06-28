@@ -1,0 +1,153 @@
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
+
+// Schema for the signup + login slice. Tables and indexes follow the locked
+// Stage 0 technical design (§4, §10). Later slices add events, opportunities,
+// certificates, the recognition ledger, and the privacy/ops entities.
+
+const lifecycleState = v.union(
+  v.literal("email_unverified"),
+  v.literal("consent_pending"),
+  v.literal("pending_guardian"),
+  v.literal("claim_pending"),
+  v.literal("pending_review"),
+  v.literal("active"),
+  v.literal("dormant"),
+  v.literal("suspended"),
+  v.literal("erasure_requested"),
+  v.literal("erasure_in_progress"),
+  v.literal("archived"),
+);
+
+const memberLane = v.union(
+  v.literal("standard"),
+  v.literal("minor"),
+  v.literal("ally"),
+  v.literal("restricted_unknown"),
+);
+
+export default defineSchema({
+  ...authTables,
+
+  // §4.1 Member: identity + lifecycle + age block (replaces flat status / minor_flag).
+  members: defineTable({
+    userId: v.optional(v.id("users")),
+    email: v.string(),
+    name: v.string(),
+    mobile: v.optional(v.string()),
+    source: v.union(v.literal("new_signup"), v.literal("migrated")),
+    lifecycle_state: lifecycleState,
+    date_of_birth: v.optional(v.string()),
+    date_of_birth_source: v.union(
+      v.literal("self_declared"),
+      v.literal("migrated"),
+      v.literal("guardian_confirmed"),
+      v.literal("unknown"),
+    ),
+    age_confidence: v.union(
+      v.literal("confirmed"),
+      v.literal("declared"),
+      v.literal("unknown"),
+    ),
+    minor_until: v.optional(v.string()),
+    age_up_prompted_at: v.optional(v.number()),
+    guardian_consent_state: v.union(
+      v.literal("not_required"),
+      v.literal("pending"),
+      v.literal("confirmed"),
+    ),
+    gender: v.union(v.literal("female"), v.literal("male")),
+    career_stage_answer: v.optional(v.string()),
+    member_lane: memberLane,
+    created_at: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_userId", ["userId"])
+    .index("by_lifecycle_state", ["lifecycle_state"])
+    .index("by_member_lane", ["member_lane"])
+    .index("by_minor_until", ["minor_until"]),
+
+  // §4.2 ImportedMember: the 1,309 legacy rows land here first so claim is safe.
+  importedMembers: defineTable({
+    legacy_row_id: v.string(),
+    legacy_row_hash: v.string(),
+    normalized_email: v.string(),
+    name: v.string(),
+    mobile: v.optional(v.string()),
+    dob_if_known: v.optional(v.string()),
+    legacy_position: v.optional(v.string()),
+    legacy_company: v.optional(v.string()),
+    legacy_bio: v.optional(v.string()),
+    claim_state: v.union(
+      v.literal("unclaimed"),
+      v.literal("claim_in_progress"),
+      v.literal("claimed"),
+      v.literal("conflict"),
+      v.literal("suppressed_minor"),
+    ),
+    match_signals: v.object({
+      email: v.boolean(),
+      name: v.boolean(),
+      mobile: v.boolean(),
+      dob: v.boolean(),
+    }),
+    conflict_reason: v.optional(v.string()),
+    linked_member_id: v.optional(v.id("members")),
+  })
+    .index("by_normalized_email", ["normalized_email"])
+    .index("by_claim_state", ["claim_state"]),
+
+  // §4.3 ConsentRecord (append-only). Explicit false rows are written too, so
+  // "she declined" is never confused with "never asked" (Codex 5).
+  consentRecords: defineTable({
+    member_id: v.id("members"),
+    type: v.union(
+      v.literal("terms_privacy"),
+      v.literal("marketing"),
+      v.literal("pipeline"),
+    ),
+    value: v.boolean(),
+    policy_version: v.string(),
+    source: v.union(
+      v.literal("join"),
+      v.literal("claim"),
+      v.literal("settings"),
+    ),
+    timestamp: v.number(),
+  }).index("by_member_type_time", ["member_id", "type", "timestamp"]),
+
+  // §4.3 GuardianConsent: under-18 confirmation.
+  guardianConsents: defineTable({
+    member_id: v.id("members"),
+    guardian_name: v.string(),
+    guardian_email: v.string(),
+    confirmation_state: v.union(
+      v.literal("pending"),
+      v.literal("confirmed"),
+      v.literal("expired"),
+    ),
+    confirmation_token_hash: v.string(),
+    timestamp: v.number(),
+  }).index("by_member", ["member_id"]),
+
+  // §8 AuditLog: mandatory, immutable, append-only row per member-affecting write.
+  auditLog: defineTable({
+    actor: v.string(),
+    role: v.string(),
+    action: v.string(),
+    target_id: v.string(),
+    before_summary: v.optional(v.string()),
+    after_summary: v.optional(v.string()),
+    request_id: v.optional(v.string()),
+    timestamp: v.number(),
+    source: v.union(
+      v.literal("member"),
+      v.literal("admin_fallback"),
+      v.literal("agent"),
+      v.literal("system"),
+    ),
+  })
+    .index("by_target_time", ["target_id", "timestamp"])
+    .index("by_actor_time", ["actor", "timestamp"]),
+});

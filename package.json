@@ -9,10 +9,17 @@
     "preview": "astro preview",
     "check": "astro check",
     "test:e2e": "playwright test",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "convex:dev": "convex dev",
+    "convex:codegen": "convex codegen",
+    "convex:deploy": "convex deploy"
   },
   "dependencies": {
-    "astro": "^6.4.8"
+    "@auth/core": "^0.41.2",
+    "@convex-dev/auth": "^0.0.94",
+    "astro": "^6.4.8",
+    "convex": "^1.42.0",
+    "resend": "^6.16.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
