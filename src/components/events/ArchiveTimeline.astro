@@ -1,0 +1,32 @@
+---
+// Archive timeline: "The story so far" (verbatim sub-heading). Six real, year-grouped
+// entries carried over verbatim from the live site history. Year labels are set in mono
+// tabular figures; the embedded figures (750, 26, 12, 400-plus) are also mono. Gold is
+// NOT used: this is history, not recognition. Hyphenation preserved verbatim
+// ("2015 to 2016", "400-plus"); regular hyphens only, no em/en dashes.
+const entries = [
+  { year: '2013', text: 'First participation at the Dubai Airport Show (May), the first board meeting that founded the chapter (October), and the Dubai Airshow (November).' },
+  { year: '2014', text: 'Abu Dhabi Air Show, the Global Aviation Aerospace Summit, the WAI International Conference in Florida, and the first MEBAA appearance.' },
+  { year: '2015 to 2016', text: 'The first annual general assembly at the Dubai Airport Show, the Global Airport Leaders Forum, WETEX, and the IAWA lunch at the Global Aerospace Summit.' },
+  { year: '2017 to 2019', text: 'The conference grew year on year, reaching the fourth General Assembly in 2019 with more than 750 attendees, 26 international speakers, and 12 sponsors.' },
+  { year: '2020 to 2022', text: 'The first Biennial Conference in Kuwait, hybrid conferences through the pandemic, and 400-plus attendees at the Abu Dhabi Air Expo in 2022.' },
+  { year: '2023 to 2024', text: 'The conference at the Airport Show in Dubai, the inaugural Women in Aviation assembly in Riyadh aligned with Saudi Vision 2030, and the 2024 Annual Conference and Awards.' },
+];
+---
+<section class="ev-archive" aria-labelledby="archive-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2 id="archive-h">The story so far</h2>
+      <p class="span">2013 to 2024</p>
+    </div>
+
+    <ol class="timeline">
+      {entries.map((e, i) => (
+        <li class="tl-item reveal" style={`--i:${i}`}>
+          <div class="tl-year">{e.year}</div>
+          <p class="tl-text">{e.text}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
