@@ -29,8 +29,21 @@
       "required": ["real_logo", "gold_recognition_only", "no_em_dashes", "concept_images_marked"]
     },
     "orphan_claims": { "type": "array", "items": { "type": "string" } },
+    "staging_allowances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim": { "type": "string" },
+          "checklist_id": { "type": "string" },
+          "marked_on_page": { "type": "boolean" }
+        },
+        "required": ["claim", "checklist_id", "marked_on_page"]
+      }
+    },
     "required_fixes": { "type": "array", "items": { "type": "string" } },
     "summary": { "type": "string" }
   },
-  "required": ["verdict", "page", "trace_table", "lock_check", "orphan_claims", "required_fixes", "summary"]
+  "required": ["verdict", "page", "trace_table", "lock_check", "orphan_claims", "staging_allowances", "required_fixes", "summary"]
 }

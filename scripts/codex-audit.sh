@@ -30,6 +30,8 @@ Audit the BUILT page: prefer the compiled HTML in dist/ for this route (for the 
 
 Check that every fact, number, name, date, place, and tier traces to a vault note; that copy is verbatim; that the brand locks hold (real logo asset only, gold = recognition only, no em-dashes, concept images marked); and that Decisions are honoured. Any sentence with no vault source is a FAIL.
 
+This is a STAGING site. Read STAGING-CHECKLIST.md in the repo root and apply its staging-allowance rule (also restated in .codex/source-of-truth-audit.md): a claim with no vault source is allowed - recorded under staging_allowances, not orphan_claims, and does NOT force FAIL - ONLY when it is both visibly marked as placeholder/test data on the page AND listed for this page in STAGING-CHECKLIST.md. If only one is true, it is still a FAIL. The staging allowance never relaxes the brand locks and never excuses reworded or invented versions of copy the vault does have.
+
 Return ONLY the final verdict as JSON matching the provided schema. Do not write or modify any files; you are read-only and the orchestrator records the result and the handoff entry.
 EOF
 

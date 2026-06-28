@@ -140,20 +140,42 @@
 .board-card .li svg{ inline-size:16px; block-size:16px; }
 @media (hover:hover){ .board-card .li:hover{ color:var(--sky-deep); } }
 
-/* Ambassadors: clear coming-soon placeholder, no names */
+/* Ambassadors: STAGING TEST DATA (see STAGING-CHECKLIST.md SA-ABOUT-AMBASSADORS) */
 .ambassadors{ margin-block-start:46px; }
-.ambassadors .eyebrow{ margin-block-end:20px; }
-.amb-slot{
-  border-radius:var(--r-card); padding:clamp(28px,4vw,40px);
+.ambassadors .eyebrow{ margin-block-end:14px; }
+.staging-mark{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:#8a5a1a; background:rgba(212,162,76,.12); border:1px dashed rgba(138,90,26,.4);
+  padding:7px 13px; border-radius:var(--r-chip); margin-block-end:20px;
+}
+.amb-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.amb-card{
+  position:relative; display:flex; gap:18px; align-items:center;
+  border-radius:var(--r-card); padding:24px;
   background:#fff; border:1px dashed rgba(15,35,63,.28);
   box-shadow:0 30px 60px -50px rgba(15,35,63,.5);
 }
-.amb-slot .coming{
-  display:inline-flex; align-items:center; gap:8px;
-  font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
-  color:var(--sky-core); background:rgba(1,139,225,.08); border:1px solid rgba(1,139,225,.24);
-  padding:7px 13px; border-radius:var(--r-chip);
+.amb-card .amb-tag{
+  position:absolute; inset-block-start:14px; inset-inline-end:14px;
+  font-family:var(--mono); font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:#8a5a1a; background:rgba(212,162,76,.14); border:1px solid rgba(138,90,26,.32);
+  padding:4px 9px; border-radius:var(--r-chip);
 }
+.amb-card .avatar{
+  flex:0 0 auto; inline-size:60px; block-size:60px; border-radius:50%;
+  display:grid; place-items:center;
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(42,164,239,.22), transparent 60%),
+    linear-gradient(160deg,#0c2a4d,#091a36);
+  color:#fff; border:1px solid var(--hair-l);
+}
+.amb-card .avatar .monogram{ font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:-0.02em; }
+.amb-card .info{ min-width:0; }
+.amb-card .name{ font-size:18px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.15; }
+.amb-card .role{ font-family:var(--mono); font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--paper-mut); margin-block:8px 10px; }
+.amb-card .amb-line{ font-size:14px; color:var(--paper-mut); line-height:1.55; }
 
 /* ============================================================
    5 · IMPACT  (PAPER, pillar-card visual weight)

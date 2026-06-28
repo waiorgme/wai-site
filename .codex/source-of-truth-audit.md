@@ -27,6 +27,28 @@ For the page you are given (its built HTML in `dist/` or the Astro source in `sr
 5. **No orphan claims** — if a sentence asserts something with no vault source, it is a
    **FAIL**, even if it sounds true.
 
+## Staging allowances (the one exception to "no orphan claims")
+
+This is a **staging** site: the team intentionally ships some sections with placeholder /
+test data so they can see the full layout before the real, vault-sourced content exists.
+Read `STAGING-CHECKLIST.md` in the repo root. A claim with no vault source is allowed —
+recorded under `staging_allowances`, **not** `orphan_claims`, and it does **not** force a
+FAIL — **only when both** of these hold:
+
+1. it is **visibly marked** as placeholder / test data on the rendered page (a staging
+   banner, a "Sample"/"Test data" tag, or an equivalent visible marker), **and**
+2. it is **listed for this page** in `STAGING-CHECKLIST.md` with a clear
+   "clear-before-production" requirement.
+
+If only one is true (marked on the page but not in the checklist, or listed in the checklist
+but not visibly marked on the page), it is **still a FAIL** — put it in `orphan_claims`.
+
+For each allowed item, add a `staging_allowances` row: `{ claim, checklist_id,
+marked_on_page }` where `checklist_id` is the matching `SA-...` id from the checklist. This
+exception applies ONLY to placeholder/test content. It never relaxes the brand locks (real
+logo, gold = recognition only, no em-dashes, concept images marked) and never excuses a
+reworded or invented version of copy that the vault DOES have.
+
 ## How you are invoked
 You are launched automatically by the harness, not by a human typing prompts. The wrapper
 `scripts/codex-audit.sh <page>` runs you with `codex exec`, read-only, and pins your final
@@ -41,12 +63,17 @@ Your **final message must be a single JSON object** matching `.codex/verdict.sch
   `verbatim` | `paraphrase` | `missing`.
 - `lock_check`: booleans for `real_logo`, `gold_recognition_only`, `no_em_dashes`,
   `concept_images_marked` (true = lock holds).
-- `orphan_claims`: any sentence with no vault source. **A non-empty list forces `verdict: FAIL`.**
+- `orphan_claims`: any sentence with no vault source that is NOT a valid staging allowance.
+  **A non-empty list forces `verdict: FAIL`.**
+- `staging_allowances`: documented + marked placeholder/test items (see "Staging allowances"
+  above), each `{ claim, checklist_id, marked_on_page }`. A non-empty list does **not** force
+  FAIL. It is the pending list the team must clear before production.
 - `required_fixes`: precise, Builder-ready fixes.
 - `summary`: one or two plain sentences.
 
 `verdict` is `PASS` only when `orphan_claims` is empty, every `lock_check` field is true, and no
-`trace_table` row is `missing`.
+`trace_table` row is `missing`. A non-empty `staging_allowances` list does not, by itself,
+block a staging PASS.
 
 ## Do not write files
 You are read-only. Do **not** edit the site, the vault, or the handoff log. Claude records the

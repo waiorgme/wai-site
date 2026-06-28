@@ -13,6 +13,16 @@ const board = [
   { name: 'Eng. Suaad Al Shamsi', title: 'Board Member', linkedin: 'https://ae.linkedin.com/in/dr-eng-suaad-alshamsi-35410b3b' },
   { name: 'Ms. Heba Hussain', title: 'Board Member', linkedin: 'https://www.linkedin.com/in/heba-hussain-mahmood-08597048/' },
 ];
+
+// Ambassadors: STAGING TEST DATA ONLY (see STAGING-CHECKLIST.md SA-ABOUT-AMBASSADORS).
+// These are illustrative sample cards so the team can see the section layout. They are NOT
+// real members. The vault has no launch Ambassadors yet; Mervat picks them pre-launch, then
+// this test data is replaced with vault-sourced names, photos, and one-line bios.
+const ambassadorsTest = [
+  { name: 'Sample Ambassador One', role: 'Community Lead, Sample City', line: 'Sample one-line description. Real Ambassador bio to follow.' },
+  { name: 'Sample Ambassador Two', role: 'Events Volunteer, Sample City', line: 'Sample one-line description. Real Ambassador bio to follow.' },
+  { name: 'Sample Ambassador Three', role: 'Student Outreach, Sample City', line: 'Sample one-line description. Real Ambassador bio to follow.' },
+];
 ---
 <section class="leadership" id="leadership" aria-labelledby="lead-h">
   <div class="wrap">
@@ -46,9 +56,22 @@ const board = [
 
     <div class="ambassadors reveal">
       <Eyebrow onPaper>Ambassadors</Eyebrow>
-      <div class="amb-slot">
-        <span class="coming">Coming soon</span>
-      </div>
+      <p class="staging-mark" role="note">Test data - not real members. Real Ambassadors to follow.</p>
+      <ul class="amb-grid" role="list">
+        {ambassadorsTest.map((a, i) => (
+          <li class="amb-card" style={`--i:${i % 3}`}>
+            <span class="amb-tag">Sample</span>
+            <div class="avatar" aria-hidden="true">
+              <span class="monogram">{a.name.charAt(0)}</span>
+            </div>
+            <div class="info">
+              <h3 class="name">{a.name}</h3>
+              <div class="role">{a.role}</div>
+              <p class="amb-line">{a.line}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   </div>
 </section>
