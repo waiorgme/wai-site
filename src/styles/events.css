@@ -252,6 +252,9 @@
 
 /* ---- show more ---- */
 .ev-more-row{ display:flex; justify-content:center; margin-block-start:clamp(36px,4.5vw,52px); }
+/* JS toggles [hidden] on this row; the author display rule above would override
+   the UA [hidden]{display:none}, so enforce it (same fix as .ev-arch-card). */
+.ev-more-row[hidden]{ display:none; }
 .ev-more{
   display:inline-flex; align-items:center; gap:11px; cursor:pointer;
   font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.1em;
