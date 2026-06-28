@@ -1,0 +1,82 @@
+/* =====================================================================
+   WAI-ME Contact - "The Climb" (v3) page styles
+   Built on tokens.css + the same primitives/motion as home.css. A simple,
+   light informational page: a short dark opener (so the shared floating
+   glass nav keeps its contrast at the top, exactly as on Membership), then
+   the email and social channels on paper.
+   Locks: real logo asset only (shared Nav/Footer); NO gold on this page
+   (no recognition here); every dash is a regular hyphen; email-only, no form.
+   ===================================================================== */
+
+/* ============================================================
+   1 · HERO  (compact dark opener: heading + intro)
+   ============================================================ */
+.ct-hero{
+  position:relative; overflow:hidden; isolation:isolate;
+  padding-block:clamp(150px,18vw,210px) clamp(56px,8vw,96px);
+  background:var(--ink);
+}
+.ct-hero .glow-orb{
+  position:absolute; z-index:-2; border-radius:50%; filter:blur(60px); opacity:.45;
+  inline-size:360px; block-size:360px; inset-block-start:2%; inset-inline-end:-6%;
+  background:radial-gradient(circle, rgba(42,164,239,.5), transparent 70%);
+}
+.ct-hero .inner{ position:relative; width:100%; max-width:var(--maxw); margin-inline:auto; padding-inline:var(--gutter); }
+.ct-hero h1{
+  font-size:clamp(40px,7.4vw,92px);
+  font-weight:800; letter-spacing:-0.035em; color:#fff; max-width:14ch;
+}
+.ct-hero .lede{ margin-block-start:28px; max-width:60ch; }
+.ct-hero .lede p{ font-size:clamp(16px,1.9vw,20px); color:var(--mist); line-height:1.62; }
+
+/* ============================================================
+   2 · CHANNELS  (PAPER: email + social channels)
+   ============================================================ */
+.ct-channels{
+  position:relative; background:var(--paper); color:var(--paper-ink);
+  padding-block:clamp(64px,9vw,120px);
+  border-radius:40px 40px 0 0; margin-block-start:-20px;
+}
+
+/* Email block: the address itself is the CTA (mailto), sky on light. */
+.ct-email{ margin-block-end:clamp(48px,6vw,72px); }
+.ct-email .label{
+  display:block; font-weight:700; letter-spacing:0.02em;
+  color:var(--paper-mut); font-size:15px; margin-block-end:12px;
+}
+.ct-email .addr{
+  display:inline-block;
+  font-family:var(--display); font-weight:700; letter-spacing:-0.02em;
+  font-size:clamp(28px,4.6vw,52px); line-height:1.05;
+  color:var(--sky-core);
+}
+@media (hover:hover){ .ct-email .addr:hover{ text-decoration:underline; text-underline-offset:0.12em; } }
+
+/* Social channels: icon-plus-label rows, single sky colour, 1.5px stroke. */
+.ct-socials{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; max-width:760px; }
+.ct-social{
+  display:flex; align-items:center; gap:16px;
+  border-radius:var(--r-card); padding:18px 22px;
+  background:#fff; border:1px solid var(--hair-l);
+  box-shadow:0 24px 50px -44px rgba(15,35,63,.5);
+  color:var(--paper-ink);
+  transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out), border-color .5s var(--ease-out);
+}
+@media (hover:hover){
+  .ct-social:hover{ transform:translateY(-4px); box-shadow:0 34px 60px -40px rgba(15,35,63,.55); border-color:rgba(1,139,225,.4); }
+}
+.ct-social .ic{
+  flex:none; display:grid; place-items:center;
+  inline-size:44px; block-size:44px; border-radius:12px;
+  background:rgba(1,139,225,.08); color:var(--sky-core);
+}
+.ct-social .ic svg{ inline-size:22px; block-size:22px; }
+.ct-social .name{ font-weight:600; font-size:clamp(16px,2vw,18px); color:var(--paper-ink); }
+
+/* ============================================================
+   3 · RESPONSIVE
+   ============================================================ */
+@media (max-width:680px){
+  :root{ --gutter:20px; }
+  .ct-socials{ grid-template-columns:1fr; }
+}

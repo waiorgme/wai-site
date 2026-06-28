@@ -1,0 +1,49 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/home.css';
+import '../styles/contact.css';
+
+import Nav from '../components/home/Nav.astro';
+import Footer from '../components/home/Footer.astro';
+
+import ContactHero from '../components/contact/ContactHero.astro';
+import ContactChannels from '../components/contact/ContactChannels.astro';
+
+// Meta description is composed ONLY of complete, unaltered sentences taken
+// verbatim from this page's vault copy ("# 7. Contact"): the heading sentence
+// "Talk to us." followed by the verbatim intro sentence. No paraphrase.
+const metaDescription =
+  'Talk to us. Whether you want to join, partner with us, or just ask a question, here is how to reach WAI-ME.';
+---
+
+<Base
+  title="Contact - Women in Aviation Middle East"
+  description={metaDescription}
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:site_name" content="Women in Aviation Middle East" />
+    <meta property="og:title" content="Talk to us." />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:image" content="/assets/wai-me-logo-on-dark.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Talk to us." />
+    <meta name="twitter:description" content={metaDescription} />
+    <meta name="twitter:image" content="/assets/wai-me-logo-on-dark.png" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <ContactHero />
+    <ContactChannels />
+  </main>
+
+  <Footer />
+
+  <script src="../scripts/home-motion.js"></script>
+</Base>
