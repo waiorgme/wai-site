@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/home.css';
+
+import Nav from '../components/home/Nav.astro';
+import Footer from '../components/home/Footer.astro';
+
+// Minimal stub: the shared JoinBand "Support as a partner" CTA (used on home, about, and
+// membership) links here so it does not 404. The real partner page is built later.
+---
+<Base
+  title="Get involved - Women in Aviation Middle East"
+  description="Support Women in Aviation Middle East. Companies that want to back the next generation can join as corporate partners."
+>
+  <Nav />
+  <main id="main" class="stub">
+    <span id="top"></span>
+    <section class="stub-sec">
+      <div class="wrap">
+        <h1>Partner page coming soon</h1>
+        <p>Companies that want to back the next generation can join as corporate partners. Details are on their way.</p>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .stub-sec{ background:var(--ink); padding-block:clamp(150px,18vw,220px) clamp(72px,10vw,130px); }
+  .stub-sec h1{ font-size:clamp(36px,6vw,72px); color:#fff; letter-spacing:-0.03em; }
+  .stub-sec p{ margin-block-start:24px; max-width:56ch; color:var(--mist); font-size:clamp(16px,1.9vw,20px); line-height:1.62; }
+</style>

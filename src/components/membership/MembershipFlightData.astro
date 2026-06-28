@@ -1,0 +1,27 @@
+---
+// Flight-data strip (instrument readout) for the Membership page. Same glass-panel
+// pattern as the home FlightData. Count-up numbers carry sr-only fallbacks so
+// no-JS / reduced-motion users always read the final figures.
+// Cell 3 ("Free") is a static label: no counter, no sub-line (no verbatim source).
+---
+<section class="flightdata" aria-label="WAI-ME membership at a glance">
+  <div class="wrap">
+    <div class="fd-panel reveal">
+      <div class="fd-cell">
+        <div class="label">Community</div>
+        <div class="val"><span class="count" data-to="1300" data-format="comma" aria-hidden="true">1,300</span><span class="sr-only">1,300</span>+ members</div>
+        <div class="sub">across the Middle East and beyond</div>
+      </div>
+      <div class="fd-cell">
+        <div class="label">Reach</div>
+        <div class="val"><span class="count" data-to="40" aria-hidden="true">40</span><span class="sr-only">40</span>+ countries</div>
+        <div class="sub">where our members live and work</div>
+      </div>
+      <div class="fd-cell">
+        <div class="label">Membership fee</div>
+        <div class="val">Free</div>
+        <!-- OQ-1: no verbatim sub-line exists in the vault for the free-fee cell; sub-line omitted by directive. -->
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,29 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// What you get: five member benefits on paper, verbatim. Numbered card grid in the
+// same paper-card visual weight as the About Impact pillars.
+const benefits = [
+  'An always-current opportunities board: jobs, scholarships, and training discounts, in one place.',
+  'Events that follow through: photos, materials, and your attendance history, not just an invite.',
+  'A mentor, matched to where you are and where you want to go.',
+  'A member directory to find and connect with other women in the region. (Visible to members, not the public.)',
+  'A profile and certificates you can share, including the proof that you are part of WAI-ME.',
+];
+---
+<section class="mbr-get" id="what-you-get" aria-labelledby="get-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>What you get</Eyebrow>
+      <h2 id="get-h">What you get</h2>
+    </div>
+    <ol class="get-grid">
+      {benefits.map((b, i) => (
+        <li class="get-card reveal" style={`--i:${i % 3}`}>
+          <span class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <p>{b}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>

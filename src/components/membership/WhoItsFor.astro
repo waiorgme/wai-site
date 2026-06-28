@@ -1,0 +1,43 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Who it's for: four audience descriptions on paper. The bold lead word is the
+// friendly descriptor the vault wrote into the prose (Dreamers/Entrants/
+// Professionals/Leaders), NOT an internal tier label. Rendered as plain prose
+// cards, no tier table, no threshold numbers, no internal standing labels.
+const audiences = [
+  {
+    lead: 'Dreamers.',
+    rest: ' Students, cadets, and schoolgirls with the dream. You get a way in, scholarships and training leads, and your ambition taken seriously.',
+  },
+  {
+    lead: 'Entrants.',
+    rest: ' Women breaking into aviation, or returning after another field or a career break. You get contacts, doors, and help turning the skills you have into an aviation role.',
+  },
+  {
+    lead: 'Professionals.',
+    rest: ' Women already working in the industry, junior to senior. You get a peer network, a route to your next rating or role, and a way to give back.',
+  },
+  {
+    lead: 'Leaders.',
+    rest: ' Captains, managers, founders, and the visible few. You get a platform, recognition, and the chance to open doors you once needed opened for you.',
+  },
+];
+---
+<section class="mbr-who" id="who" aria-labelledby="who-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>Who it's for</Eyebrow>
+      <h2 id="who-h">Who it's for</h2>
+    </div>
+    <p class="intro reveal" style="--i:1">Membership is open to women at any stage of the aviation journey:</p>
+
+    <div class="who-grid">
+      {audiences.map((a, i) => (
+        <article class="who-card reveal" style={`--i:${i % 2}`}>
+          <p><span class="lead">{a.lead}</span>{a.rest}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

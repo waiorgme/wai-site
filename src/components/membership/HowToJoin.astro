@@ -1,0 +1,42 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+import Button from '../primitives/Button.astro';
+
+// How to join: three-step sequence + returning-member path, on the dark surface.
+// This page carries NO form fields; the form lives at the /join stub. Steps, closing
+// line, and returning-member body are verbatim from the spec.
+const steps = [
+  'Tell us a little about you and where you are in aviation.',
+  'Get straight into the opportunities board and the next event.',
+  'Complete your profile when you are ready, the more complete it is, the more we can match you to.',
+];
+---
+<section class="mbr-join-how" id="how-to-join" aria-labelledby="how-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow>How to join</Eyebrow>
+      <h2 id="how-h">Joining takes a minute.</h2>
+    </div>
+
+    <ol class="steps">
+      {steps.map((s, i) => (
+        <li class="step-card reveal" style={`--i:${i}`}>
+          <span class="step-n" aria-hidden="true">{i + 1}</span>
+          <p>{s}</p>
+        </li>
+      ))}
+    </ol>
+
+    <p class="closing reveal" style="--i:3">There is no approval queue and no fee. You are in as soon as you join.</p>
+
+    <div class="returning reveal" style="--i:4">
+      <h3>Already a member from before?</h3>
+      <p>If you joined WAI-ME in the past, you already have a place here. Claim your profile with your email and pick up where you left off.</p>
+      <!-- OQ-3 / [CONFIRM]: no vault-authorised button label for the returning-member path; body copy only, no button. Confirm wording aligns with the claim-account flow + consent steps. -->
+    </div>
+
+    <div class="cta-row reveal" style="--i:5">
+      <Button href="/join" magnetic>Become a member</Button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,32 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// How recognition works: verbatim explainer + a visual ladder of the four public,
+// vault-authorised level names. Lock 2 (gold = recognition only): gold treatment is
+// applied SOLELY to Ambassador and Leadership Circle. No internal threshold numbers,
+// no internal standing labels.
+const levels = [
+  { name: 'Member', gold: false },
+  { name: 'Active Member', gold: false },
+  { name: 'Ambassador', gold: true },
+  { name: 'Leadership Circle', gold: true },
+];
+---
+<section class="mbr-recognition" id="recognition" aria-labelledby="rec-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>How recognition works</Eyebrow>
+      <h2 id="rec-h">How recognition works</h2>
+    </div>
+    <p class="rec-body reveal" style="--i:1">As you take part, host, mentor, and help others, you earn standing in the community, from Member to Active Member to Ambassador, and a small Leadership Circle at the top. Standing is earned only by contribution, never bought, because we handle no money. It is how we say thank you, and how members supporting members becomes the engine that grows WAI-ME.</p>
+
+    <ol class="ladder reveal" style="--i:2" aria-label="Recognition levels, from Member to Leadership Circle">
+      {levels.map((l, i) => (
+        <li class={`rung${l.gold ? ' is-gold' : ''}`} style={`--i:${i}`}>
+          <span class="step" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <span class="rung-name">{l.name}</span>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>

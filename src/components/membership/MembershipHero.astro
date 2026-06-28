@@ -1,0 +1,31 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+import Button from '../primitives/Button.astro';
+
+// Membership hero: dark "climb" opener, pure aerospace-ink typographic section.
+// No background photo (per build directive), so no concept-image marker needed.
+// Headline + intro are verbatim from the spec.
+---
+<section class="mbr-hero" aria-labelledby="mbr-h">
+  <div class="dawn" aria-hidden="true"></div>
+  <div class="glow-orb a" aria-hidden="true"></div>
+  <svg class="flight-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="flightline draw" d="M-40 760 C 360 720, 620 560, 880 380 S 1280 120, 1520 40" pathLength="1" stroke-opacity="0.55"/>
+  </svg>
+
+  <div class="inner">
+    <Eyebrow class="over reveal">// Membership</Eyebrow>
+    <h1 id="mbr-h">
+      <span class="line-mask"><span>Membership is free.</span></span>
+      <span class="line-mask"><span class="accent">The only currency is showing up.</span></span>
+    </h1>
+
+    <div class="lede reveal" style="--i:2">
+      <p>WAI-ME membership costs nothing. We handle no money and charge no fees. What you put in is your time and your willingness to help the woman behind you, and what you get back is a way into the industry and a community that wants you to rise.</p>
+    </div>
+
+    <div class="cta-row reveal" style="--i:3">
+      <Button href="/join" magnetic>Become a member</Button>
+    </div>
+  </div>
+</section>
