@@ -1,0 +1,161 @@
+{
+  "verdict": "FAIL",
+  "page": "membership",
+  "trace_table": [
+    {
+      "claim": "Membership is free. The only currency is showing up.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership page heading",
+      "match": "verbatim"
+    },
+    {
+      "claim": "WAI-ME membership costs nothing. We handle no money and charge no fees. Members contribute time and help for others.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership intro",
+      "match": "verbatim"
+    },
+    {
+      "claim": "1,300+ members across the Middle East and beyond.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, member count decision; 01.02 Individual Membership - Decision & Handoff.md, member data",
+      "match": "verbatim"
+    },
+    {
+      "claim": "40+ countries where members live and work.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Home proof points; 01.02 Individual Membership - Decision & Handoff.md, regional and diaspora data",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Membership fee is free.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership page heading and intro; 02 PRD - Public Site & Member Portal (Phase 2-3).md, no payment/billing/subscription constraint",
+      "match": "paraphrase"
+    },
+    {
+      "claim": "Membership is open to women at any stage of the aviation journey.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership Who it's for",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Dreamers, Entrants, Professionals, and Leaders audience cards describe student, career-entry, working, and leadership-stage women.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership Who it's for; 01.02 Individual Membership - Decision & Handoff.md, Ladder 1",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Public audience labels must be everyday descriptions, not raw internal labels like Dreamer or Entrant.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership plain-language build note; 02 Platform/Home Design Tournament/02 Home Design Tournament - V3 WOW Concept Brief (Playbook).md, member-facing voice",
+      "match": "missing"
+    },
+    {
+      "claim": "Members get an always-current opportunities board for jobs, scholarships, and training discounts.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership What you get",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Members get events with photos, materials, and attendance history.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership What you get",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Members get a mentor matched to where they are and where they want to go.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership What you get",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Members get a directory visible to members, not the public.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership What you get",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Members get a profile and certificates they can share.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership What you get",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Recognition runs from Member to Active Member to Ambassador, with a small Leadership Circle at the top, and is earned by contribution rather than money.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership How recognition works; 01.02 Recognition Thresholds (Decision).md",
+      "match": "verbatim"
+    },
+    {
+      "claim": "The rendered recognition ladder shows Member, Active Member, Ambassador, and Leadership Circle.",
+      "vault_source": "01.02 Individual Membership - Decision & Handoff.md, Ladder 2; 01.02 Recognition Thresholds (Decision).md",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Recognition labels must carry a short plain-language hint line or tooltip wherever they appear.",
+      "vault_source": "01 Organization/01.02 Membership Model/01.02 Recognition Thresholds (Decision).md, What this locks for the Phase 2 PRD",
+      "match": "missing"
+    },
+    {
+      "claim": "Joining takes a minute, with three steps: tell WAI-ME where you are in aviation, enter the opportunities board and next event, then complete your profile.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership How to join",
+      "match": "verbatim"
+    },
+    {
+      "claim": "There is no approval queue and no fee. You are in as soon as you join.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership How to join; 02 PRD Phase 2 - Public Site & Join Flow.md, Join flow P0",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Returning members can claim their profile with their email and pick up where they left off.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Membership How to join [CONFIRM: claim-your-account flow and consent steps]",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Confirmed source for returning-member claim-profile wording.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Open item 7: Claim-your-profile wording still needs confirmation",
+      "match": "missing"
+    },
+    {
+      "claim": "If you love aviation, you belong here.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Join band",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Companies that want to back the next generation can join as corporate partners.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Join band; 01.02 Corporate Membership - Decision & Handoff.md",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Metadata description says WAI-ME membership is free and open to women at every stage of aviation.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Join band and Membership Who it's for",
+      "match": "paraphrase"
+    },
+    {
+      "claim": "Footer tagline: Making a Difference One Person at a Time.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Footer; 01 Organization/01 Branding.md",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Women in Aviation Middle East is the Middle East chapter of Women in Aviation International.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Footer short about; 01 Organization/01 Branding.md",
+      "match": "verbatim"
+    },
+    {
+      "claim": "WAI-ME is a duly recognised chapter of Women in Aviation International, hosted by The Emirates Aerosports Federation, which provides the registered address.",
+      "vault_source": "01 Organization/01 Legal Standing & Chapter Authority (Decision).md, standard attribution footer; 02 Platform/02 Public Website Content - English (Draft).md, Footer",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Registered address is c/o The Emirates Aerosports Federation, Skydive HQ, P.O. Box 6677, Al Karama, Dubai, UAE.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Footer registered address; 01.02 Corporate Membership - Decision & Handoff.md",
+      "match": "verbatim"
+    },
+    {
+      "claim": "Contact email and social channels are support@waiorg.me plus Facebook, Instagram, X, LinkedIn, and YouTube URLs.",
+      "vault_source": "02 Platform/02 Public Website Content - English (Draft).md, Footer social channels and contact",
+      "match": "verbatim"
+    }
+  ],
+  "lock_check": {
+    "real_logo": true,
+    "gold_recognition_only": true,
+    "no_em_dashes": true,
+    "concept_images_marked": true
+  },
+  "orphan_claims": [],
+  "staging_allowances": [],
+  "required_fixes": [
+    "In src/components/membership/WhoItsFor.astro, replace visible internal labels Dreamers, Entrants, Professionals, and Leaders with vault-approved everyday public wording, or record an explicit vault decision approving those public labels.",
+    "In src/components/membership/HowRecognitionWorks.astro, add vault-sourced plain-language hint text or tooltips for Member, Active Member, Ambassador, and Leadership Circle.",
+    "Confirm the returning-member claim-profile wording in the vault before rendering it as final copy, or remove that block until it is confirmed. There is no membership staging allowance for it.",
+    "Replace the membership meta and social descriptions with exact vault copy, or add the metadata wording to the vault."
+  ],
+  "summary": "FAIL: the main factual page copy is sourced, and the brand locks hold. The page still publishes internal/plain-language-sensitive labels without required explanations and renders unconfirmed returning-member copy with no membership staging allowance."
+}

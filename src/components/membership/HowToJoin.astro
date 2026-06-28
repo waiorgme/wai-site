@@ -2,9 +2,10 @@
 import Eyebrow from '../primitives/Eyebrow.astro';
 import Button from '../primitives/Button.astro';
 
-// How to join: three-step sequence + returning-member path, on the dark surface.
-// This page carries NO form fields; the form lives at the /join stub. Steps, closing
-// line, and returning-member body are verbatim from the spec.
+// How to join: three-step sequence on the dark surface. This page carries NO form
+// fields; the form lives at the /join stub. Steps and closing line are verbatim.
+// The returning-member block was removed per the Codex audit (its copy is marked
+// [CONFIRM] in the vault, pending the claim-your-account flow + consent steps).
 const steps = [
   'Tell us a little about you and where you are in aviation.',
   'Get straight into the opportunities board and the next event.',
@@ -29,13 +30,11 @@ const steps = [
 
     <p class="closing reveal" style="--i:3">There is no approval queue and no fee. You are in as soon as you join.</p>
 
-    <div class="returning reveal" style="--i:4">
-      <h3>Already a member from before?</h3>
-      <p>If you joined WAI-ME in the past, you already have a place here. Claim your profile with your email and pick up where you left off.</p>
-      <!-- OQ-3 / [CONFIRM]: no vault-authorised button label for the returning-member path; body copy only, no button. Confirm wording aligns with the claim-account flow + consent steps. -->
-    </div>
+    <!-- Returning-member block ("Already a member from before?" + claim-your-profile body)
+         held pending vault [CONFIRM]: copy is unconfirmed until it aligns with the
+         claim-your-account flow + consent steps. Restore here once the vault confirms it. -->
 
-    <div class="cta-row reveal" style="--i:5">
+    <div class="cta-row reveal" style="--i:4">
       <Button href="/join" magnetic>Become a member</Button>
     </div>
   </div>

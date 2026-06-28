@@ -1,27 +1,17 @@
 ---
 import Eyebrow from '../primitives/Eyebrow.astro';
 
-// Who it's for: four audience descriptions on paper. The bold lead word is the
-// friendly descriptor the vault wrote into the prose (Dreamers/Entrants/
-// Professionals/Leaders), NOT an internal tier label. Rendered as plain prose
-// cards, no tier table, no threshold numbers, no internal standing labels.
+// Who it's for: four audience descriptions on paper. Per the vault build note
+// (02 Public Website Content - English (Draft), "Who it's for") and
+// [[wai-plain-language-ux-rule]], the lead-words "Dreamer / Entrant" and
+// "standing" are INTERNAL and must not surface to members. So each card renders
+// ONLY the verbatim description sentence, with no lead-word and no invented
+// heading. Plain prose cards, no tier table, no threshold numbers.
 const audiences = [
-  {
-    lead: 'Dreamers.',
-    rest: ' Students, cadets, and schoolgirls with the dream. You get a way in, scholarships and training leads, and your ambition taken seriously.',
-  },
-  {
-    lead: 'Entrants.',
-    rest: ' Women breaking into aviation, or returning after another field or a career break. You get contacts, doors, and help turning the skills you have into an aviation role.',
-  },
-  {
-    lead: 'Professionals.',
-    rest: ' Women already working in the industry, junior to senior. You get a peer network, a route to your next rating or role, and a way to give back.',
-  },
-  {
-    lead: 'Leaders.',
-    rest: ' Captains, managers, founders, and the visible few. You get a platform, recognition, and the chance to open doors you once needed opened for you.',
-  },
+  'Students, cadets, and schoolgirls with the dream. You get a way in, scholarships and training leads, and your ambition taken seriously.',
+  'Women breaking into aviation, or returning after another field or a career break. You get contacts, doors, and help turning the skills you have into an aviation role.',
+  'Women already working in the industry, junior to senior. You get a peer network, a route to your next rating or role, and a way to give back.',
+  'Captains, managers, founders, and the visible few. You get a platform, recognition, and the chance to open doors you once needed opened for you.',
 ];
 ---
 <section class="mbr-who" id="who" aria-labelledby="who-h">
@@ -35,7 +25,7 @@ const audiences = [
     <div class="who-grid">
       {audiences.map((a, i) => (
         <article class="who-card reveal" style={`--i:${i % 2}`}>
-          <p><span class="lead">{a.lead}</span>{a.rest}</p>
+          <p>{a}</p>
         </article>
       ))}
     </div>
