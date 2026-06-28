@@ -1,0 +1,76 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Leadership: the board. Names transliterated (pending Mervat's confirm). Photos are the
+// same dated staging assets as the English page; bios remain a pre-launch fill slot.
+const board = [
+  { name: 'السيدة ميرفت سلطان', title: 'الرئيسة', linkedin: 'https://www.linkedin.com/in/mervat-sultan-61950639/', photo: '/assets/team/mervat.webp' },
+  { name: 'السيدة دينا بالجفلة', title: 'نائبة الرئيسة', linkedin: 'https://www.linkedin.com/in/dina-beljaflah-1951082a/', photo: '/assets/team/dina.webp' },
+  { name: 'الكابتن كريستينا تيرفو', title: 'عضو المجلس', linkedin: 'https://www.linkedin.com/in/kristina-tervo-fraes-a861372/', photo: '/assets/team/kristina.webp' },
+  { name: 'السيدة فرح الأنصاري', title: 'عضو المجلس', linkedin: 'https://ae.linkedin.com/in/farah-al-ansari-5034815a', photo: '/assets/team/farah.webp' },
+  { name: 'المهندسة سعاد الشامسي', title: 'عضو المجلس', linkedin: 'https://ae.linkedin.com/in/dr-eng-suaad-alshamsi-35410b3b', photo: '/assets/team/suaad.webp' },
+  { name: 'السيدة هبة حسين', title: 'عضو المجلس', linkedin: 'https://www.linkedin.com/in/heba-hussain-mahmood-08597048/', photo: '/assets/team/heba.webp' },
+];
+
+// Ambassadors: STAGING TEST DATA ONLY (mirrors the English placeholder cards).
+const ambassadorsTest = [
+  { name: 'سفيرة تجريبية ١', role: 'مسؤولة المجتمع، مدينة تجريبية', line: 'وصفٌ تجريبي من سطرٍ واحد. نبذة السفيرة الفعلية لاحقاً.' },
+  { name: 'سفيرة تجريبية ٢', role: 'متطوّعة فعاليات، مدينة تجريبية', line: 'وصفٌ تجريبي من سطرٍ واحد. نبذة السفيرة الفعلية لاحقاً.' },
+  { name: 'سفيرة تجريبية ٣', role: 'تواصل الطالبات، مدينة تجريبية', line: 'وصفٌ تجريبي من سطرٍ واحد. نبذة السفيرة الفعلية لاحقاً.' },
+];
+
+const monogram = (name: string) => name.replace(/^(السيدة|المهندسة|الكابتن|الدكتورة)\s+/, '').charAt(0);
+---
+<section class="leadership" id="leadership" aria-labelledby="lead-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>القيادة</Eyebrow>
+      <h2 id="lead-h">تعرّفي على الفريق.</h2>
+      <p class="intro">تُدار المرأة في الطيران – الشرق الأوسط بفريقٍ من المتطوّعات اللواتي بنين مسيراتهنّ في الطيران، ويُكرّسن وقتهنّ اليوم لفتح الباب أمام مَن يَلِين.</p>
+      <p class="staging-mark" role="note">صور أعضاء المجلس مأخوذة من الموقع الحالي وسيتم تحديثها قبل الإطلاق.</p>
+    </div>
+
+    <ul class="board-grid" role="list">
+      {board.map((m, i) => (
+        <li class="board-card reveal" style={`--i:${i % 3}`}>
+          <div class="avatar" aria-hidden="true">
+            <span class="monogram">{monogram(m.name)}</span>
+            <img class="portrait" src={m.photo} alt={`${m.name}، ${m.title} في المرأة في الطيران – الشرق الأوسط`} loading="lazy" decoding="async" width="60" height="60" />
+          </div>
+          <div class="info">
+            <h3 class="name">{m.name}</h3>
+            <div class="role">{m.title}</div>
+            <a class="li" href={m.linkedin} target="_blank" rel="noopener noreferrer" aria-label={`${m.name} على LinkedIn`}>
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+              <span dir="ltr">LinkedIn</span>
+            </a>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <div class="ambassadors">
+      <div class="head reveal">
+        <Eyebrow onPaper>السفيرات</Eyebrow>
+        <h2>العضوات اللواتي يُسهمن في إدارتها.</h2>
+        <p class="intro">إلى جانب المجلس، تَحمل المنظمة على عاتق سفيراتها: عضواتٌ فاعلات في أنحاء المنطقة يُسهمن في إدارة المجتمع، ويستضِفن ويُرشِدن، ويَفتحن الباب أمام مَن يَلِين. وتُدعى السفيرات من داخل المجتمع كلّما تقدّمت عضواتٌ للمساعدة.</p>
+        <p class="staging-mark" role="note">بطاقاتٌ تجريبية أدناه — السفيرات الفعليات لاحقاً.</p>
+      </div>
+      <ul class="amb-grid" role="list">
+        {ambassadorsTest.map((a, i) => (
+          <li class="amb-card" style={`--i:${i % 3}`}>
+            <span class="amb-tag">تجريبي</span>
+            <div class="avatar" aria-hidden="true">
+              <span class="monogram">{a.name.charAt(0)}</span>
+            </div>
+            <div class="info">
+              <h3 class="name">{a.name}</h3>
+              <div class="role">{a.role}</div>
+              <p class="amb-line">{a.line}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>

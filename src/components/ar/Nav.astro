@@ -1,0 +1,46 @@
+---
+import Button from '../primitives/Button.astro';
+import LangToggle from '../primitives/LangToggle.astro';
+
+// Arabic nav. Full mirror: every page now has an Arabic counterpart under /ar/.
+const links = [
+  { href: '/ar/about', label: 'من نحن' },
+  { href: '/ar/membership', label: 'العضوية' },
+  { href: '/ar/get-involved', label: 'شارك معنا' },
+  { href: '/ar/events', label: 'الفعاليات' },
+  { href: '/ar/contact', label: 'تواصل معنا' },
+];
+const path = (Astro.url.pathname.replace(/\/+$/, '') || '/');
+const isActive = (href: string) => href.startsWith('/') && path === href.replace(/\/+$/, '');
+---
+<header class="site">
+  <nav class="nav" aria-label="التنقّل الرئيسي">
+    <a class="brand" href="/ar" aria-label="المرأة في الطيران – الشرق الأوسط، الصفحة الرئيسية">
+      <img src="/assets/wai-me-logo-on-dark.png" alt="المرأة في الطيران – الشرق الأوسط" />
+    </a>
+    <div class="links">
+      <span class="nav-ind" aria-hidden="true"></span>
+      {links.map((l) => (
+        <a href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>{l.label}</a>
+      ))}
+    </div>
+    <LangToggle lang="ar" />
+    <div class="cta-d">
+      <Button href="/membership" magnetic>انضمّي إلينا</Button>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="فتح القائمة" aria-expanded="false" aria-controls="mobileMenu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<div class="mobile-menu" id="mobileMenu" role="dialog" aria-modal="true" aria-label="قائمة الموقع">
+  <a class="m-link" href="/ar/about">من نحن</a>
+  <a class="m-link" href="/ar/membership">العضوية</a>
+  <a class="m-link" href="/ar/get-involved">شارك معنا</a>
+  <a class="m-link" href="/ar/events">الفعاليات</a>
+  <a class="m-link" href="/ar/contact">تواصل معنا</a>
+  <div class="m-cta">
+    <Button href="/membership">انضمّي إلينا</Button>
+  </div>
+</div>

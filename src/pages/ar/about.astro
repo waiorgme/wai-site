@@ -1,0 +1,46 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/home.css';
+import '../../styles/about.css';
+import '../../styles/ar.css';
+
+import Nav from '../../components/ar/Nav.astro';
+import Footer from '../../components/ar/Footer.astro';
+
+import AboutHero from '../../components/ar/AboutHero.astro';
+import Story from '../../components/ar/Story.astro';
+import MissionVision from '../../components/ar/MissionVision.astro';
+import Leadership from '../../components/ar/Leadership.astro';
+import ClosingCta from '../../components/ar/ClosingCta.astro';
+---
+
+<Base
+  lang="ar"
+  title="من نحن — المرأة في الطيران – الشرق الأوسط"
+  description="المرأة في الطيران – الشرق الأوسط (WAI-ME) هي فرع الشرق الأوسط من المرأة في الطيران الدولية، يُدار بجهود متطوّعات يفتحن الأبواب أمام المرأة في الطيران والفضاء الجوي."
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ar" />
+    <meta property="og:site_name" content="المرأة في الطيران – الشرق الأوسط" />
+    <link rel="alternate" hreflang="en" href="/about/" />
+    <link rel="alternate" hreflang="ar" href="/ar/about/" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <AboutHero />
+    <Story />
+    <MissionVision />
+    <Leadership />
+    <ClosingCta />
+  </main>
+
+  <Footer />
+
+  <script src="../../scripts/home-motion.js"></script>
+</Base>

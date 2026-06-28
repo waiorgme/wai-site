@@ -1,0 +1,50 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/home.css';
+import '../../styles/membership.css';
+import '../../styles/ar.css';
+
+import Nav from '../../components/ar/Nav.astro';
+import Footer from '../../components/ar/Footer.astro';
+
+import MembershipHero from '../../components/ar/MembershipHero.astro';
+import MembershipFlightData from '../../components/ar/MembershipFlightData.astro';
+import WhoItsFor from '../../components/ar/WhoItsFor.astro';
+import WhatYouGet from '../../components/ar/WhatYouGet.astro';
+import HowRecognitionWorks from '../../components/ar/HowRecognitionWorks.astro';
+import HowToJoin from '../../components/ar/MembershipHowToJoin.astro';
+import MembershipJoinBand from '../../components/ar/MembershipJoinBand.astro';
+---
+
+<Base
+  lang="ar"
+  title="العضوية — المرأة في الطيران – الشرق الأوسط"
+  description="العضوية مجّانية ومفتوحة للمرأة في كلّ مرحلة من رحلتها في الطيران. لا رسوم ولا أموال، بل مجتمعٌ ولوحة فرصٍ وإرشادٌ وتقدير."
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ar" />
+    <meta property="og:site_name" content="المرأة في الطيران – الشرق الأوسط" />
+    <link rel="alternate" hreflang="en" href="/membership/" />
+    <link rel="alternate" hreflang="ar" href="/ar/membership/" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+    <MembershipHero />
+    <MembershipFlightData />
+    <WhoItsFor />
+    <WhatYouGet />
+    <HowRecognitionWorks />
+    <HowToJoin />
+    <MembershipJoinBand />
+  </main>
+
+  <Footer />
+
+  <script src="../../scripts/home-motion.js"></script>
+</Base>

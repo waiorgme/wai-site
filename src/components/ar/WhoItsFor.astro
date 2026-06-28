@@ -1,0 +1,28 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// Who it's for: four audience descriptions on paper. Plain prose cards, no tier table.
+const audiences = [
+  'الطالبة والمتدرّبة وطالبة المدرسة صاحبة الحلم. تحصلين على طريقٍ إلى الداخل، وعلى منحٍ دراسية ومساراتٍ تدريبية، وعلى أخذ طموحكِ على محمل الجدّ.',
+  'المرأة التي تدخل الطيران حديثاً، أو تعود إليه بعد مجالٍ آخر أو انقطاعٍ مهني. تحصلين على علاقاتٍ وأبوابٍ ومساعدةٍ في تحويل مهاراتكِ إلى دورٍ في الطيران.',
+  'المرأة العاملة في القطاع، من المبتدئة إلى القيادية. تحصلين على شبكةٍ من الأقران، وعلى طريقٍ إلى رخصتكِ أو دوركِ التالي، وعلى وسيلةٍ لردّ الجميل.',
+  'الكابتن والمديرة والمؤسِّسة والقلّة البارزة. تحصلين على منصّةٍ وتقديرٍ وفرصةٍ لتفتحي أبواباً كنتِ يوماً بحاجةٍ لمن يفتحها لكِ.',
+];
+---
+<section class="mbr-who" id="who" aria-labelledby="who-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>لِمن هذه العضوية</Eyebrow>
+      <h2 id="who-h">لِمن هذه العضوية</h2>
+    </div>
+    <p class="intro reveal" style="--i:1">العضوية مفتوحة للمرأة في كلّ مرحلة من رحلتها في الطيران:</p>
+
+    <div class="who-grid">
+      {audiences.map((a, i) => (
+        <article class="who-card reveal" style={`--i:${i % 2}`}>
+          <p>{a}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,28 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+
+// What you get: five member benefits on paper.
+const benefits = [
+  'لوحة فرصٍ محدَّثة دائماً: وظائف ومنحٌ دراسية وخصوماتٌ تدريبية، في مكانٍ واحد.',
+  'فعالياتٌ لها أثرٌ يمتدّ: صورٌ وموادّ وسجلُّ حضوركِ، لا مجرّد دعوة.',
+  'مرشِدةٌ تُختار وفقاً لموضعكِ الحالي وإلى أين تريدين الوصول.',
+  'دليل عضوات للعثور على نساءٍ أخريات في المنطقة والتواصل معهنّ. (يظهر للعضوات لا للعموم.)',
+  'ملفٌّ شخصي وشهاداتٌ يمكنكِ مشاركتها، بما في ذلك ما يُثبت انتماءكِ إلى المرأة في الطيران – الشرق الأوسط.',
+];
+---
+<section class="mbr-get" id="what-you-get" aria-labelledby="get-h">
+  <div class="wrap">
+    <div class="head reveal">
+      <Eyebrow onPaper>ما الذي تحصلين عليه</Eyebrow>
+      <h2 id="get-h">ما الذي تحصلين عليه</h2>
+    </div>
+    <ol class="get-grid">
+      {benefits.map((b, i) => (
+        <li class="get-card reveal" style={`--i:${i % 3}`}>
+          <span class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <p>{b}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
