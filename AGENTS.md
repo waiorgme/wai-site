@@ -25,8 +25,12 @@ committed directly to `main`, and `main` is never force-pushed.
 - **During the gates:** commit gate work and fix loops on `build/<name>` (conventional commits).
 - **Merge (only after approval + `/handoff`):** the full test suite must be green (`npm run test:e2e`), then `git switch main && git merge --ff-only build/<name> && git branch -d build/<name>`. If the fast-forward is refused, stop and ask rather than forcing.
 
-The repo is local-only today; when it gains a GitHub remote, `build/<name>` branches become pull
-requests with no change to the habit. (The vault itself is not yet under version control — separate task.)
+The repo now has a private GitHub remote (`waiorgme/wai-site`, `origin`). A GitHub Actions workflow
+(`.github/workflows/ci.yml`) runs the build + full E2E suite on every push and PR to `main` and
+reports green/red. Making that check a *required, merge-blocking* rule needs GitHub Pro on the
+private repo (or a public repo); until then the merge gate is enforced **locally** — run
+`npm run test:e2e` and require green before the ff-merge. (The vault itself is not yet under version
+control — separate task.)
 
 ## The brand locks (every page)
 - Real logo asset only — never redraw or CSS-fake it.
