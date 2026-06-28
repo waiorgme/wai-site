@@ -1,6 +1,7 @@
 import Resend from "@auth/core/providers/resend";
 import { Resend as ResendAPI } from "resend";
 import { convexAuth } from "@convex-dev/auth/server";
+import type { MutationCtx } from "./_generated/server";
 
 // §1 Auth: Convex Auth, magic-link only (no passwords). §8 specifics:
 // 15-minute single-use links, delivered transactionally via Resend.
@@ -31,7 +32,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     // On first verified sign-in, link the auth user to the member row created at
     // join (matched by email) and advance the lifecycle per §6. Minors route to
     // pending_guardian; everyone else (consents already captured at join) to active.
-    async afterUserCreatedOrUpdated(ctx, { userId, profile }) {
+    async afterUserCreatedOrUpdated(baseCtx, { userId, profile }) {
+      // The auth callback's ctx is generically typed; cast to our app's
+      // MutationCtx so the members schema + indexes are known.
+      const ctx = baseCtx as unknown as MutationCtx;
       const email = profile.email;
       if (typeof email !== "string") {
         return;

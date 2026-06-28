@@ -17,6 +17,15 @@ const consentArgs = v.object({
   pipeline: v.boolean(),
 });
 
+// §7.1 result envelopes. Annotating the handlers with these breaks the circular
+// type inference that arises when submitJoin references createPendingMember from
+// the same module.
+type CreateResult =
+  | { ok: true; already: true; route: "sign_in" }
+  | { ok: true; memberId: Id<"members">; lifecycle_state: "email_unverified" };
+
+type JoinResult = { ok: false; error: "validation" } | CreateResult;
+
 // §7 submitJoin: the public Join action. Verifies the human (Turnstile) at the
 // boundary, then delegates the member/consent writes to an internal mutation.
 // Returns the §7.1 result envelope.
@@ -30,7 +39,7 @@ export const submitJoin = action({
     consents: consentArgs,
     turnstileToken: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<JoinResult> => {
     if (!args.consents.terms) {
       return { ok: false, error: "validation" } as const;
     }
@@ -58,7 +67,7 @@ export const createPendingMember = internalMutation({
     dobAnswer: v.optional(v.string()),
     consents: consentArgs,
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<CreateResult> => {
     const email = args.email.trim().toLowerCase();
 
     // Duplicate email → route to sign-in, never create a second Member row (§8).
