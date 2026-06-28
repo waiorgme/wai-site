@@ -146,7 +146,7 @@
 .staging-mark{
   display:inline-flex; align-items:center; gap:8px;
   font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
-  color:#8a5a1a; background:rgba(212,162,76,.12); border:1px dashed rgba(138,90,26,.4);
+  color:var(--paper-mut); background:rgba(15,35,63,.06); border:1px dashed rgba(15,35,63,.3);
   padding:7px 13px; border-radius:var(--r-chip); margin-block-end:20px;
 }
 .amb-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
@@ -159,7 +159,7 @@
 .amb-card .amb-tag{
   position:absolute; inset-block-start:14px; inset-inline-end:14px;
   font-family:var(--mono); font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase;
-  color:#8a5a1a; background:rgba(212,162,76,.14); border:1px solid rgba(138,90,26,.32);
+  color:var(--paper-mut); background:rgba(15,35,63,.06); border:1px solid rgba(15,35,63,.22);
   padding:4px 9px; border-radius:var(--r-chip);
 }
 .amb-card .avatar{
