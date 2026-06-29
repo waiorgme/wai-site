@@ -1,7 +1,25 @@
 import Resend from "@auth/core/providers/resend";
 import { Resend as ResendAPI } from "resend";
 import { convexAuth } from "@convex-dev/auth/server";
+import type { Id } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
+
+// The member row linked to an auth user, matched by (lower-cased) email.
+const memberForUser = async (
+  ctx: MutationCtx,
+  userId: Id<"users">,
+): Promise<Doc<"members"> | null> => {
+  const user = await ctx.db.get(userId);
+  const email = user?.email;
+  if (typeof email !== "string") {
+    return null;
+  }
+  return ctx.db
+    .query("members")
+    .withIndex("by_email", (q) => q.eq("email", email.toLowerCase()))
+    .unique();
+};
 
 // §1 Auth: Convex Auth, magic-link only (no passwords). §8 specifics:
 // 15-minute single-use links, delivered transactionally via Resend.
@@ -29,48 +47,41 @@ const WaiMagicLink = Resend({
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [WaiMagicLink],
   callbacks: {
-    // On first verified sign-in, link the auth user to the member row created at
-    // join (matched by email) and advance the lifecycle per §6. Minors route to
-    // pending_guardian; everyone else (consents already captured at join) to active.
-    async afterUserCreatedOrUpdated(baseCtx, { userId, profile }) {
+    // Link the auth user to the member at creation (matched by email). User
+    // creation happens when signIn is initiated — BEFORE the email is verified —
+    // so we only link here; we do NOT advance the lifecycle.
+    async afterUserCreatedOrUpdated(baseCtx, { userId }) {
       // The auth callback's ctx is generically typed; cast to our app's
       // MutationCtx so the members schema + indexes are known.
       const ctx = baseCtx as unknown as MutationCtx;
-      const email = profile.email;
-      if (typeof email !== "string") {
+      const member = await memberForUser(ctx, userId);
+      if (member !== null && member.userId === undefined) {
+        await ctx.db.patch(member._id, { userId });
+      }
+    },
+    // Fires only on actual authentication — after the magic link is verified and
+    // just before the session is created. This is the real "email verified"
+    // signal, so we advance the lifecycle here (§6): minors → pending_guardian,
+    // everyone else (consents captured at join) → active.
+    async beforeSessionCreation(baseCtx, { userId }) {
+      const ctx = baseCtx as unknown as MutationCtx;
+      const member = await memberForUser(ctx, userId);
+      if (member === null || member.lifecycle_state !== "email_unverified") {
         return;
       }
-      const member = await ctx.db
-        .query("members")
-        .withIndex("by_email", (q) => q.eq("email", email.toLowerCase()))
-        .unique();
-      if (member === null) {
-        return;
-      }
-      const patch: {
-        userId?: typeof userId;
-        lifecycle_state?: "pending_guardian" | "active";
-      } = {};
-      if (member.userId === undefined) {
-        patch.userId = userId;
-      }
-      if (member.lifecycle_state === "email_unverified") {
-        patch.lifecycle_state =
-          member.member_lane === "minor" ? "pending_guardian" : "active";
-      }
-      if (Object.keys(patch).length > 0) {
-        await ctx.db.patch(member._id, patch);
-        await ctx.db.insert("auditLog", {
-          actor: email,
-          role: "member",
-          action: "confirmMagicLink",
-          target_id: member._id,
-          before_summary: `lifecycle=${member.lifecycle_state}`,
-          after_summary: `lifecycle=${patch.lifecycle_state ?? member.lifecycle_state}`,
-          timestamp: Date.now(),
-          source: "system",
-        });
-      }
+      const next =
+        member.member_lane === "minor" ? "pending_guardian" : "active";
+      await ctx.db.patch(member._id, { lifecycle_state: next });
+      await ctx.db.insert("auditLog", {
+        actor: member.email,
+        role: "member",
+        action: "confirmMagicLink",
+        target_id: member._id,
+        before_summary: "lifecycle=email_unverified",
+        after_summary: `lifecycle=${next}`,
+        timestamp: Date.now(),
+        source: "system",
+      });
     },
   },
 });

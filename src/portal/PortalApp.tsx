@@ -1,17 +1,14 @@
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import {
   Authenticated,
   AuthLoading,
-  ConvexReactClient,
   Unauthenticated,
   useQuery,
 } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
-
-// Client-side Convex connection for the portal islands. The deployment URL is
-// exposed to the browser via Astro's PUBLIC_ prefix.
-const convex = new ConvexReactClient(import.meta.env.PUBLIC_CONVEX_URL as string);
+import { convex } from "./convex";
+import { card, dl, h1, input, linkBtn, muted, primaryBtn } from "./ui";
 
 export function PortalApp() {
   return (
@@ -93,10 +90,11 @@ function SignIn() {
         <button type="submit" disabled={busy} style={primaryBtn}>
           {busy ? "Sending…" : "Send sign-in link"}
         </button>
-        {error !== null && (
-          <p style={{ ...muted, color: "#ff9b9b" }}>{error}</p>
-        )}
+        {error !== null && <p style={{ ...muted, color: "#ff9b9b" }}>{error}</p>}
       </form>
+      <p style={{ ...muted, fontSize: 13 }}>
+        New to WAI-ME? <a href="/join" style={{ color: "var(--sky)" }}>Join here</a>.
+      </p>
     </div>
   );
 }
@@ -147,74 +145,3 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-const card: CSSProperties = {
-  width: "min(420px, 100%)",
-  background: "var(--ink-2)",
-  border: "1px solid rgba(207, 224, 245, 0.14)",
-  borderRadius: "var(--r-card)",
-  padding: "32px 28px",
-  display: "grid",
-  gap: 14,
-  boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
-};
-
-const h1: CSSProperties = {
-  margin: 0,
-  fontFamily: "var(--display)",
-  fontWeight: 700,
-  fontSize: 26,
-  color: "var(--white)",
-};
-
-const muted: CSSProperties = {
-  margin: 0,
-  color: "var(--mist)",
-  lineHeight: 1.5,
-  fontFamily: "var(--body)",
-};
-
-const input: CSSProperties = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: 12,
-  border: "1px solid rgba(207, 224, 245, 0.22)",
-  background: "var(--ink)",
-  color: "var(--white)",
-  fontSize: 16,
-  fontFamily: "var(--body)",
-};
-
-const primaryBtn: CSSProperties = {
-  padding: "12px 16px",
-  borderRadius: "var(--r-chip)",
-  border: "none",
-  background: "var(--sky)",
-  color: "var(--ink)",
-  fontWeight: 700,
-  fontSize: 15,
-  fontFamily: "var(--body)",
-  cursor: "pointer",
-};
-
-const linkBtn: CSSProperties = {
-  justifySelf: "start",
-  marginTop: 4,
-  padding: 0,
-  border: "none",
-  background: "none",
-  color: "var(--sky)",
-  fontFamily: "var(--body)",
-  fontSize: 14,
-  cursor: "pointer",
-  textDecoration: "underline",
-};
-
-const dl: CSSProperties = {
-  margin: 0,
-  display: "grid",
-  gap: 10,
-  padding: "12px 0",
-  borderTop: "1px solid rgba(207, 224, 245, 0.12)",
-  borderBottom: "1px solid rgba(207, 224, 245, 0.12)",
-};
