@@ -174,4 +174,32 @@ export default defineSchema({
   })
     .index("by_target_time", ["target_id", "timestamp"])
     .index("by_actor_time", ["actor", "timestamp"]),
+
+  // §4.5 Certificate. Membership type auto-issues on join (the first win); all
+  // other types are approve-first (later slice). The public verification page —
+  // not the image — is the proof, so each row carries a public_id and a snapshot
+  // of what the certificate states ([[02 Certificate Design & Eligibility Rules
+  // (Draft)]] + [[02 Certificates - In-House Engine (Decision)]]).
+  certificates: defineTable({
+    member_id: v.id("members"),
+    type: v.union(v.literal("membership")),
+    public_id: v.string(),
+    membership_number: v.number(),
+    recipient_name: v.string(),
+    issued_at: v.number(),
+    issued_date_label: v.string(),
+    is_founding: v.boolean(),
+    template_version: v.string(),
+    idempotency_key: v.string(),
+  })
+    .index("by_member", ["member_id"])
+    .index("by_public_id", ["public_id"])
+    .index("by_idempotency_key", ["idempotency_key"]),
+
+  // Atomic sequence counters (e.g. the membership number). Convex serialises
+  // writes per document, so a read-modify-write in one mutation is safe.
+  counters: defineTable({
+    name: v.string(),
+    value: v.number(),
+  }).index("by_name", ["name"]),
 });

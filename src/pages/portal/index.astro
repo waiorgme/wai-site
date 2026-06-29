@@ -7,6 +7,11 @@ import { PortalApp } from "../../portal/PortalApp";
   title="Member Portal — WAI-ME"
   description="Sign in to the WAI-ME member portal."
 >
+  <link
+    slot="head"
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
   <main id="main" class="portal">
     <PortalApp client:only="react" />
   </main>
@@ -16,7 +21,7 @@ import { PortalApp } from "../../portal/PortalApp";
   .portal {
     min-height: 100dvh;
     display: grid;
-    place-items: center;
+    place-items: start center;
     padding: var(--gutter);
     background: radial-gradient(
       1200px 600px at 50% -10%,

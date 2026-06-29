@@ -1,15 +1,9 @@
 import { useState } from "react";
-import {
-  Authenticated,
-  AuthLoading,
-  Unauthenticated,
-  useQuery,
-} from "convex/react";
+import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
-import { api } from "../../convex/_generated/api";
 import { convex } from "./convex";
-import { ProfileEditor } from "./ProfileEditor";
-import { card, dl, h1, input, linkBtn, muted, panel, primaryBtn } from "./ui";
+import { Dashboard } from "./Dashboard";
+import { card, h1, input, linkBtn, muted, primaryBtn } from "./ui";
 
 export function PortalApp() {
   return (
@@ -23,7 +17,7 @@ export function PortalApp() {
         <SignIn />
       </Unauthenticated>
       <Authenticated>
-        <MemberPanel />
+        <Dashboard />
       </Authenticated>
     </ConvexAuthProvider>
   );
@@ -96,80 +90,6 @@ function SignIn() {
       <p style={{ ...muted, fontSize: 13 }}>
         New to WAI-ME? <a href="/join" style={{ color: "var(--sky)" }}>Join here</a>.
       </p>
-    </div>
-  );
-}
-
-function MemberPanel() {
-  const { signOut } = useAuthActions();
-  const me = useQuery(api.members.getCurrentMember);
-  const [editing, setEditing] = useState(false);
-  const firstName = me?.name?.split(" ")[0];
-
-  if (editing) {
-    return (
-      <div style={panel}>
-        <h1 style={h1}>Your profile</h1>
-        <p style={muted}>
-          The more you add, the better we can match you to opportunities, events
-          and people. Nothing is required — add what you like, anytime.
-        </p>
-        <ProfileEditor onClose={() => setEditing(false)} />
-      </div>
-    );
-  }
-
-  return (
-    <div style={card}>
-      <h1 style={h1}>Welcome{firstName ? `, ${firstName}` : ""}</h1>
-      {me === undefined ? (
-        <p style={muted}>Loading your profile…</p>
-      ) : me === null ? (
-        <p style={muted}>
-          You're signed in, but there's no member profile linked to this email
-          yet.
-        </p>
-      ) : (
-        <>
-          <dl style={dl}>
-            <Row label="Email" value={me.email} />
-            <Row label="Status" value={me.lifecycle_state} />
-            <Row label="Access lane" value={me.member_lane} />
-            <Row
-              label="Profile"
-              value={me.profile_complete ? "complete" : "add details"}
-            />
-          </dl>
-          <button
-            type="button"
-            style={primaryBtn}
-            onClick={() => setEditing(true)}
-          >
-            {me.profile_complete ? "Edit profile" : "Complete your profile"}
-          </button>
-        </>
-      )}
-      <button type="button" style={linkBtn} onClick={() => void signOut()}>
-        Sign out
-      </button>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-      <dt style={{ color: "var(--mist)", opacity: 0.7 }}>{label}</dt>
-      <dd
-        style={{
-          margin: 0,
-          color: "var(--white)",
-          fontFamily: "var(--mono)",
-          fontSize: 14,
-        }}
-      >
-        {value}
-      </dd>
     </div>
   );
 }
