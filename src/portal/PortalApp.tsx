@@ -8,7 +8,8 @@ import {
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { convex } from "./convex";
-import { card, dl, h1, input, linkBtn, muted, primaryBtn } from "./ui";
+import { ProfileEditor } from "./ProfileEditor";
+import { card, dl, h1, input, linkBtn, muted, panel, primaryBtn } from "./ui";
 
 export function PortalApp() {
   return (
@@ -102,7 +103,21 @@ function SignIn() {
 function MemberPanel() {
   const { signOut } = useAuthActions();
   const me = useQuery(api.members.getCurrentMember);
+  const [editing, setEditing] = useState(false);
   const firstName = me?.name?.split(" ")[0];
+
+  if (editing) {
+    return (
+      <div style={panel}>
+        <h1 style={h1}>Your profile</h1>
+        <p style={muted}>
+          The more you add, the better we can match you to opportunities, events
+          and people. Nothing is required — add what you like, anytime.
+        </p>
+        <ProfileEditor onClose={() => setEditing(false)} />
+      </div>
+    );
+  }
 
   return (
     <div style={card}>
@@ -115,11 +130,24 @@ function MemberPanel() {
           yet.
         </p>
       ) : (
-        <dl style={dl}>
-          <Row label="Email" value={me.email} />
-          <Row label="Status" value={me.lifecycle_state} />
-          <Row label="Access lane" value={me.member_lane} />
-        </dl>
+        <>
+          <dl style={dl}>
+            <Row label="Email" value={me.email} />
+            <Row label="Status" value={me.lifecycle_state} />
+            <Row label="Access lane" value={me.member_lane} />
+            <Row
+              label="Profile"
+              value={me.profile_complete ? "complete" : "add details"}
+            />
+          </dl>
+          <button
+            type="button"
+            style={primaryBtn}
+            onClick={() => setEditing(true)}
+          >
+            {me.profile_complete ? "Edit profile" : "Complete your profile"}
+          </button>
+        </>
       )}
       <button type="button" style={linkBtn} onClick={() => void signOut()}>
         Sign out
