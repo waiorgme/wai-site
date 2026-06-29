@@ -4,29 +4,29 @@ import '../styles/home.css';
 
 import Nav from '../components/home/Nav.astro';
 import Footer from '../components/home/Footer.astro';
-
-// Minimal stub (OQ-5): the membership "Become a member" CTAs link here so they do not
-// 404. The real join form is a separate, later page. No form fields here yet.
+import { JoinApp } from '../portal/JoinApp';
 ---
 <Base
   title="Join - Women in Aviation Middle East"
   description="Join Women in Aviation Middle East. Membership is free and open to women at every stage of aviation."
 >
   <Nav />
-  <main id="main" class="stub">
+  <main id="main" class="join">
     <span id="top"></span>
-    <section class="stub-sec">
-      <div class="wrap">
-        <h1>Join form coming soon</h1>
-        <p>Our membership sign-up is on its way. Membership is free, and it is open to women at any stage of aviation.</p>
-      </div>
+    <section class="join-sec">
+      <JoinApp client:only="react" />
     </section>
   </main>
   <Footer />
 </Base>
 
 <style>
-  .stub-sec{ background:var(--ink); padding-block:clamp(150px,18vw,220px) clamp(72px,10vw,130px); }
-  .stub-sec h1{ font-size:clamp(36px,6vw,72px); color:#fff; letter-spacing:-0.03em; }
-  .stub-sec p{ margin-block-start:24px; max-width:56ch; color:var(--mist); font-size:clamp(16px,1.9vw,20px); line-height:1.62; }
+  .join-sec{
+    background:var(--ink);
+    min-height:100vh;
+    display:grid;
+    place-items:center;
+    padding-block:clamp(120px,14vw,180px) clamp(72px,10vw,130px);
+    padding-inline:var(--gutter);
+  }
 </style>
