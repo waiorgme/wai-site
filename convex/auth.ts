@@ -12,7 +12,7 @@ const WaiMagicLink = Resend({
   async sendVerificationRequest({ identifier: email, url, provider }) {
     const resend = new ResendAPI(provider.apiKey as string);
     const { error } = await resend.emails.send({
-      from: process.env.AUTH_EMAIL_FROM ?? "WAI-ME <onboarding@resend.dev>",
+      from: process.env.AUTH_EMAIL_FROM ?? "WAI-ME <noreply@updates.waiorg.me>",
       to: [email],
       subject: "Your WAI-ME sign-in link",
       text:

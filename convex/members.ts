@@ -1,7 +1,8 @@
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { action, internalMutation, mutation } from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { writeAudit } from "./lib/audit";
 import { deriveAgeBlock } from "./lib/age";
@@ -25,6 +26,31 @@ type CreateResult =
   | { ok: true; memberId: Id<"members">; lifecycle_state: "email_unverified" };
 
 type JoinResult = { ok: false; error: "validation" } | CreateResult;
+
+// The logged-in member's own summary, keyed off the Convex Auth user id.
+// Returns null when signed out or before the auth user is linked to a member.
+export const getCurrentMember = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      return null;
+    }
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (member === null) {
+      return null;
+    }
+    return {
+      email: member.email,
+      name: member.name,
+      lifecycle_state: member.lifecycle_state,
+      member_lane: member.member_lane,
+    };
+  },
+});
 
 // §7 submitJoin: the public Join action. Verifies the human (Turnstile) at the
 // boundary, then delegates the member/consent writes to an internal mutation.

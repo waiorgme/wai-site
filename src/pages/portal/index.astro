@@ -1,0 +1,27 @@
+---
+import Base from "../../layouts/Base.astro";
+import { PortalApp } from "../../portal/PortalApp";
+---
+
+<Base
+  title="Member Portal — WAI-ME"
+  description="Sign in to the WAI-ME member portal."
+>
+  <main id="main" class="portal">
+    <PortalApp client:only="react" />
+  </main>
+</Base>
+
+<style>
+  .portal {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: var(--gutter);
+    background: radial-gradient(
+      1200px 600px at 50% -10%,
+      var(--navy),
+      var(--ink) 60%
+    );
+  }
+</style>
