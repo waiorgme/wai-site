@@ -99,3 +99,52 @@ export const errorText: CSSProperties = {
   fontFamily: "var(--body)",
   fontSize: 14,
 };
+
+// Wider card for the profile editor (the sign-in card is 480px).
+export const panel: CSSProperties = {
+  ...card,
+  width: "min(680px, 100%)",
+};
+
+export const textarea: CSSProperties = {
+  ...input,
+  minHeight: 88,
+  resize: "vertical",
+  lineHeight: 1.5,
+};
+
+export const sectionTitle: CSSProperties = {
+  margin: "8px 0 0",
+  fontFamily: "var(--display)",
+  fontWeight: 700,
+  fontSize: 15,
+  letterSpacing: "0.02em",
+  color: "var(--white)",
+};
+
+export const hint: CSSProperties = {
+  margin: 0,
+  color: "var(--mist)",
+  opacity: 0.72,
+  fontFamily: "var(--body)",
+  fontSize: 12.5,
+  lineHeight: 1.4,
+};
+
+export const chip: CSSProperties = {
+  padding: "7px 12px",
+  borderRadius: "var(--r-chip)",
+  border: "1px solid rgba(207, 224, 245, 0.22)",
+  background: "transparent",
+  color: "var(--mist)",
+  fontFamily: "var(--body)",
+  fontSize: 13,
+  cursor: "pointer",
+};
+
+export const chipActive: CSSProperties = {
+  ...chip,
+  border: "1px solid var(--sky)",
+  background: "rgba(110, 168, 254, 0.16)",
+  color: "var(--white)",
+};

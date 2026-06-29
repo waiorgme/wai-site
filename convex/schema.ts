@@ -61,6 +61,30 @@ export default defineSchema({
     career_stage_answer: v.optional(v.string()),
     member_lane: memberLane,
     created_at: v.number(),
+
+    // §4.1 profile fields (talent-pipeline spec). All optional, filled after
+    // join through completeness nudges; option values validated at the
+    // updateProfile boundary against convex/lib/profile.ts.
+    headline: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    photo_storage_id: v.optional(v.id("_storage")),
+    nationality: v.optional(v.string()),
+    country_of_residence: v.optional(v.string()),
+    function_area: v.optional(v.string()),
+    role: v.optional(v.string()),
+    second_function_area: v.optional(v.string()),
+    second_role: v.optional(v.string()),
+    years_in_aviation: v.optional(v.string()),
+    current_job_title: v.optional(v.string()),
+    current_employer: v.optional(v.string()),
+    sectors: v.optional(v.array(v.string())),
+    certifications: v.optional(v.array(v.string())),
+    certifications_other: v.optional(v.string()),
+    highest_qualification: v.optional(v.string()),
+    field_of_study: v.optional(v.string()),
+    institution: v.optional(v.string()),
+    looking_for: v.optional(v.array(v.string())),
+    profile_complete: v.optional(v.boolean()),
   })
     .index("by_email", ["email"])
     .index("by_userId", ["userId"])

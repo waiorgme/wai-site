@@ -14,6 +14,7 @@ import type * as lib_age from "../lib/age.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_lifecycle from "../lib/lifecycle.js";
 import type * as lib_memberLane from "../lib/memberLane.js";
+import type * as lib_profile from "../lib/profile.js";
 import type * as members from "../members.js";
 
 import type {
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   "lib/audit": typeof lib_audit;
   "lib/lifecycle": typeof lib_lifecycle;
   "lib/memberLane": typeof lib_memberLane;
+  "lib/profile": typeof lib_profile;
   members: typeof members;
 }>;
 
