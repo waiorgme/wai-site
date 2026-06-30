@@ -3,21 +3,25 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
 import { issueMembershipCertificate } from "./lib/certificates";
 
-// What a certificate row exposes for display (no internal ids).
+// What a certificate row exposes for display (no internal ids). verify_token is
+// the unguessable key the holder uses to build her own share/verify link; the
+// human label WAIME-MEM-#### is derived from the membership number on the client.
 const toView = (c: {
   type: "membership";
-  public_id: string;
+  verify_token: string;
   membership_number: number;
   recipient_name: string;
   issued_date_label: string;
   is_founding: boolean;
+  status: "valid" | "superseded" | "revoked";
 }) => ({
   type: c.type,
-  public_id: c.public_id,
+  verify_token: c.verify_token,
   membership_number: c.membership_number,
   recipient_name: c.recipient_name,
   issued_date_label: c.issued_date_label,
   is_founding: c.is_founding,
+  status: c.status,
 });
 
 // The signed-in member's certificates (for the dashboard).
@@ -43,14 +47,15 @@ export const getMyCertificates = query({
   },
 });
 
-// Public verification: anyone with the link can confirm a certificate is real
-// and see what it states. The page is the proof, not the image. No auth.
-export const getCertificateByPublicId = query({
-  args: { publicId: v.string() },
-  handler: async (ctx, { publicId }) => {
+// Public verification: anyone with the unguessable token can confirm a
+// certificate and see its real status. The page is the proof, not the image.
+// No auth, but the token can't be guessed, so the member list can't be walked.
+export const getCertificateByToken = query({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
     const cert = await ctx.db
       .query("certificates")
-      .withIndex("by_public_id", (q) => q.eq("public_id", publicId))
+      .withIndex("by_verify_token", (q) => q.eq("verify_token", token))
       .unique();
     return cert === null ? null : toView(cert);
   },
@@ -61,7 +66,7 @@ export const getCertificateByPublicId = query({
 // who became active before this engine existed (and the future claim path).
 export const ensureMyMembershipCertificate = mutation({
   args: {},
-  handler: async (ctx): Promise<{ ok: boolean; public_id?: string }> => {
+  handler: async (ctx): Promise<{ ok: boolean; verify_token?: string }> => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
       return { ok: false };
@@ -70,12 +75,14 @@ export const ensureMyMembershipCertificate = mutation({
       .query("members")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
-    // Only issue once the membership is real (email verified → active+).
-    if (member === null || member.lifecycle_state === "email_unverified") {
+    // Only `active` members get a membership certificate. Minors sit at
+    // `pending_guardian` until guardian consent, so they do not get one yet
+    // (safeguarding); other pre-active states don't either.
+    if (member === null || member.lifecycle_state !== "active") {
       return { ok: false };
     }
     const certId = await issueMembershipCertificate(ctx, member);
     const cert = await ctx.db.get(certId);
-    return { ok: true, public_id: cert?.public_id };
+    return { ok: true, verify_token: cert?.verify_token };
   },
 });

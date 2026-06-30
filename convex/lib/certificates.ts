@@ -60,16 +60,20 @@ export const issueMembershipCertificate = async (
 
   const number = await nextMembershipNumber(ctx);
   const now = Date.now();
-  const public_id = `WAIME-MEM-${number}`;
+  // Unguessable public lookup key (128-bit). The WAIME-MEM-#### the member sees
+  // is only a display label, never the verification key — so no one can walk the
+  // sequential numbers to enumerate the membership list.
+  const verify_token = crypto.randomUUID().replace(/-/g, "");
   const certId = await ctx.db.insert("certificates", {
     member_id: member._id,
     type: "membership",
-    public_id,
+    verify_token,
     membership_number: number,
     recipient_name: member.name,
     issued_at: now,
     issued_date_label: formatDateLabel(now),
     is_founding: number <= FOUNDING_MEMBER_LIMIT,
+    status: "valid",
     template_version: CERT_TEMPLATE_VERSION,
     idempotency_key,
   });
@@ -79,7 +83,7 @@ export const issueMembershipCertificate = async (
     role: "member",
     action: "issueMembershipCertificate",
     target_id: member._id,
-    after_summary: `cert=${public_id} number=${number}`,
+    after_summary: `cert=WAIME-MEM-${number} number=${number}`,
     source: "system",
   });
 

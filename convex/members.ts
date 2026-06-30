@@ -113,6 +113,15 @@ export const generatePhotoUploadUrl = mutation({
     if (userId === null) {
       throw new Error("Not signed in");
     }
+    // Require a linked member row, so only an actual member can request an
+    // upload URL (not just any authenticated session).
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (member === null) {
+      throw new Error("No member profile");
+    }
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -278,37 +287,41 @@ export const createPendingMember = internalMutation({
   },
 });
 
-// §7 writeConsent: append a new consent row (settings changes after join).
+// §7 writeConsent: a member changes her OWN consent after join (settings). Keyed
+// off the auth user — never a passed memberId — so one member can't write a
+// consent row for another. Join/claim consent is written internally, not here.
 export const writeConsent = mutation({
   args: {
-    memberId: v.id("members"),
     type: v.union(
       v.literal("terms_privacy"),
       v.literal("marketing"),
       v.literal("pipeline"),
     ),
     value: v.boolean(),
-    source: v.union(v.literal("join"), v.literal("claim"), v.literal("settings")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ ok: boolean; error?: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      return { ok: false, error: "not_signed_in" };
+    }
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (member === null) {
+      return { ok: false, error: "no_member" };
+    }
     const now = Date.now();
-    const consentId = await insertConsent(
-      ctx,
-      args.memberId,
-      args.type,
-      args.value,
-      now,
-      args.source,
-    );
+    await insertConsent(ctx, member._id, args.type, args.value, now, "settings");
     await writeAudit(ctx, {
-      actor: args.memberId,
+      actor: member.email,
       role: "member",
       action: "writeConsent",
-      target_id: args.memberId,
+      target_id: member._id,
       after_summary: `${args.type}=${args.value}`,
       source: "member",
     });
-    return { ok: true, consentId } as const;
+    return { ok: true };
   },
 });
 

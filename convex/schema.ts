@@ -177,23 +177,32 @@ export default defineSchema({
 
   // §4.5 Certificate. Membership type auto-issues on join (the first win); all
   // other types are approve-first (later slice). The public verification page —
-  // not the image — is the proof, so each row carries a public_id and a snapshot
-  // of what the certificate states ([[02 Certificate Design & Eligibility Rules
-  // (Draft)]] + [[02 Certificates - In-House Engine (Decision)]]).
+  // not the image — is the proof, so each row carries an UNGUESSABLE verify_token
+  // (the public lookup key; the human-facing WAIME-MEM-#### label is derived from
+  // the membership number and is never the lookup key, so the member list can't
+  // be enumerated) and a `status` so verification tells the truth: valid /
+  // superseded / revoked / not-found ([[02 Certificates - In-House Engine
+  // (Decision)]] §6b "valid, superseded, revoked, or not found").
   certificates: defineTable({
     member_id: v.id("members"),
     type: v.union(v.literal("membership")),
-    public_id: v.string(),
+    verify_token: v.string(),
     membership_number: v.number(),
     recipient_name: v.string(),
     issued_at: v.number(),
     issued_date_label: v.string(),
     is_founding: v.boolean(),
+    status: v.union(
+      v.literal("valid"),
+      v.literal("superseded"),
+      v.literal("revoked"),
+    ),
+    supersedes_id: v.optional(v.id("certificates")),
     template_version: v.string(),
     idempotency_key: v.string(),
   })
     .index("by_member", ["member_id"])
-    .index("by_public_id", ["public_id"])
+    .index("by_verify_token", ["verify_token"])
     .index("by_idempotency_key", ["idempotency_key"]),
 
   // Atomic sequence counters (e.g. the membership number). Convex serialises

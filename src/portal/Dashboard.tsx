@@ -17,10 +17,11 @@ export function Dashboard() {
   const ensureCert = useMutation(api.certificates.ensureMyMembershipCertificate);
   const [editing, setEditing] = useState(false);
 
-  const isActive = me != null && me.lifecycle_state !== "email_unverified";
+  const isActive = me != null && me.lifecycle_state === "active";
 
   // Make sure an active member has her certificate (covers members who became
-  // active before the engine existed). Idempotent server-side.
+  // active before the engine existed). Idempotent server-side. Minors at
+  // pending_guardian are not active, so they don't trigger issuance here.
   useEffect(() => {
     if (isActive && certs !== undefined && certs.length === 0) {
       void ensureCert({});
@@ -36,7 +37,7 @@ export function Dashboard() {
         <h1 style={h1}>Your profile</h1>
         <p style={muted}>
           The more you add, the better we can match you to opportunities, events
-          and people. Nothing is required — add what you like, anytime.
+          and people. Nothing is required, so add what you like, anytime.
         </p>
         <ProfileEditor onClose={() => setEditing(false)} />
       </div>
@@ -50,7 +51,7 @@ export function Dashboard() {
           Welcome to WAI-ME{firstName ? `, ${firstName}` : ""}
         </h1>
         <p style={muted}>
-          You're a member. Here's your certificate to start — your first of many
+          You're a member. Here's your certificate to start, your first of many
           wins as part of the community.
         </p>
       </header>
@@ -77,22 +78,22 @@ export function Dashboard() {
               <MembershipCertificate
                 recipientName={membershipCert.recipient_name}
                 membershipNumber={membershipCert.membership_number}
-                publicId={membershipCert.public_id}
+                certId={`WAIME-MEM-${membershipCert.membership_number}`}
                 dateLabel={membershipCert.issued_date_label}
                 isFounding={membershipCert.is_founding}
-                verifyUrl={verifyUrlFor(membershipCert.public_id)}
+                verifyUrl={verifyUrlFor(membershipCert.verify_token)}
               />
             </ScaledCertificate>
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
               <a
-                href={`/verify?id=${membershipCert.public_id}`}
+                href={`/verify?id=${membershipCert.verify_token}`}
                 target="_blank"
                 rel="noopener"
                 style={{ ...primaryBtn, textDecoration: "none", display: "inline-block" }}
               >
                 View &amp; verify
               </a>
-              <ShareButton publicId={membershipCert.public_id} />
+              <ShareButton token={membershipCert.verify_token} />
               <span style={{ ...muted, fontSize: 13 }}>
                 Membership Number WAIME-{membershipCert.membership_number}
               </span>
@@ -116,8 +117,8 @@ export function Dashboard() {
         <Tile title="Your standing">
           <p style={tileBody}>
             You're a <strong style={{ color: "var(--white)" }}>Member</strong>.
-            Take part — attend an event, share a resource, help someone — to
-            become an Active Member.
+            Take part by attending an event, sharing a resource, or helping
+            someone, and you become an Active Member.
           </p>
         </Tile>
 
@@ -147,10 +148,10 @@ export function Dashboard() {
   );
 }
 
-function ShareButton({ publicId }: { publicId: string }) {
+function ShareButton({ token }: { token: string }) {
   const [done, setDone] = useState(false);
   const onShare = async () => {
-    const url = verifyUrlFor(publicId);
+    const url = verifyUrlFor(token);
     const text = `Proud to join Women in Aviation Middle East! ${url}`;
     try {
       if (navigator.share) {
@@ -161,7 +162,7 @@ function ShareButton({ publicId }: { publicId: string }) {
         setTimeout(() => setDone(false), 2000);
       }
     } catch {
-      /* user dismissed the share sheet — nothing to do */
+      /* user dismissed the share sheet, nothing to do */
     }
   };
   return (
@@ -191,10 +192,10 @@ function Tile({
   );
 }
 
-const verifyUrlFor = (publicId: string): string =>
+const verifyUrlFor = (token: string): string =>
   typeof window === "undefined"
-    ? `/verify?id=${publicId}`
-    : `${window.location.origin}/verify?id=${publicId}`;
+    ? `/verify?id=${token}`
+    : `${window.location.origin}/verify?id=${token}`;
 
 const wrap: CSSProperties = { display: "grid", gap: 18, width: "min(1040px, 100%)" };
 const grid: CSSProperties = {

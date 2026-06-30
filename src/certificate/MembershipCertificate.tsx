@@ -18,7 +18,7 @@ export const CERT_H = 794;
 export type CertificateData = {
   recipientName: string;
   membershipNumber: number;
-  publicId: string;
+  certId: string;
   dateLabel: string;
   isFounding: boolean;
   verifyUrl: string;
@@ -42,7 +42,7 @@ export function MembershipCertificate(data: CertificateData) {
         <div style={title}>Certificate of Membership</div>
         <div style={titleAr}>شهادة عضوية</div>
         {data.isFounding && (
-          <div style={foundingTag}>Founding Member · {year}</div>
+          <div style={foundingTag}>Founding Member, {year}</div>
         )}
         <div style={goldRule} />
 
@@ -77,7 +77,7 @@ export function MembershipCertificate(data: CertificateData) {
           <div style={{ background: "#fff", padding: 4, borderRadius: 4 }}>
             <QRCodeSVG value={data.verifyUrl} size={66} fgColor={NAVY} bgColor="#fff" />
           </div>
-          <div style={verifyId}>{data.publicId}</div>
+          <div style={verifyId}>{data.certId}</div>
           <div style={verifyUrl}>verify.waiorg.me</div>
         </div>
 
