@@ -20,6 +20,7 @@
     "@convex-dev/auth": "^0.0.94",
     "astro": "^6.4.8",
     "convex": "^1.42.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "resend": "^6.16.0"

@@ -4,6 +4,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
+import { issueMembershipCertificate } from "./lib/certificates";
 
 // The member row linked to an auth user, matched by (lower-cased) email.
 const memberForUser = async (
@@ -82,6 +83,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         timestamp: Date.now(),
         source: "system",
       });
+      // The first win: issue the membership certificate the moment the email is
+      // verified (adults reach `active` here; minors get it after guardian
+      // confirmation, a later slice). Idempotent.
+      if (next === "active") {
+        await issueMembershipCertificate(ctx, member);
+      }
     },
   },
 });

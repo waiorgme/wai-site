@@ -9,9 +9,11 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as certificates from "../certificates.js";
 import type * as http from "../http.js";
 import type * as lib_age from "../lib/age.js";
 import type * as lib_audit from "../lib/audit.js";
+import type * as lib_certificates from "../lib/certificates.js";
 import type * as lib_lifecycle from "../lib/lifecycle.js";
 import type * as lib_memberLane from "../lib/memberLane.js";
 import type * as lib_profile from "../lib/profile.js";
@@ -25,9 +27,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  certificates: typeof certificates;
   http: typeof http;
   "lib/age": typeof lib_age;
   "lib/audit": typeof lib_audit;
+  "lib/certificates": typeof lib_certificates;
   "lib/lifecycle": typeof lib_lifecycle;
   "lib/memberLane": typeof lib_memberLane;
   "lib/profile": typeof lib_profile;

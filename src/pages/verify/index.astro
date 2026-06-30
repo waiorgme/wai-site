@@ -1,0 +1,54 @@
+---
+import Base from "../../layouts/Base.astro";
+import { VerifyApp } from "../../portal/VerifyApp";
+---
+
+<Base
+  title="Verify a certificate - Women in Aviation Middle East"
+  description="Confirm a Women in Aviation Middle East certificate is genuine."
+>
+  <link
+    slot="head"
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <main id="main" class="verify">
+    <VerifyApp client:only="react" />
+  </main>
+</Base>
+
+<style>
+  .verify {
+    min-height: 100dvh;
+    display: grid;
+    place-items: start center;
+    padding: var(--gutter);
+    background: radial-gradient(
+      1200px 600px at 50% -10%,
+      var(--navy),
+      var(--ink) 60%
+    );
+  }
+  @media print {
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+    .verify {
+      background: #fff;
+      padding: 0;
+    }
+    :global(body *) {
+      visibility: hidden;
+    }
+    :global(.cert-print),
+    :global(.cert-print *) {
+      visibility: visible;
+    }
+    :global(.cert-print) {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+  }
+</style>
