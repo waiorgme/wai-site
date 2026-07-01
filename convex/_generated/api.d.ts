@@ -17,7 +17,9 @@ import type * as lib_certificates from "../lib/certificates.js";
 import type * as lib_lifecycle from "../lib/lifecycle.js";
 import type * as lib_memberLane from "../lib/memberLane.js";
 import type * as lib_profile from "../lib/profile.js";
+import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as members from "../members.js";
+import type * as rateLimit from "../rateLimit.js";
 
 import type {
   ApiFromModules,
@@ -35,7 +37,9 @@ declare const fullApi: ApiFromModules<{
   "lib/lifecycle": typeof lib_lifecycle;
   "lib/memberLane": typeof lib_memberLane;
   "lib/profile": typeof lib_profile;
+  "lib/rateLimit": typeof lib_rateLimit;
   members: typeof members;
+  rateLimit: typeof rateLimit;
 }>;
 
 /**

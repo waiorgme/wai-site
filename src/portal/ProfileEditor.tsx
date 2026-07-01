@@ -125,6 +125,12 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
   };
 
   const onPickPhoto = async (file: File) => {
+    // Friendly early check; the server enforces the same rule (SEC-4).
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setError("Please choose a JPG, PNG or WebP photo under 5 MB.");
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
@@ -154,7 +160,11 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
         ...(newPhotoId ? { photo_storage_id: newPhotoId } : {}),
       });
       if (result.ok === false) {
-        setError("Some details couldn't be saved. Please check and try again.");
+        setError(
+          result.error === "invalid:photo"
+            ? "Please choose a JPG, PNG or WebP photo under 5 MB."
+            : "Some details couldn't be saved. Please check and try again.",
+        );
         return;
       }
       setSaved(true);

@@ -211,4 +211,13 @@ export default defineSchema({
     name: v.string(),
     value: v.number(),
   }).index("by_name", ["name"]),
+
+  // Fixed-window rate-limit buckets (security-hardening slice). One row per
+  // key (e.g. "signin:<email>" or "signin:global"); windows roll forward in
+  // place, so the table stays as small as the number of distinct keys.
+  rateLimits: defineTable({
+    key: v.string(),
+    window_start: v.number(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
 });

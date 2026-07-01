@@ -18,6 +18,25 @@ export const computeMinorUntil = (dobIso: string): string => {
   return d.toISOString().slice(0, 10);
 };
 
+// SEC-1: boundary validation for a self-declared DOB. ISO YYYY-MM-DD, a real
+// calendar date, not in the future, not before 1900. The public join flow
+// REQUIRES a valid DOB; only the internal migration path may omit one.
+export const isValidDob = (dob: string, now: number): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+    return false;
+  }
+  const parsed = new Date(`${dob}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return false;
+  }
+  // Reject normalised overflow like 2001-02-31 -> 2001-03-03.
+  if (parsed.toISOString().slice(0, 10) !== dob) {
+    return false;
+  }
+  const year = parsed.getUTCFullYear();
+  return year >= 1900 && parsed.getTime() <= now;
+};
+
 type AgeBlock = {
   date_of_birth: string | undefined;
   date_of_birth_source: "self_declared" | "migrated" | "guardian_confirmed" | "unknown";

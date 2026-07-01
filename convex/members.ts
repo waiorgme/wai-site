@@ -5,7 +5,7 @@ import type { MutationCtx } from "./_generated/server";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { writeAudit } from "./lib/audit";
-import { deriveAgeBlock } from "./lib/age";
+import { deriveAgeBlock, isValidDob } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
 import {
   isProfileComplete,
@@ -170,6 +170,23 @@ export const updateProfile = mutation({
       return { ok: false, error: `invalid:${invalid}` };
     }
 
+    // SEC-4: validate the uploaded photo server-side before linking it. The
+    // client's accept="image/*" is advisory; without this check any blob
+    // (including scriptable SVG) would be served from a public URL. Raster
+    // images only, 5 MB cap. Storage IDs are 128-bit unguessable, so ownership
+    // binding is bounded by this validation (spec: out-of-scope note).
+    if (fields.photo_storage_id !== undefined) {
+      const blob = await ctx.db.system.get(fields.photo_storage_id);
+      if (blob === null) {
+        return { ok: false, error: "invalid:photo" };
+      }
+      const allowed = ["image/jpeg", "image/png", "image/webp"];
+      const type = blob.contentType ?? "";
+      if (!allowed.includes(type) || blob.size > 5 * 1024 * 1024) {
+        return { ok: false, error: "invalid:photo" };
+      }
+    }
+
     const merged = { ...member, ...fields };
     const profile_complete = isProfileComplete(merged);
 
@@ -191,18 +208,26 @@ export const updateProfile = mutation({
 // §7 submitJoin: the public Join action. Verifies the human (Turnstile) at the
 // boundary, then delegates the member/consent writes to an internal mutation.
 // Returns the §7.1 result envelope.
+// SEC-1: DOB is REQUIRED and validated here, server-side. The browser's
+// `required` attribute is advisory only; without this check a caller could
+// strip the field, land in the restricted_unknown lane, and bypass the minor
+// safeguards entirely. Only the internal migration path (the 1,309 imported
+// members) may create a member without a DOB.
 export const submitJoin = action({
   args: {
     name: v.string(),
     email: v.string(),
     careerStageAnswer: v.string(),
     genderAnswer: v.union(v.literal("female"), v.literal("male")),
-    dobAnswer: v.optional(v.string()),
+    dobAnswer: v.string(),
     consents: consentArgs,
     turnstileToken: v.string(),
   },
   handler: async (ctx, args): Promise<JoinResult> => {
     if (!args.consents.terms) {
+      return { ok: false, error: "validation" } as const;
+    }
+    if (!isValidDob(args.dobAnswer, Date.now())) {
       return { ok: false, error: "validation" } as const;
     }
     const human = await verifyTurnstile(args.turnstileToken);
@@ -310,6 +335,25 @@ export const writeConsent = mutation({
       .unique();
     if (member === null) {
       return { ok: false, error: "no_member" };
+    }
+    // SEC-5 safeguarding lane guard: minors (and unknown-age accounts) are
+    // blocked from the talent pipeline, so they can never consent INTO it.
+    // The refusal is audited; no consent row is written.
+    if (
+      args.type === "pipeline" &&
+      args.value === true &&
+      (member.member_lane === "minor" ||
+        member.member_lane === "restricted_unknown")
+    ) {
+      await writeAudit(ctx, {
+        actor: member.email,
+        role: "member",
+        action: "writeConsent.refused",
+        target_id: member._id,
+        after_summary: `pipeline=true refused lane=${member.member_lane}`,
+        source: "system",
+      });
+      return { ok: false, error: "not_permitted" };
     }
     const now = Date.now();
     await insertConsent(ctx, member._id, args.type, args.value, now, "settings");

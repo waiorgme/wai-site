@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { convex } from "./convex";
+import { sendLinkErrorMessage } from "./errors";
 import { Dashboard } from "./Dashboard";
 import { card, h1, input, linkBtn, muted, primaryBtn } from "./ui";
 
@@ -67,8 +68,8 @@ function SignIn() {
           try {
             await signIn("resend", { email, redirectTo: "/portal" });
             setSentTo(email);
-          } catch {
-            setError("Something went wrong sending your link. Please try again.");
+          } catch (err) {
+            setError(sendLinkErrorMessage(err));
           } finally {
             setBusy(false);
           }

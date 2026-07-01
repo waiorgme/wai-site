@@ -3,6 +3,7 @@ import { useAction } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { convex } from "./convex";
+import { sendLinkErrorMessage } from "./errors";
 import {
   card,
   checkboxRow,
@@ -95,10 +96,14 @@ function JoinForm() {
           setBusy(true);
           setError(null);
           try {
+            if (dob === "") {
+              setError("Please enter your date of birth.");
+              return;
+            }
             const result = await submitJoin({
               name,
               email,
-              dobAnswer: dob === "" ? undefined : dob,
+              dobAnswer: dob,
               genderAnswer: form.get("gender") === "male" ? "male" : "female",
               careerStageAnswer: String(form.get("careerStage") ?? ""),
               consents: {
@@ -114,8 +119,8 @@ function JoinForm() {
             }
             await signIn("resend", { email, redirectTo: "/portal" });
             setSentTo(email);
-          } catch {
-            setError("Something went wrong. Please try again.");
+          } catch (err) {
+            setError(sendLinkErrorMessage(err));
           } finally {
             setBusy(false);
           }
