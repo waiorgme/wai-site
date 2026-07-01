@@ -5,8 +5,17 @@ import type { MutationCtx } from "./_generated/server";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { writeAudit } from "./lib/audit";
-import { deriveAgeBlock, isValidDob, meetsMinimumJoinAge } from "./lib/age";
+import { deriveAgeBlock } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
+import { fullName, isValidNamePart } from "./lib/names";
+import {
+  dobGate,
+  isValidCountry,
+  isValidJoinEmail,
+  isValidLookingFor,
+  normalizeEmail,
+} from "./lib/joinValidation";
+import { GLOBAL_JOIN_DAY, PER_EMAIL_JOIN_DAY } from "./lib/rateLimit";
 import {
   isProfileComplete,
   validateProfileFields,
@@ -31,7 +40,7 @@ type CreateResult =
   | { ok: true; memberId: Id<"members">; lifecycle_state: "email_unverified" };
 
 type JoinResult =
-  | { ok: false; error: "validation" | "underage" }
+  | { ok: false; error: "validation" | "under_13" | "rate_limited" }
   | CreateResult;
 
 // The logged-in member's own summary, keyed off the Convex Auth user id.
@@ -207,9 +216,10 @@ export const updateProfile = mutation({
   },
 });
 
-// §7 submitJoin: the public Join action. Verifies the human (Turnstile) at the
-// boundary, then delegates the member/consent writes to an internal mutation.
-// Returns the §7.1 result envelope.
+// §7 submitJoin: the public Join action (PRD §6.2). Verifies the human
+// (Turnstile + honeypot + rate limits) and every field at the boundary, then
+// delegates the member/consent writes to an internal mutation. Returns the
+// §7.1 result envelope.
 // SEC-1: DOB is REQUIRED and validated here, server-side. The browser's
 // `required` attribute is advisory only; without this check a caller could
 // strip the field, land in the restricted_unknown lane, and bypass the minor
@@ -217,53 +227,127 @@ export const updateProfile = mutation({
 // members) may create a member without a DOB.
 export const submitJoin = action({
   args: {
-    name: v.string(),
+    firstName: v.string(),
+    lastName: v.string(),
     email: v.string(),
+    country: v.string(),
+    lookingFor: v.array(v.string()),
     careerStageAnswer: v.string(),
     genderAnswer: v.union(v.literal("female"), v.literal("male")),
     dobAnswer: v.string(),
+    attestation: v.boolean(),
+    guardianName: v.optional(v.string()),
+    guardianEmail: v.optional(v.string()),
     consents: consentArgs,
     turnstileToken: v.string(),
+    // Honeypot. Humans never see it; a filled value means a bot.
+    website: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<JoinResult> => {
-    if (!args.consents.terms) {
+    const now = Date.now();
+
+    // Honeypot: silently drop. Same shape as the duplicate-email route, so a
+    // bot learns nothing; no row is written and no email is ever sent.
+    if (args.website !== undefined && args.website !== "") {
+      return { ok: true, already: true, route: "sign_in" } as const;
+    }
+
+    // Required declarations (PRD P0): terms+privacy and the truthful-details
+    // attestation.
+    if (!args.consents.terms || !args.attestation) {
       return { ok: false, error: "validation" } as const;
     }
-    if (!isValidDob(args.dobAnswer, Date.now())) {
+
+    // Field validation at the boundary (all length-capped in the validators).
+    if (!isValidNamePart(args.firstName) || !isValidNamePart(args.lastName)) {
       return { ok: false, error: "validation" } as const;
     }
-    // Vault lock: minimum joining age is 13; under-13s are never signed up as
-    // their own members. Rejected BEFORE any member or consent row exists. The
-    // distinct error lets the form show the decided gentle-refusal copy.
-    if (!meetsMinimumJoinAge(args.dobAnswer, Date.now())) {
-      return { ok: false, error: "underage" } as const;
+    if (!isValidJoinEmail(args.email)) {
+      return { ok: false, error: "validation" } as const;
     }
+    if (!isValidCountry(args.country)) {
+      return { ok: false, error: "validation" } as const;
+    }
+    if (!isValidLookingFor(args.lookingFor)) {
+      return { ok: false, error: "validation" } as const;
+    }
+
+    // DOB gate: min age 13; 13-17 requires the guardian branch (PRD §6.2).
+    const gate = dobGate(args.dobAnswer, now);
+    if (gate === "invalid") {
+      return { ok: false, error: "validation" } as const;
+    }
+    if (gate === "under_13") {
+      return { ok: false, error: "under_13" } as const;
+    }
+    if (gate === "minor") {
+      const gName = (args.guardianName ?? "").trim();
+      const gEmail = (args.guardianEmail ?? "").trim();
+      if (
+        gName.length < 2 ||
+        gName.length > 80 ||
+        !isValidJoinEmail(gEmail) ||
+        normalizeEmail(gEmail) === normalizeEmail(args.email)
+      ) {
+        return { ok: false, error: "validation" } as const;
+      }
+    }
+
+    // Per-source rate limiting (PRD P0): per-email and global daily caps.
+    const email = normalizeEmail(args.email);
+    for (const { key, rule } of [
+      { key: `join24h:${email}`, rule: PER_EMAIL_JOIN_DAY },
+      { key: "join24h:global", rule: GLOBAL_JOIN_DAY },
+    ]) {
+      const res = await ctx.runMutation(internal.rateLimit.consume, {
+        key,
+        limit: rule.limit,
+        windowMs: rule.windowMs,
+      });
+      if (!res.ok) {
+        return { ok: false, error: "rate_limited" } as const;
+      }
+    }
+
     const human = await verifyTurnstile(args.turnstileToken);
     if (!human) {
       return { ok: false, error: "validation" } as const;
     }
+
     return await ctx.runMutation(internal.members.createPendingMember, {
-      name: args.name,
-      email: args.email,
+      name: fullName(args.firstName, args.lastName),
+      email,
+      country: args.country,
+      lookingFor: args.lookingFor,
       careerStageAnswer: args.careerStageAnswer,
       genderAnswer: args.genderAnswer,
       dobAnswer: args.dobAnswer,
+      guardianName:
+        gateIsMinor(gate) ? (args.guardianName ?? "").trim() : undefined,
+      guardianEmail:
+        gateIsMinor(gate) ? normalizeEmail(args.guardianEmail ?? "") : undefined,
       consents: args.consents,
     });
   },
 });
 
+const gateIsMinor = (gate: string): boolean => gate === "minor";
+
 // Serves the PUBLIC join path only, so DOB is required here too (defence in
-// depth behind submitJoin's checks). The 1,309 migrated members, who arrive
+// depth behind submitJoin's dobGate). The 1,309 migrated members, who arrive
 // without DOB by design, are created by the claim-wave import path, never
 // through this mutation.
 export const createPendingMember = internalMutation({
   args: {
     name: v.string(),
     email: v.string(),
+    country: v.optional(v.string()),
+    lookingFor: v.optional(v.array(v.string())),
     careerStageAnswer: v.string(),
     genderAnswer: v.union(v.literal("female"), v.literal("male")),
     dobAnswer: v.string(),
+    guardianName: v.optional(v.string()),
+    guardianEmail: v.optional(v.string()),
     consents: consentArgs,
   },
   handler: async (ctx, args): Promise<CreateResult> => {
@@ -297,9 +381,27 @@ export const createPendingMember = internalMutation({
       ...ageBlock,
       gender: args.genderAnswer,
       career_stage_answer: args.careerStageAnswer,
+      country_of_residence: args.country,
+      looking_for: args.lookingFor,
       member_lane: lane,
       created_at: now,
     });
+
+    // 13-17: record the guardian now (state pending). The guardian
+    // confirmation email flow is the minor-certificate slice (Phase 3 §10);
+    // until it confirms, the account stays unusable at pending_guardian.
+    if (lane === "minor" && args.guardianName && args.guardianEmail) {
+      await ctx.db.insert("guardianConsents", {
+        member_id: memberId,
+        guardian_name: args.guardianName,
+        guardian_email: args.guardianEmail,
+        confirmation_state: "pending",
+        // Placeholder hash; the real token is generated when the confirmation
+        // email is sent (later slice) and this row is re-keyed then.
+        confirmation_token_hash: crypto.randomUUID().replace(/-/g, ""),
+        timestamp: now,
+      });
+    }
 
     // §4.3 Write all three consent rows at join, including explicit false rows
     // for marketing and pipeline (Codex 5).

@@ -12,7 +12,15 @@ the Spec gate stops (Stop-the-Line) until one exists in the vault.
 | Get Involved | `/get-involved` | `02 Public Website Content - English (Draft)` · partner/Ambassador Decision notes |
 | Events | `/events` | `02 Public Website Content - English (Draft)` (Events) · `04 Events/` (real dates) |
 | Contact | `/contact` | `02 Public Website Content - English (Draft)` (Contact) · `05 Operations/05 Tools & Accounts.md` (support email) |
-| Arabic mirror | `/ar/*` | Same notes, Arabic copy. RTL. Built only after the English page passes all four gates. |
+| Join | `/join` | `02 PRD Phase 2 - Public Site & Join Flow` §6.2-6.3 · `02 Signup & Onboarding Flow (Design)` · `02 Member Profile Field Spec (Talent Pipeline)` (career stages, looking-for options) · gender-field + plain-language hard rules |
+| Portal (dashboard, profile, certificate) | `/portal` | `02 Stage 0 - Technical Design (Public Site & Portal)` · `02 PRD Phase 3 - Member Portal` · `02 Member Profile Field Spec (Talent Pipeline)` · `02 Certificates - In-House Engine (Decision)` · `02 Certificate Design & Eligibility Rules (Draft)` |
+| Certificate verify | `/verify` | `02 Certificates - In-House Engine (Decision)` §6b (valid / superseded / revoked / not found) |
+| Arabic Home | `/ar/` | `02 Public Website Content - Arabic Front Door (Draft)` · same layout notes as `/` |
+| Arabic About | `/ar/about/` | Arabic draft (About) · same notes as `/about` |
+| Arabic Membership | `/ar/membership/` | Arabic copy on the rendered page (approved batch 2026-06-28) · same notes as `/membership` |
+| Arabic Get Involved | `/ar/get-involved/` | Arabic draft (Get Involved) · same notes as `/get-involved` |
+| Arabic Events | `/ar/events/` | Arabic copy + `src/data/events-archive-ar.json` (32-entry translated archive) · same notes as `/events` |
+| Arabic Contact | `/ar/contact/` | Arabic copy on the rendered page · same notes as `/contact` |
 
 ## Brand locks (apply to every row)
 Real logo asset only · gold = recognition only · no em-dashes (regular hyphens) ·

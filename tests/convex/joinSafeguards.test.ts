@@ -141,10 +141,19 @@ describe("under-13 join boundary (13+ vault lock)", () => {
   it("submitJoin rejects an under-13 DOB before any row is written", async () => {
     const t = convexTest(schema, modules);
     const result = await t.action(api.members.submitJoin, {
-      ...joinArgs("child@example.com", UNDER_13_DOB, false),
+      firstName: "Test",
+      lastName: "Child",
+      email: "child@example.com",
+      country: "United Arab Emirates",
+      lookingFor: [],
+      careerStageAnswer: "student",
+      genderAnswer: "female" as const,
+      dobAnswer: UNDER_13_DOB,
+      attestation: true,
+      consents: { terms: true, marketing: false, pipeline: false },
       turnstileToken: "irrelevant",
     });
-    expect(result).toEqual({ ok: false, error: "underage" });
+    expect(result).toEqual({ ok: false, error: "under_13" });
 
     const members = await t.run(async (ctx) =>
       ctx.db.query("members").collect(),

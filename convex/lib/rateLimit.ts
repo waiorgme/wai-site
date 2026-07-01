@@ -27,6 +27,11 @@ export const PER_EMAIL_DAY: RateLimitRule = { limit: 10, windowMs: 24 * 60 * 60 
 // live link, while an upstream refusal happens after the code swap and would
 // burn it. Raise only once Resend Pro is confirmed active (owner item).
 export const GLOBAL_DAY: RateLimitRule = { limit: 90, windowMs: 24 * 60 * 60 * 1000 };
+// Join submissions (PRD §6.2 "per-source rate limiting"; Convex actions don't
+// see the caller's IP, so per-email + global is the enforceable pair). Join
+// throttling only; actual email sends stay capped by the limits above.
+export const PER_EMAIL_JOIN_DAY: RateLimitRule = { limit: 5, windowMs: 24 * 60 * 60 * 1000 };
+export const GLOBAL_JOIN_DAY: RateLimitRule = { limit: 300, windowMs: 24 * 60 * 60 * 1000 };
 
 export type WindowState = { window_start: number; count: number };
 

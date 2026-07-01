@@ -4,6 +4,10 @@ import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { convex } from "./convex";
 import { joinErrorMessage } from "./errors";
+import { fullName } from "../../convex/lib/names";
+import { COUNTRIES } from "../../convex/lib/countries";
+import { LOOKING_FOR } from "../../convex/lib/profile";
+import { dobGate, MIN_JOIN_AGE } from "../../convex/lib/joinValidation";
 import {
   card,
   checkboxRow,
@@ -52,24 +56,193 @@ export function JoinApp() {
   );
 }
 
+type FormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  country: string;
+  dob: string;
+  gender: "female" | "male";
+  careerStage: string;
+  lookingFor: string[];
+  guardianName: string;
+  guardianEmail: string;
+  attestation: boolean;
+  terms: boolean;
+  marketing: boolean;
+  pipeline: boolean;
+  website: string; // honeypot, humans never see it
+};
+
+const EMPTY: FormValues = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  country: "",
+  dob: "",
+  gender: "female",
+  careerStage: "",
+  lookingFor: [],
+  guardianName: "",
+  guardianEmail: "",
+  attestation: false,
+  terms: false,
+  marketing: false,
+  pipeline: false,
+  website: "",
+};
+
+type Stage = "form" | "confirm" | "sent" | "welcome_back" | "under_13";
+
 function JoinForm() {
   const submitJoin = useAction(api.members.submitJoin);
   const { signIn } = useAuthActions();
+  const [values, setValues] = useState<FormValues>(EMPTY);
+  const [stage, setStage] = useState<Stage>("form");
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sentTo, setSentTo] = useState<string | null>(null);
 
-  if (sentTo !== null) {
+  const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) =>
+    setValues((v) => ({ ...v, [key]: value }));
+
+  const gate = values.dob === "" ? null : dobGate(values.dob, Date.now());
+  const isMinor = gate === "minor";
+
+  if (stage === "sent") {
     return (
       <div style={card}>
-        <h1 style={h1}>Almost there — check your email</h1>
+        <h1 style={h1}>Almost there. Check your email</h1>
         <p style={muted}>
           Welcome to WAI-ME. We sent a confirmation link to{" "}
-          <strong style={{ color: "var(--white)" }}>{sentTo}</strong>. Click it to
-          confirm your email and activate your membership. It expires in 15
-          minutes.
+          <strong style={{ color: "var(--white)" }}>{values.email}</strong>.
+          Click it to confirm your email and activate your membership. It
+          expires in 15 minutes.
         </p>
+      </div>
+    );
+  }
+
+  if (stage === "welcome_back") {
+    return (
+      <div style={card}>
+        <h1 style={h1}>Welcome back</h1>
+        <p style={muted}>
+          You already have a WAI-ME account with{" "}
+          <strong style={{ color: "var(--white)" }}>{values.email}</strong>.
+          No need to join again, just sign in.
+        </p>
+        <a href="/portal" style={{ ...primaryBtn, textDecoration: "none", display: "inline-block" }}>
+          Sign in
+        </a>
+      </div>
+    );
+  }
+
+  if (stage === "under_13") {
+    return (
+      <div style={card}>
+        <h1 style={h1}>Not just yet</h1>
+        <p style={muted}>
+          Thank you for wanting to join. WAI-ME membership starts at age{" "}
+          {MIN_JOIN_AGE}, so we can't sign you up as a member today. We would
+          love to welcome you when you turn {MIN_JOIN_AGE}. Until then, a
+          parent or guardian is welcome to write to us at{" "}
+          <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+            support@waiorg.me
+          </a>{" "}
+          about ways to stay connected.
+        </p>
+        <button type="button" style={linkBtn} onClick={() => setStage("form")}>
+          Back
+        </button>
+      </div>
+    );
+  }
+
+  if (stage === "confirm") {
+    const certName = fullName(values.firstName, values.lastName);
+    return (
+      <div style={card}>
+        <h1 style={h1}>One last look</h1>
+        <p style={muted}>
+          Your membership certificate will read:{" "}
+          <strong style={{ color: "var(--white)", fontSize: 18 }}>{certName}</strong>
+        </p>
+        <p style={muted}>Is that correct?</p>
+        <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            disabled={busy}
+            style={primaryBtn}
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                const result = await submitJoin({
+                  firstName: values.firstName,
+                  lastName: values.lastName,
+                  email: values.email.trim().toLowerCase(),
+                  country: values.country,
+                  lookingFor: values.lookingFor,
+                  careerStageAnswer: values.careerStage,
+                  genderAnswer: values.gender,
+                  dobAnswer: values.dob,
+                  attestation: values.attestation,
+                  ...(isMinor
+                    ? {
+                        guardianName: values.guardianName.trim(),
+                        guardianEmail: values.guardianEmail.trim().toLowerCase(),
+                      }
+                    : {}),
+                  consents: {
+                    terms: values.terms,
+                    marketing: values.marketing,
+                    pipeline: values.pipeline,
+                  },
+                  turnstileToken: token ?? "",
+                  website: values.website,
+                });
+                if (result.ok === false) {
+                  if (result.error === "under_13") {
+                    setStage("under_13");
+                  } else if (result.error === "rate_limited") {
+                    setError(
+                      "We received several sign-ups from this email today, so we have paused new attempts for a short while. Please try again tomorrow.",
+                    );
+                    setStage("form");
+                  } else {
+                    setError(
+                      "Some details didn't look right to us. Please check them and try again.",
+                    );
+                    setStage("form");
+                  }
+                  return;
+                }
+                if ("already" in result && result.already) {
+                  setStage("welcome_back");
+                  return;
+                }
+                await signIn("resend", {
+                  email: values.email.trim().toLowerCase(),
+                  redirectTo: "/portal",
+                });
+                setStage("sent");
+              } catch (err) {
+                setError(joinErrorMessage(err));
+                setStage("form");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Creating your account…" : "Yes, join WAI-ME"}
+          </button>
+          <button type="button" style={linkBtn} onClick={() => setStage("form")}>
+            Edit my name
+          </button>
+        </div>
+        {error !== null && <p style={errorText}>{error}</p>}
       </div>
     );
   }
@@ -78,58 +251,57 @@ function JoinForm() {
     <div style={card}>
       <h1 style={h1}>Join WAI-ME</h1>
       <p style={muted}>
-        Membership is free and open to women at every stage of aviation. Allies
-        are welcome too.
+        Membership is free and open to everyone in aviation, at every stage,
+        from dreaming about it to leading it.
       </p>
       <form
         style={{ display: "grid", gap: 14, marginTop: 4 }}
-        onSubmit={async (event) => {
+        onSubmit={(event) => {
           event.preventDefault();
-          const form = new FormData(event.currentTarget);
-          const email = String(form.get("email") ?? "").trim();
-          const name = String(form.get("name") ?? "").trim();
-          const dob = String(form.get("dob") ?? "").trim();
+          setError(null);
           if (token === null) {
             setError("Please complete the verification check.");
             return;
           }
-          setBusy(true);
-          setError(null);
-          try {
-            if (dob === "") {
-              setError("Please enter your date of birth.");
-              return;
-            }
-            const result = await submitJoin({
-              name,
-              email,
-              dobAnswer: dob,
-              genderAnswer: form.get("gender") === "male" ? "male" : "female",
-              careerStageAnswer: String(form.get("careerStage") ?? ""),
-              consents: {
-                terms: form.get("terms") === "on",
-                marketing: form.get("marketing") === "on",
-                pipeline: form.get("pipeline") === "on",
-              },
-              turnstileToken: token,
-            });
-            if (result.ok === false) {
-              setError("We couldn't complete your sign-up. Please try again.");
-              return;
-            }
-            await signIn("resend", { email, redirectTo: "/portal" });
-            setSentTo(email);
-          } catch (err) {
-            setError(joinErrorMessage(err));
-          } finally {
-            setBusy(false);
+          if (gate === "under_13") {
+            setStage("under_13");
+            return;
           }
+          if (gate === "invalid" || gate === null) {
+            setError("Please enter your date of birth.");
+            return;
+          }
+          setStage("confirm");
         }}
       >
-        <label style={label}>
-          Full name
-          <input name="name" type="text" required autoComplete="name" style={input} />
-        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <label style={label}>
+            First name
+            <input
+              name="firstName"
+              type="text"
+              required
+              maxLength={40}
+              autoComplete="given-name"
+              value={values.firstName}
+              onChange={(e) => set("firstName", e.target.value)}
+              style={input}
+            />
+          </label>
+          <label style={label}>
+            Last name
+            <input
+              name="lastName"
+              type="text"
+              required
+              maxLength={40}
+              autoComplete="family-name"
+              value={values.lastName}
+              onChange={(e) => set("lastName", e.target.value)}
+              style={input}
+            />
+          </label>
+        </div>
 
         <label style={label}>
           Email
@@ -137,32 +309,123 @@ function JoinForm() {
             name="email"
             type="email"
             required
+            maxLength={254}
             autoComplete="email"
             placeholder="you@example.com"
+            value={values.email}
+            onChange={(e) => set("email", e.target.value)}
             style={input}
           />
         </label>
 
         <label style={label}>
-          Date of birth
-          <input name="dob" type="date" required style={input} />
+          Country
+          <select
+            name="country"
+            required
+            value={values.country}
+            onChange={(e) => set("country", e.target.value)}
+            style={input}
+          >
+            <option value="" disabled>
+              Select your country…
+            </option>
+            {COUNTRIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </label>
 
+        <label style={label}>
+          Date of birth
+          <input
+            name="dob"
+            type="date"
+            required
+            value={values.dob}
+            onChange={(e) => set("dob", e.target.value)}
+            style={input}
+          />
+        </label>
+
+        {isMinor && (
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              padding: "12px 14px",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 10,
+            }}
+          >
+            <p style={{ ...muted, margin: 0 }}>
+              Because you are under 18, we also need a parent or guardian's
+              details. We will ask them to confirm your membership.
+            </p>
+            <label style={label}>
+              Parent or guardian's name
+              <input
+                name="guardianName"
+                type="text"
+                required
+                maxLength={80}
+                value={values.guardianName}
+                onChange={(e) => set("guardianName", e.target.value)}
+                style={input}
+              />
+            </label>
+            <label style={label}>
+              Parent or guardian's email
+              <input
+                name="guardianEmail"
+                type="email"
+                required
+                maxLength={254}
+                value={values.guardianEmail}
+                onChange={(e) => set("guardianEmail", e.target.value)}
+                style={input}
+              />
+            </label>
+          </div>
+        )}
+
         <fieldset style={{ border: "none", padding: 0, margin: 0, ...label }}>
-          <span>I am a…</span>
+          <span>Gender</span>
           <div style={{ display: "flex", gap: 18, color: "var(--white)" }}>
             <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="radio" name="gender" value="female" defaultChecked /> Woman
+              <input
+                type="radio"
+                name="gender"
+                value="female"
+                checked={values.gender === "female"}
+                onChange={() => set("gender", "female")}
+              />{" "}
+              Female
             </label>
             <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="radio" name="gender" value="male" /> Ally
+              <input
+                type="radio"
+                name="gender"
+                value="male"
+                checked={values.gender === "male"}
+                onChange={() => set("gender", "male")}
+              />{" "}
+              Male
             </label>
           </div>
         </fieldset>
 
         <label style={label}>
           Where are you in aviation right now?
-          <select name="careerStage" required defaultValue="" style={input}>
+          <select
+            name="careerStage"
+            required
+            value={values.careerStage}
+            onChange={(e) => set("careerStage", e.target.value)}
+            style={input}
+          >
             <option value="" disabled>
               Select one…
             </option>
@@ -174,28 +437,104 @@ function JoinForm() {
           </select>
         </label>
 
+        <fieldset style={{ border: "none", padding: 0, margin: 0, ...label }}>
+          <span>What are you hoping we help you with? (pick any)</span>
+          <div style={{ display: "grid", gap: 6, color: "var(--white)" }}>
+            {LOOKING_FOR.map((option) => (
+              <label
+                key={option}
+                style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 400 }}
+              >
+                <input
+                  type="checkbox"
+                  checked={values.lookingFor.includes(option)}
+                  onChange={() =>
+                    set(
+                      "lookingFor",
+                      values.lookingFor.includes(option)
+                        ? values.lookingFor.filter((o) => o !== option)
+                        : [...values.lookingFor, option],
+                    )
+                  }
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {/* Honeypot: hidden from humans and screen readers; naive bots fill
+            every input in the DOM regardless. */}
+        <div aria-hidden="true" style={{ display: "none" }}>
+          <label>
+            Website
+            <input
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={values.website}
+              onChange={(e) => set("website", e.target.value)}
+            />
+          </label>
+        </div>
+
         <label style={checkboxRow}>
-          <input type="checkbox" name="terms" required />
+          <input
+            type="checkbox"
+            name="terms"
+            required
+            checked={values.terms}
+            onChange={(e) => set("terms", e.target.checked)}
+          />
           <span>
             I agree to the WAI-ME terms and privacy policy. <em>(required)</em>
           </span>
         </label>
         <label style={checkboxRow}>
-          <input type="checkbox" name="marketing" />
-          <span>Email me about events, opportunities and news. (optional)</span>
-        </label>
-        <label style={checkboxRow}>
-          <input type="checkbox" name="pipeline" />
+          <input
+            type="checkbox"
+            name="attestation"
+            required
+            checked={values.attestation}
+            onChange={(e) => set("attestation", e.target.checked)}
+          />
           <span>
-            Let WAI-ME include me in the opt-in talent pipeline for partners.
-            (optional)
+            I confirm my details, including age and gender, are accurate.{" "}
+            <em>(required)</em>
           </span>
         </label>
+        <label style={checkboxRow}>
+          <input
+            type="checkbox"
+            name="marketing"
+            checked={values.marketing}
+            onChange={(e) => set("marketing", e.target.checked)}
+          />
+          <span>Email me about events, opportunities and news. (optional)</span>
+        </label>
+        {/* Safeguarding: members under 18 are never offered the partner-search
+            option; the server enforces the same rule. */}
+        {!isMinor && (
+          <label style={checkboxRow}>
+            <input
+              type="checkbox"
+              name="pipeline"
+              checked={values.pipeline}
+              onChange={(e) => set("pipeline", e.target.checked)}
+            />
+            <span>
+              Make my profile searchable by corporate partners with jobs,
+              internships and scholarships. You can change this anytime.
+              (optional)
+            </span>
+          </label>
+        )}
 
         <Turnstile onToken={setToken} />
 
         <button type="submit" disabled={busy} style={primaryBtn}>
-          {busy ? "Creating your account…" : "Join WAI-ME"}
+          Continue
         </button>
         {error !== null && <p style={errorText}>{error}</p>}
       </form>

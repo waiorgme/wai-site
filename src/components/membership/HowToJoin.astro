@@ -30,9 +30,10 @@ const steps = [
 
     <p class="closing reveal" style="--i:3">There is no approval queue and no fee. You are in as soon as you join.</p>
 
-    <!-- Returning-member block ("Already a member from before?" + claim-your-profile body)
-         held pending vault [CONFIRM]: copy is unconfirmed until it aligns with the
-         claim-your-account flow + consent steps. Restore here once the vault confirms it. -->
+    {/* Returning-member block ("Already a member from before?" + claim-your-profile
+        body) is held back until the vault confirms copy that aligns with the
+        claim-your-account flow + consent steps. Restore here once confirmed.
+        (Astro comment: stripped at build, never ships in HTML.) */}
 
     <div class="cta-row reveal" style="--i:4">
       <Button href="/join" magnetic>Become a member</Button>

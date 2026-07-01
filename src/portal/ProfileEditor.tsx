@@ -226,7 +226,7 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
       <Section title="Where you are in aviation" />
       <Field
         labelText="Career stage"
-        tip="Just tell us where you are right now — there's no wrong answer, and it changes as you grow."
+        tip="Just tell us where you are right now - there's no wrong answer, and it changes as you grow."
       >
         <Select
           value={form.career_stage_answer}
@@ -252,7 +252,7 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
       {form.function_area !== "" && form.function_area !== "Other / Aspiring" && (
         <Field
           labelText="Role"
-          tip="Your specific role within that area. Pick the closest one — you can change it anytime."
+          tip="Your specific role within that area. Pick the closest one - you can change it anytime."
         >
           <Select
             value={form.role}
@@ -293,7 +293,7 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
       <Section title="Your experience" />
       <Field
         labelText="Years in aviation"
-        tip="Roughly how long you've worked in aviation. Brand new? Choose 'None yet' — that's completely fine here."
+        tip="Roughly how long you've worked in aviation. Brand new? Choose 'None yet' - that's completely fine here."
       >
         <Select
           value={form.years_in_aviation}
@@ -320,7 +320,7 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
       </Two>
       <Field
         labelText="Sectors"
-        tip="The kind of place you've worked — an airline, an airport, a training school, and so on. Tick all that apply."
+        tip="The kind of place you've worked - an airline, an airport, a training school, and so on. Tick all that apply."
       >
         <Chips
           options={SECTORS}
@@ -378,7 +378,7 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
       <Section title="What you're looking for" />
       <Field
         labelText="Looking for"
-        tip="What would help you most right now? Tick anything — a job, a scholarship, a mentor, or just meeting other women in aviation."
+        tip="What would help you most right now? Tick anything - a job, a scholarship, a mentor, or just meeting other women in aviation."
       >
         <Chips
           options={LOOKING_FOR}

@@ -50,7 +50,7 @@ function SignIn() {
     <div style={card}>
       <h1 style={h1}>Member sign-in</h1>
       <p style={muted}>
-        Enter your email and we'll send you a secure sign-in link — no password
+        Enter your email and we'll send you a secure sign-in link - no password
         needed.
       </p>
       <form

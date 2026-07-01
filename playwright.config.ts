@@ -21,5 +21,12 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
     timeout: 120_000,
+    // The portal islands need a Convex URL at build time. Tests never talk to
+    // a deployment; a syntactically valid placeholder lets the islands mount
+    // in CI (QA-6) so their rendered shells can be asserted on.
+    env: {
+      PUBLIC_CONVEX_URL:
+        process.env.PUBLIC_CONVEX_URL ?? "https://placeholder-000.convex.cloud",
+    },
   },
 });
