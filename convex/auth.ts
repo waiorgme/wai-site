@@ -3,6 +3,7 @@
 // upgrades are deliberate, reviewed events, never a floating caret).
 import Resend from "@auth/core/providers/resend";
 import { Resend as ResendAPI } from "resend";
+import { ConvexError } from "convex/values";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericActionCtx } from "convex/server";
 import type { DataModel, Id } from "./_generated/dataModel";
@@ -54,7 +55,10 @@ const enforceSendLimits = async (
       windowMs: rule.windowMs,
     });
     if (!res.ok) {
-      throw new Error(RATE_LIMITED_MARKER);
+      // ConvexError, not Error: plain Error messages are redacted to "Server
+      // Error" on production deployments, so the client would never see the
+      // marker and could not show the plain-language wait-and-retry copy.
+      throw new ConvexError(RATE_LIMITED_MARKER);
     }
   }
 };

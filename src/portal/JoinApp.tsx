@@ -3,7 +3,7 @@ import { useAction } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { convex } from "./convex";
-import { sendLinkErrorMessage } from "./errors";
+import { joinErrorMessage } from "./errors";
 import {
   card,
   checkboxRow,
@@ -120,7 +120,7 @@ function JoinForm() {
             await signIn("resend", { email, redirectTo: "/portal" });
             setSentTo(email);
           } catch (err) {
-            setError(sendLinkErrorMessage(err));
+            setError(joinErrorMessage(err));
           } finally {
             setBusy(false);
           }

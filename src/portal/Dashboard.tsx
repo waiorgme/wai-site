@@ -71,9 +71,9 @@ export function Dashboard() {
             {isActive
               ? "Preparing your certificate…"
               : me?.lifecycle_state === "pending_review"
-                ? "Thanks for confirming your email. A team member is reviewing your details; you will get an email when your membership is confirmed."
+                ? "Thanks for confirming your email. A team member is reviewing your details. This page will update as soon as your membership is confirmed."
                 : me?.lifecycle_state === "pending_guardian"
-                  ? "Thanks for confirming your email. Because you are under 18, we need a parent or guardian to confirm too. We will guide you through that step by email."
+                  ? "Thanks for confirming your email. Because you are under 18, we need a parent or guardian to confirm too. Our team will contact you by email to arrange that step."
                   : "Your certificate is issued once your email is confirmed."}
           </p>
         ) : (
