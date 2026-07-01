@@ -106,3 +106,13 @@ p { margin: 0; }
 .lang-toggle .lt-opt[lang="ar"] { font-family: var(--arabic); letter-spacing: 0; font-size: 13px; }
 .lang-toggle .lt-opt[aria-current="true"] { background: var(--sky-core); color: #fff; }
 @media (hover: hover) { .lang-toggle .lt-opt:not([aria-current]):hover { color: #fff; } }
+
+/* Skip link (global: every page loads tokens.css via Base, including portal + verify) */
+/* skip link */
+.skip{
+  position:fixed; inset-block-start:-100px; inset-inline-start:16px; z-index:200;
+  background:var(--white); color:var(--navy); font-weight:700;
+  padding:12px 18px; border-radius:var(--r-chip);
+  transition:inset-block-start .2s var(--ease-out);
+}
+.skip:focus{ inset-block-start:14px; }

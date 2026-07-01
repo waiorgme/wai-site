@@ -1,0 +1,38 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/home.css';
+import '../styles/legal.css';
+
+import Nav from '../components/home/Nav.astro';
+import Footer from '../components/home/Footer.astro';
+---
+
+<Base
+  title="Page not found - Women in Aviation Middle East"
+  description="That page doesn't exist. Head back to the Women in Aviation Middle East home page."
+  noindex
+>
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <div class="notfound">
+      <p class="code">404</p>
+      <h1>Off the flight path</h1>
+      <p>
+        That page doesn't exist, or it may have moved. Let's get you back on
+        course.
+      </p>
+      <p class="ar-line" lang="ar">هذه الصفحة غير موجودة. عودي إلى الصفحة الرئيسية.</p>
+      <div class="links">
+        <a href="/">Home</a>
+        <a href="/join">Join WAI-ME</a>
+        <a href="/contact">Contact</a>
+        <a href="/ar/" lang="ar">الصفحة الرئيسية بالعربية</a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Base>

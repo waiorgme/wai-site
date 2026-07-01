@@ -5,10 +5,30 @@ interface Props {
   title: string;
   description: string;
   lang?: 'en' | 'ar';
+  /** Canonical path for this page, e.g. "/about". Enables canonical + og:url. */
+  path?: string;
+  /** The same page in the other language, e.g. "/ar/about" - emits reciprocal hreflang. */
+  alternate?: string;
+  /** Keep private surfaces (portal, verify) out of search results. */
+  noindex?: boolean;
 }
 
-const { title, description, lang = 'en' } = Astro.props;
+// One site constant so canonical URLs, og:url, hreflang and the sitemap all
+// agree. Matches the live domain.
+export const SITE = 'https://www.waiorg.me';
+
+const { title, description, lang = 'en', path, alternate, noindex = false } = Astro.props;
 const dir = lang === 'ar' ? 'rtl' : 'ltr';
+const canonical = path !== undefined ? `${SITE}${path}` : undefined;
+const alternateUrl = alternate !== undefined ? `${SITE}${alternate}` : undefined;
+// x-default points at the English page (the site's primary language).
+const xDefault =
+  path === undefined
+    ? undefined
+    : lang === 'en'
+      ? canonical
+      : alternateUrl;
+const skipLabel = lang === 'ar' ? 'تخطّي إلى المحتوى' : 'Skip to content';
 ---
 
 <!DOCTYPE html>
@@ -22,6 +42,17 @@ const dir = lang === 'ar' ? 'rtl' : 'ltr';
     <meta name="theme-color" content="#060d1c" />
     <link rel="icon" type="image/png" href="/assets/wai-me-icon.png" />
     <link rel="apple-touch-icon" href="/assets/wai-me-icon.png" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {canonical && <link rel="canonical" href={canonical} />}
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:locale" content={lang === 'ar' ? 'ar_AE' : 'en_US'} />
+    {canonical && alternateUrl && (
+      <>
+        <link rel="alternate" hreflang={lang} href={canonical} />
+        <link rel="alternate" hreflang={lang === 'ar' ? 'en' : 'ar'} href={alternateUrl} />
+        <link rel="alternate" hreflang="x-default" href={xDefault} />
+      </>
+    )}
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,7 +63,7 @@ const dir = lang === 'ar' ? 'rtl' : 'ltr';
     <slot name="head" />
   </head>
   <body>
-    <a class="skip" href="#main">Skip to content</a>
+    <a class="skip" href="#main">{skipLabel}</a>
     <slot />
   </body>
 </html>

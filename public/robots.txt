@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /portal
+Disallow: /verify
+Allow: /
+
+Sitemap: https://www.waiorg.me/sitemap-index.xml

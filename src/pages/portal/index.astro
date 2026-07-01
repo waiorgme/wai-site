@@ -6,6 +6,7 @@ import { PortalApp } from "../../portal/PortalApp";
 <Base
   title="Member Portal - Women in Aviation Middle East"
   description="Sign in to the WAI-ME member portal."
+  noindex
 >
   <link
     slot="head"
@@ -13,11 +14,26 @@ import { PortalApp } from "../../portal/PortalApp";
     rel="stylesheet"
   />
   <main id="main" class="portal">
+    <noscript>
+      <p class="nojs">
+        The member portal needs JavaScript, and it looks like your browser has
+        it switched off. Turn it on and reload this page, or email
+        <a href="mailto:support@waiorg.me">support@waiorg.me</a> for help
+        signing in.
+      </p>
+    </noscript>
     <PortalApp client:only="react" />
   </main>
 </Base>
 
 <style>
+  .nojs {
+    color: var(--mist-mut);
+    max-width: 52ch;
+    text-align: center;
+    padding-top: 30vh;
+  }
+  .nojs a { color: var(--sky); }
   .portal {
     min-height: 100dvh;
     display: grid;

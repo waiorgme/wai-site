@@ -17,6 +17,7 @@ export function VerifyApp() {
 
 function Verify() {
   const [token, setToken] = useState<string | null>(null);
+  const [slow, setSlow] = useState(false);
   useEffect(() => {
     setToken(new URLSearchParams(window.location.search).get("id"));
   }, []);
@@ -25,6 +26,18 @@ function Verify() {
     api.certificates.getCertificateByToken,
     token ? { token } : "skip",
   );
+
+  // UX-1: this page is a trust surface, so it never spins forever. If the
+  // lookup has no answer after 8 seconds, say so plainly and give a human
+  // fallback.
+  useEffect(() => {
+    if (cert !== undefined || !token) {
+      setSlow(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setSlow(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [cert, token]);
 
   if (token === null || token === "") {
     return (
@@ -40,7 +53,21 @@ function Verify() {
   if (cert === undefined) {
     return (
       <div style={card}>
-        <p style={muted}>Checking certificate…</p>
+        {slow ? (
+          <>
+            <h1 style={h1}>We can't reach our records right now</h1>
+            <p style={muted}>
+              This is usually temporary. Please reload the page in a minute. If
+              it keeps happening, email{" "}
+              <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+                support@waiorg.me
+              </a>{" "}
+              with the certificate ID and we will confirm it for you.
+            </p>
+          </>
+        ) : (
+          <p style={muted}>Checking certificate…</p>
+        )}
       </div>
     );
   }

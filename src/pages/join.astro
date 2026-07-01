@@ -9,11 +9,20 @@ import { JoinApp } from '../portal/JoinApp';
 <Base
   title="Join - Women in Aviation Middle East"
   description="Join Women in Aviation Middle East. Membership is free and open to women at every stage of aviation."
+  path="/join"
 >
   <Nav />
   <main id="main" class="join">
     <span id="top"></span>
     <section class="join-sec">
+      <noscript>
+        <p class="nojs">
+          The join form needs JavaScript, and it looks like your browser has it
+          switched off. Turn it on and reload this page, or email us at
+          <a href="mailto:support@waiorg.me">support@waiorg.me</a> and we will
+          sign you up by hand.
+        </p>
+      </noscript>
       <JoinApp client:only="react" />
     </section>
   </main>
@@ -21,6 +30,12 @@ import { JoinApp } from '../portal/JoinApp';
 </Base>
 
 <style>
+  .nojs{
+    color:var(--mist-mut);
+    max-width:52ch;
+    text-align:center;
+  }
+  .nojs a{ color:var(--sky); }
   .join-sec{
     background:var(--ink);
     min-height:100vh;

@@ -1,0 +1,164 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/home.css';
+import '../styles/legal.css';
+
+import Nav from '../components/home/Nav.astro';
+import Footer from '../components/home/Footer.astro';
+
+// Copy is verbatim from the vault: 02 Platform/02 Privacy Policy & Guardian
+// Consent (Draft), Part 1. The combined legal review before launch is a
+// tracked owner task; wording changes land here when it returns.
+const description =
+  'What personal information Women in Aviation Middle East collects, why, who we share it with, and the choices and rights you have.';
+---
+
+<Base
+  title="Privacy Policy - Women in Aviation Middle East"
+  description={description}
+  path="/privacy"
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Women in Aviation Middle East" />
+    <meta property="og:title" content="Privacy Policy" />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="https://www.waiorg.me/assets/wai-me-logo-on-dark.png" />
+    <meta name="twitter:card" content="summary" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+
+    <header class="legal-hero">
+      <div class="wrap">
+        <p class="eyebrow">Your data, plainly</p>
+        <h1>Privacy Policy</h1>
+        <p class="lede">
+          This policy explains what personal information we collect, why, who we
+          share it with, and the choices and rights you have.
+        </p>
+      </div>
+    </header>
+
+    <section class="legal-body">
+      <div class="wrap">
+        <div class="legal-inner">
+          <h2>Who we are</h2>
+          <p>
+            Women in Aviation Middle East (WAI-ME) is a recognised chapter of Women in
+            Aviation International, hosted by the Emirates Aerosports Federation, which
+            provides our registered address: c/o Emirates Aerosports Federation, Skydive
+            HQ, Dubai, United Arab Emirates. This policy explains what personal
+            information we collect, why, who we share it with, and the choices and
+            rights you have. Questions or requests:
+            <a href="mailto:support@waiorg.me">support@waiorg.me</a>.
+          </p>
+          <p>
+            Our members come from more than 40 countries, so we follow both the
+            <strong>UAE Personal Data Protection Law (PDPL)</strong> and, where it
+            applies, the <strong>EU/UK General Data Protection Regulation (GDPR)</strong>.
+          </p>
+
+          <h2>What we collect</h2>
+          <ul>
+            <li><strong>When you join:</strong> your name, email, mobile number, country, gender, and your stage in aviation (for example student, early-career, or established professional).</li>
+            <li><strong>In your profile:</strong> certifications and licences, experience, role or specialisation, education, a short bio or personal statement, and, if you choose, a CV.</li>
+            <li><strong>When you take part:</strong> events you attend, certificates you earn, workshops you join, and contributions you make in the community.</li>
+            <li><strong>Automatically:</strong> basic, privacy-friendly website analytics (we use Cloudflare Web Analytics, which does not track you across other sites or use advertising cookies).</li>
+          </ul>
+
+          <h2>Why we use it, and our lawful basis</h2>
+          <ul>
+            <li><strong>To run your membership:</strong> your account, profile, certificates, and event participation. <em>Basis: performance of our agreement with you / legitimate interest.</em></li>
+            <li><strong>To send you news and updates by email:</strong> only if you opt in. <em>Basis: your consent (you can withdraw it any time).</em></li>
+            <li><strong>To make your profile searchable by our corporate partners</strong> (the talent pipeline), only if you switch this on. <em>Basis: your separate, explicit, revocable consent.</em></li>
+            <li><strong>To consider you for scholarships and opportunities</strong> you apply for. <em>Basis: your request and consent.</em></li>
+            <li><strong>To keep the community safe:</strong> handling code-of-conduct and safeguarding matters. <em>Basis: legitimate interest and legal obligation.</em></li>
+          </ul>
+
+          <h2>Your choices</h2>
+          <p>Three separate, clearly-labelled choices, not one blanket tick:</p>
+          <ol>
+            <li><strong>Membership terms and this privacy policy:</strong> required to join.</li>
+            <li><strong>Marketing and update emails:</strong> optional, and you can turn them off any time.</li>
+            <li><strong>Make my profile searchable by corporate partners:</strong> optional, off unless you turn it on, and reversible at any time.</li>
+          </ol>
+          <p>We record which version of each you agreed to, and when.</p>
+
+          <h2>Who we share it with</h2>
+          <ul>
+            <li><strong>Corporate partners:</strong> only the profiles of members who switched on the talent-pipeline option, and only so partners can offer jobs, internships, mentorship, and scholarships. Partners must use this information <strong>only</strong> for that purpose, must not keep it longer than needed, and must not pass it on or sell it.</li>
+            <li><strong>Scholarship partners:</strong> a shortlist of applicants for a specific scholarship you applied for, under the same use-only-for-this-purpose rule.</li>
+            <li><strong>Service providers who run our systems for us:</strong> our database (Convex), our email senders (Resend and EmailOctopus), our official support mailbox (Zoho Mail), and our website infrastructure (Cloudflare). They process data on our instructions under data-protection agreements; we note where each stores data.</li>
+            <li>We do <strong>not</strong> sell your personal information to anyone, ever.</li>
+          </ul>
+
+          <h2>Sending data across borders</h2>
+          <p>
+            Some of our service providers store data outside your country. Where that
+            happens, we rely on the providers' standard data-protection terms and note
+            their hosting regions so transfers are handled lawfully.
+          </p>
+
+          <h2>How long we keep it</h2>
+          <p>
+            We keep your membership record while you are a member. If an account becomes
+            inactive, we flag it as dormant after about three years rather than deleting
+            it automatically, so you can return. <strong>If you ask us to delete your
+            data, we delete it (or irreversibly anonymise it), keeping only the minimum
+            the law requires.</strong> Safeguarding records are kept longer, as
+            safeguarding good practice and law require.
+          </p>
+
+          <h2>Your rights</h2>
+          <p>
+            You can ask us to: see the data we hold about you; correct it; delete it;
+            stop sending you marketing; or turn off partner searchability. You can also
+            withdraw any consent you gave, and complain to a data-protection authority.
+            To exercise any of these, email
+            <a href="mailto:support@waiorg.me">support@waiorg.me</a> or use the "manage
+            my data" options in your member area. We respond within the timeframes the
+            law sets.
+          </p>
+
+          <h2>Keeping your data safe</h2>
+          <p>
+            We protect your data with access controls, secure providers, and a small,
+            named admin team. If a data breach ever affected your information, we follow
+            a set plan to contain it, assess it, and notify you and the relevant
+            authority within the legal timeframes (72 hours under GDPR, and as PDPL
+            requires).
+          </p>
+
+          <h2>Children and young members</h2>
+          <p>
+            Members must be at least 13. Members under 18 join with a parent or
+            guardian's consent and go into a protected setting with extra safeguards,
+            see <a href="/safeguarding">Safeguarding of Members Under 18</a>. We do not
+            knowingly sign up anyone under 13 as their own member.
+          </p>
+
+          <h2>Changes to this policy</h2>
+          <p>
+            If we change this policy, we update the date below and, for important
+            changes, tell members directly.
+          </p>
+
+          <p class="updated">
+            Last updated: 24 June 2026 · Contact:
+            <a href="mailto:support@waiorg.me">support@waiorg.me</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+
+  <script src="../scripts/home-motion.js"></script>
+</Base>

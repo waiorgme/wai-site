@@ -1,0 +1,84 @@
+/* Trust pages (privacy, safeguarding, 404): quiet long-form prose on the
+   site's dark surface, tokens only. */
+
+.legal-hero {
+  padding: calc(var(--nav-h) + 64px) 0 24px;
+}
+.legal-hero .eyebrow { margin-bottom: 14px; }
+.legal-hero h1 {
+  font-family: var(--display);
+  font-size: clamp(34px, 5.5vw, 56px);
+  line-height: 1.05;
+  color: var(--white);
+  margin: 0 0 10px;
+}
+.legal-hero .lede {
+  color: var(--mist-mut);
+  font-size: 17px;
+  max-width: 62ch;
+}
+
+.legal-body {
+  padding: 8px 0 96px;
+}
+.legal-inner {
+  max-width: 760px;
+}
+.legal-body h2 {
+  font-family: var(--display);
+  font-size: 24px;
+  color: var(--white);
+  margin: 40px 0 12px;
+}
+.legal-body p,
+.legal-body li {
+  color: var(--mist-mut);
+  font-size: 16px;
+  line-height: 1.7;
+}
+.legal-body ul {
+  padding-inline-start: 22px;
+  display: grid;
+  gap: 8px;
+}
+.legal-body ol {
+  padding-inline-start: 22px;
+  display: grid;
+  gap: 8px;
+}
+.legal-body strong { color: var(--white); font-weight: 600; }
+.legal-body em { font-style: italic; }
+.legal-body a { color: var(--sky); text-decoration: underline; text-underline-offset: 3px; }
+.legal-body .updated {
+  margin-top: 44px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 14px;
+  color: var(--mist-mut);
+}
+
+/* 404 */
+.notfound {
+  min-height: 70vh;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: calc(var(--nav-h) + 40px) 20px 60px;
+}
+.notfound .code {
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  color: var(--sky);
+}
+.notfound h1 {
+  font-family: var(--display);
+  font-size: clamp(34px, 6vw, 60px);
+  color: var(--white);
+  margin: 0;
+}
+.notfound p { color: var(--mist-mut); max-width: 46ch; margin: 0 auto; }
+.notfound .links { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.notfound .links a { color: var(--sky); text-decoration: underline; text-underline-offset: 3px; }
+.notfound .ar-line { font-family: var(--arabic); direction: rtl; }

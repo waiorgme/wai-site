@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import { loadEnv } from 'vite';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 
 // SEC-6: public/_headers is committed with wildcard *.convex.cloud/.site
 // origins as a template. At build time this hook narrows the CSP to the ONE
@@ -44,9 +45,18 @@ const convexCspHeaders = () => ({
 // English-first, Arabic front door. The Arabic RTL mirror lives under /ar.
 // See the vault: [[01 Branding]] and the language decision in 02 Platform.
 // React powers the member portal islands (Convex Auth is client-side).
+// The site URL is the canonical www form (matches the live domain and the
+// SITE constant in src/layouts/Base.astro).
 export default defineConfig({
-  site: 'https://waiorg.me',
-  integrations: [react(), convexCspHeaders()],
+  site: 'https://www.waiorg.me',
+  integrations: [
+    react(),
+    sitemap({
+      // Private surfaces stay out of the sitemap (robots.txt disallows them too).
+      filter: (page) => !page.includes('/portal') && !page.includes('/verify'),
+    }),
+    convexCspHeaders(),
+  ],
   i18n: {
     defaultLocale: 'en',
     locales: ['en', 'ar'],

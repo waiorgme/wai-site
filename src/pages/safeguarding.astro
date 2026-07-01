@@ -1,0 +1,117 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/home.css';
+import '../styles/legal.css';
+
+import Nav from '../components/home/Nav.astro';
+import Footer from '../components/home/Footer.astro';
+
+// Copy is verbatim from the vault: 01 Organization/01 Under-18 Launch Copy
+// (Drafts), section 3 "Public statement: Safeguarding of Members Under 18".
+const description =
+  'How Women in Aviation Middle East protects its members under 18: guardian consent, a protected experience, vetted adults, careful data handling, and how to raise a concern.';
+---
+
+<Base
+  title="Safeguarding of Members Under 18 - Women in Aviation Middle East"
+  description={description}
+  path="/safeguarding"
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Women in Aviation Middle East" />
+    <meta property="og:title" content="Safeguarding of Members Under 18" />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="https://www.waiorg.me/assets/wai-me-logo-on-dark.png" />
+    <meta name="twitter:card" content="summary" />
+  </Fragment>
+
+  <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
+
+  <Nav />
+
+  <main id="main">
+    <span id="top"></span>
+
+    <header class="legal-hero">
+      <div class="wrap">
+        <p class="eyebrow">Safeguarding</p>
+        <h1>Keeping Our Young Members Safe</h1>
+        <p class="lede">
+          Women in Aviation Middle East welcomes girls and young women into
+          aviation, and a number of our members are under 18. Their safety and
+          wellbeing come first. This page explains, simply, how we protect them.
+        </p>
+      </div>
+    </header>
+
+    <section class="legal-body">
+      <div class="wrap">
+        <div class="legal-inner">
+          <h2>A parent or guardian is always involved</h2>
+          <p>
+            No one under 18 joins WAI-ME without a parent or guardian's consent, and
+            the youngest age to hold a membership is 13. We ask guardians to confirm
+            again before a young member takes part in any in-person event, or before we
+            use a young member's photo.
+          </p>
+
+          <h2>Young members have a protected experience</h2>
+          <p>
+            Members under 18 are kept apart from our adult features. They are not part
+            of one-to-one mentoring, the adult events calendar, the talent pipeline
+            that connects members with employers, the member directory, or private
+            messaging with adult members. What they receive is aviation learning,
+            inspiration, and youth events through Women in Aviation International's
+            <em>Aviation for Girls</em> program. Any other opportunity for a young
+            member is reviewed and approved individually.
+          </p>
+
+          <h2>The adults around them are checked and briefed</h2>
+          <p>
+            Anyone who works directly with under-18s, at events or in youth activities,
+            is vetted and given a short safeguarding briefing first. At any event
+            involving minors, <strong>at least two approved adults are present at all
+            times</strong>, and no child is ever alone with a single adult. There is no
+            private contact between an adult and a young member.
+          </p>
+
+          <h2>Their information is handled carefully</h2>
+          <p>
+            We collect only what we need from a young member, we never share it with
+            companies or partners, and a guardian can ask to see it, correct it, or
+            have it removed at any time. How we handle all member data is set out in
+            our <a href="/privacy">Privacy Policy</a>.
+          </p>
+
+          <h2>How to raise a concern</h2>
+          <p>
+            If you are a parent, guardian, member, or volunteer and something worries
+            you about a young member's safety, please contact our Safeguarding Lead
+            directly at <a href="mailto:support@waiorg.me">support@waiorg.me</a>. We
+            take every concern seriously, handle it confidentially, and act quickly.
+            Where anyone is at risk, we involve the appropriate authorities, we never
+            handle those situations alone.
+          </p>
+
+          <h2>Who is responsible</h2>
+          <p>
+            Our President serves as Safeguarding Lead and owns any concern involving a
+            young member. This policy is reviewed every year, and after any serious
+            incident.
+          </p>
+
+          <p class="updated">
+            Women in Aviation Middle East is a recognised chapter of Women in Aviation
+            International, whose Aviation for Girls program provides aviation learning
+            and youth events for girls up to 18.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+
+  <script src="../scripts/home-motion.js"></script>
+</Base>

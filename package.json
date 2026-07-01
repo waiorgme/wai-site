@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^6.0.0",
+    "@astrojs/sitemap": "^3.7.3",
     "@auth/core": "^0.41.2",
     "@convex-dev/auth": "0.0.94",
     "astro": "^6.4.8",

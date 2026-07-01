@@ -16,20 +16,45 @@ import Footer from '../components/home/Footer.astro';
 ---
 
 <Base
+  path="/"
+  alternate="/ar/"
   title="Women in Aviation Middle East, across the region"
   description="The Middle East community for women building careers in aviation and aerospace. We open doors to training, mentors, scholarships, and each other."
 >
   <Fragment slot="head">
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="en" />
     <meta property="og:site_name" content="Women in Aviation Middle East" />
     <meta property="og:title" content="Women in aviation, across the region." />
     <meta property="og:description" content="The Middle East community for women building careers in aviation and aerospace. We open doors to training, mentors, scholarships, and each other." />
-    <meta property="og:image" content="/assets/wai-me-logo-on-dark.png" />
+    <meta property="og:image" content="https://www.waiorg.me/assets/wai-me-logo-on-dark.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Women in aviation, across the region." />
     <meta name="twitter:description" content="The Middle East community for women building careers in aviation and aerospace. We open doors to training, mentors, scholarships, and each other." />
-    <meta name="twitter:image" content="/assets/wai-me-logo-on-dark.png" />
+    <meta name="twitter:image" content="https://www.waiorg.me/assets/wai-me-logo-on-dark.png" />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Women in Aviation Middle East',
+        alternateName: 'WAI-ME',
+        url: 'https://www.waiorg.me/',
+        logo: 'https://www.waiorg.me/assets/wai-me-logo-on-dark.png',
+        email: 'support@waiorg.me',
+        parentOrganization: {
+          '@type': 'Organization',
+          name: 'Women in Aviation International',
+          url: 'https://www.wai.org/',
+        },
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: 'c/o The Emirates Aerosports Federation, Skydive HQ, P.O. Box 6677, Al Karama',
+          addressLocality: 'Dubai',
+          addressCountry: 'AE',
+        },
+      })}
+    />
   </Fragment>
 
   <span class="top-sentinel" id="topSentinel" aria-hidden="true"></span>
