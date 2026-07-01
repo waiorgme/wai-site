@@ -314,11 +314,18 @@ export const submitJoin = action({
       return { ok: false, error: "validation" } as const;
     }
 
+    // Safeguarding: mentorship is not available to minors; strip those options
+    // server-side whatever the client sent.
+    const lookingFor =
+      gate === "minor"
+        ? args.lookingFor.filter((o) => !o.toLowerCase().includes("mentor"))
+        : args.lookingFor;
+
     return await ctx.runMutation(internal.members.createPendingMember, {
       name: fullName(args.firstName, args.lastName),
       email,
       country: args.country,
-      lookingFor: args.lookingFor,
+      lookingFor,
       careerStageAnswer: args.careerStageAnswer,
       genderAnswer: args.genderAnswer,
       dobAnswer: args.dobAnswer,

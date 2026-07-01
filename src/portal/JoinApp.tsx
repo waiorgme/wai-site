@@ -115,9 +115,10 @@ function JoinForm() {
         <h1 style={h1}>Almost there. Check your email</h1>
         <p style={muted}>
           Welcome to WAI-ME. We sent a confirmation link to{" "}
-          <strong style={{ color: "var(--white)" }}>{values.email}</strong>.
-          Click it to confirm your email and activate your membership. It
-          expires in 15 minutes.
+          <strong style={{ color: "var(--white)" }}>{values.email}</strong>.{" "}
+          {isMinor
+            ? "Click it to confirm your email. It expires in 15 minutes. Because you are under 18, your membership starts once your parent or guardian confirms it."
+            : "Click it to confirm your email and activate your membership. It expires in 15 minutes."}
         </p>
       </div>
     );
@@ -208,7 +209,7 @@ function JoinForm() {
                     setStage("under_13");
                   } else if (result.error === "rate_limited") {
                     setError(
-                      "We received several sign-ups from this email today, so we have paused new attempts for a short while. Please try again tomorrow.",
+                      "We received several sign-ups from this email today, so we have paused new attempts. Please try again tomorrow.",
                     );
                     setStage("form");
                   } else {
@@ -259,7 +260,7 @@ function JoinForm() {
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
-          if (token === null) {
+          if (!token) {
             setError("Please complete the verification check.");
             return;
           }
@@ -274,7 +275,7 @@ function JoinForm() {
           setStage("confirm");
         }}
       >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
           <label style={label}>
             First name
             <input
@@ -440,7 +441,11 @@ function JoinForm() {
         <fieldset style={{ border: "none", padding: 0, margin: 0, ...label }}>
           <span>What are you hoping we help you with? (pick any)</span>
           <div style={{ display: "grid", gap: 6, color: "var(--white)" }}>
-            {LOOKING_FOR.map((option) => (
+            {/* Safeguarding: mentorship is not available to members under 18,
+                so those options are never offered to them. */}
+            {LOOKING_FOR.filter(
+              (option) => !isMinor || !option.toLowerCase().includes("mentor"),
+            ).map((option) => (
               <label
                 key={option}
                 style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 400 }}
@@ -488,7 +493,7 @@ function JoinForm() {
             onChange={(e) => set("terms", e.target.checked)}
           />
           <span>
-            I agree to the WAI-ME terms and privacy policy. <em>(required)</em>
+            I agree to the WAI-ME terms and privacy policy. (required)
           </span>
         </label>
         <label style={checkboxRow}>
@@ -500,8 +505,8 @@ function JoinForm() {
             onChange={(e) => set("attestation", e.target.checked)}
           />
           <span>
-            I confirm my details, including age and gender, are accurate.{" "}
-            <em>(required)</em>
+            I confirm my details, including age and gender, are accurate.
+            (required)
           </span>
         </label>
         <label style={checkboxRow}>
@@ -566,6 +571,9 @@ function Turnstile({ onToken }: { onToken: (token: string) => void }) {
           sitekey,
           theme: "dark",
           callback: onToken,
+          // Clear a stale token client-side so the member re-verifies instead
+          // of hitting a confusing server rejection.
+          "expired-callback": () => onToken(""),
         });
       }
     };
