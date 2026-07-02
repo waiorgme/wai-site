@@ -167,10 +167,10 @@ function JoinForm() {
       <div style={card}>
         <h1 style={h1}>One last look</h1>
         <p style={muted}>
-          Your membership certificate will read:{" "}
-          <strong style={{ color: "var(--white)", fontSize: 18 }}>{certName}</strong>
+          Your certificate will read:{" "}
+          <strong style={{ color: "var(--white)", fontSize: 18 }}>{certName}</strong>,
+          is that correct?
         </p>
-        <p style={muted}>Is that correct?</p>
         <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
           <button
             type="button"

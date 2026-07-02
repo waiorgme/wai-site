@@ -10,7 +10,9 @@ import { evaluateMemberLane } from "./lib/memberLane";
 import { fullName, isValidNamePart } from "./lib/names";
 import {
   dobGate,
+  isValidCareerStage,
   isValidCountry,
+  isValidGuardianName,
   isValidJoinEmail,
   isValidLookingFor,
   normalizeEmail,
@@ -133,6 +135,12 @@ export const generatePhotoUploadUrl = mutation({
     if (member === null) {
       throw new Error("No member profile");
     }
+    // Safeguarding: member surfaces open only at `active`. A pending_guardian
+    // minor (or pending_review unknown-age account) cannot upload anything
+    // until the human step confirms her.
+    if (member.lifecycle_state !== "active") {
+      throw new Error("Membership not active yet");
+    }
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -174,6 +182,12 @@ export const updateProfile = mutation({
       .unique();
     if (member === null) {
       return { ok: false, error: "no_member" };
+    }
+    // Safeguarding: profile editing opens only at `active`. A pending_guardian
+    // minor stays unusable until guardian confirmation (Under-18 decision);
+    // pending_review unknown-age accounts wait for the human look.
+    if (member.lifecycle_state !== "active") {
+      return { ok: false, error: "not_active" };
     }
 
     const invalid = validateProfileFields(fields as ProfileFields);
@@ -258,7 +272,8 @@ export const submitJoin = action({
       return { ok: false, error: "validation" } as const;
     }
 
-    // Field validation at the boundary (all length-capped in the validators).
+    // Field validation at the boundary (every string validated and
+    // length-capped in the validators; no free text reaches storage).
     if (!isValidNamePart(args.firstName) || !isValidNamePart(args.lastName)) {
       return { ok: false, error: "validation" } as const;
     }
@@ -271,6 +286,9 @@ export const submitJoin = action({
     if (!isValidLookingFor(args.lookingFor)) {
       return { ok: false, error: "validation" } as const;
     }
+    if (!isValidCareerStage(args.careerStageAnswer)) {
+      return { ok: false, error: "validation" } as const;
+    }
 
     // DOB gate: min age 13; 13-17 requires the guardian branch (PRD §6.2).
     const gate = dobGate(args.dobAnswer, now);
@@ -281,11 +299,9 @@ export const submitJoin = action({
       return { ok: false, error: "under_13" } as const;
     }
     if (gate === "minor") {
-      const gName = (args.guardianName ?? "").trim();
       const gEmail = (args.guardianEmail ?? "").trim();
       if (
-        gName.length < 2 ||
-        gName.length > 80 ||
+        !isValidGuardianName(args.guardianName ?? "") ||
         !isValidJoinEmail(gEmail) ||
         normalizeEmail(gEmail) === normalizeEmail(args.email)
       ) {
@@ -293,7 +309,16 @@ export const submitJoin = action({
       }
     }
 
-    // Per-source rate limiting (PRD P0): per-email and global daily caps.
+    // Human check FIRST: a failed Turnstile must leave no stored state at all,
+    // including rate-limit rows. Otherwise five invalid-token requests could
+    // lock a victim's email out of joining for a day (Codex Gate 4 blocker).
+    const human = await verifyTurnstile(args.turnstileToken);
+    if (!human) {
+      return { ok: false, error: "validation" } as const;
+    }
+
+    // Per-source rate limiting (PRD P0): per-email and global daily caps,
+    // consumed only by human-verified requests.
     const email = normalizeEmail(args.email);
     for (const { key, rule } of [
       { key: `join24h:${email}`, rule: PER_EMAIL_JOIN_DAY },
@@ -307,11 +332,6 @@ export const submitJoin = action({
       if (!res.ok) {
         return { ok: false, error: "rate_limited" } as const;
       }
-    }
-
-    const human = await verifyTurnstile(args.turnstileToken);
-    if (!human) {
-      return { ok: false, error: "validation" } as const;
     }
 
     // Safeguarding: mentorship is not available to minors; strip those options
@@ -408,6 +428,16 @@ export const createPendingMember = internalMutation({
         confirmation_token_hash: crypto.randomUUID().replace(/-/g, ""),
         timestamp: now,
       });
+      // §8: guardian-consent capture is its own compliance event, distinct
+      // from the join itself. No raw guardian PII in the summary.
+      await writeAudit(ctx, {
+        actor: email,
+        role: "visitor",
+        action: "captureGuardianConsent",
+        target_id: memberId,
+        after_summary: "guardian recorded state=pending",
+        source: "system",
+      });
     }
 
     // §4.3 Write all three consent rows at join, including explicit false rows
@@ -475,6 +505,12 @@ export const writeConsent = mutation({
       .unique();
     if (member === null) {
       return { ok: false, error: "no_member" };
+    }
+    // Safeguarding: consent changes open only at `active` (join/claim consent
+    // is written internally, never here). pending_guardian and pending_review
+    // accounts stay read-only until their human step completes.
+    if (member.lifecycle_state !== "active") {
+      return { ok: false, error: "not_active" };
     }
     // SEC-5 safeguarding lane guard: minors and unknown-age accounts are
     // blocked from the talent pipeline, and it is women-only, so allies are

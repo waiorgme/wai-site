@@ -42,4 +42,21 @@ describe("isValidNamePart", () => {
     expect(isValidNamePart("")).toBe(false);
     expect(isValidNamePart("x".repeat(41))).toBe(false);
   });
+
+  it("rejects short sentence fragments and padded phrases (adversarial)", () => {
+    expect(isValidNamePart("I am here")).toBe(false); // 1-char word
+    expect(isValidNamePart("please add me now")).toBe(false); // 4 words
+    // A 3-word letters-only phrase is structurally a name; the certificate
+    // confirm step ("Your certificate will read ...") is the human backstop.
+  });
+
+  it("still accepts real multi-word name parts", () => {
+    expect(isValidNamePart("de la Cruz")).toBe(true);
+    expect(isValidNamePart("bint Rashid")).toBe(true);
+  });
+
+  it("rejects doubled punctuation", () => {
+    expect(isValidNamePart("Sara--Jane")).toBe(false);
+    expect(isValidNamePart("O''Brien")).toBe(false);
+  });
 });

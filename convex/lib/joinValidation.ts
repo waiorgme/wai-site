@@ -3,7 +3,7 @@
 // mirrors the friendly parts but is never the enforcement layer.
 
 import { ageInYears, isValidDob, MIN_JOIN_AGE } from "./age";
-import { LOOKING_FOR } from "./profile";
+import { CAREER_STAGES, LOOKING_FOR } from "./profile";
 import { COUNTRIES } from "./countries";
 
 export const EMAIL_MAX = 254;
@@ -52,6 +52,25 @@ export const dobGate = (dob: string, now: number): DobGate => {
 
 export const isValidCountry = (c: string): boolean => COUNTRIES.includes(c);
 
+// Duplicates rejected too: a repeated option would double-store and lets a
+// caller pad the array.
 export const isValidLookingFor = (values: string[]): boolean =>
   values.length <= LOOKING_FOR.length &&
+  new Set(values).size === values.length &&
   values.every((v) => (LOOKING_FOR as readonly string[]).includes(v));
+
+export const isValidCareerStage = (c: string): boolean =>
+  (CAREER_STAGES as readonly string[]).includes(c);
+
+// Guardian full name: same character alphabet as member names, 2-80 chars,
+// at most 6 words (a full name, not a message), every word at least 2 chars.
+export const GUARDIAN_NAME_MAX = 80;
+const GUARDIAN_NAME_RE = /^[A-Za-z][A-Za-z' -]*$/;
+export const isValidGuardianName = (raw: string): boolean => {
+  const s = raw.trim();
+  if (s.length < 2 || s.length > GUARDIAN_NAME_MAX || !GUARDIAN_NAME_RE.test(s)) {
+    return false;
+  }
+  const words = s.split(/\s+/);
+  return words.length <= 6 && words.every((w) => w.length >= 2);
+};

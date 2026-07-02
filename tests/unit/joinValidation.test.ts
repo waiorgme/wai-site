@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   dobGate,
+  isValidCareerStage,
   isValidCountry,
+  isValidGuardianName,
   isValidJoinEmail,
   isValidLookingFor,
   normalizeEmail,
 } from "../../convex/lib/joinValidation";
 import { COUNTRIES } from "../../convex/lib/countries";
+import { CAREER_STAGES } from "../../convex/lib/profile";
 
 const NOW = Date.UTC(2026, 6, 2, 12);
 
@@ -56,5 +59,36 @@ describe("country + looking-for lists", () => {
     expect(isValidLookingFor(["Jobs", "Networking"])).toBe(true);
     expect(isValidLookingFor([])).toBe(true);
     expect(isValidLookingFor(["World domination"])).toBe(false);
+  });
+
+  it("looking-for rejects duplicate options (padding)", () => {
+    expect(isValidLookingFor(["Jobs", "Jobs"])).toBe(false);
+  });
+});
+
+describe("career stage (server-side, against CAREER_STAGES)", () => {
+  it("accepts only the five public options", () => {
+    for (const stage of CAREER_STAGES) {
+      expect(isValidCareerStage(stage)).toBe(true);
+    }
+    expect(isValidCareerStage("student")).toBe(false);
+    expect(isValidCareerStage("")).toBe(false);
+    expect(isValidCareerStage("x".repeat(200))).toBe(false);
+  });
+});
+
+describe("guardian name (adversarial payloads)", () => {
+  it("accepts a real guardian full name", () => {
+    expect(isValidGuardianName("Mona Al-Sayegh")).toBe(true);
+    expect(isValidGuardianName("Ahmed bin Rashid al Maktoum")).toBe(true);
+  });
+
+  it("rejects junk, digits, scripts and over-long strings", () => {
+    expect(isValidGuardianName("")).toBe(false);
+    expect(isValidGuardianName("x")).toBe(false);
+    expect(isValidGuardianName("Mona123")).toBe(false);
+    expect(isValidGuardianName("<script>alert(1)</script>")).toBe(false);
+    expect(isValidGuardianName("m".repeat(81))).toBe(false);
+    expect(isValidGuardianName("I am the guardian of this child ok")).toBe(false);
   });
 });

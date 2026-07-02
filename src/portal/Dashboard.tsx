@@ -31,6 +31,32 @@ export function Dashboard() {
   const firstName = me?.name?.split(" ")[0];
   const membershipCert = certs?.find((c) => c.type === "membership") ?? null;
 
+  // Safeguarding: until the account is `active`, the portal shows ONLY the
+  // waiting state. A pending_guardian minor (or pending_review unknown-age
+  // account) gets no profile editor, no tiles, no member surfaces; the server
+  // enforces the same rule on every mutation, this is the honest UI for it.
+  if (me != null && !isActive) {
+    return (
+      <div style={wrap}>
+        <header style={{ display: "grid", gap: 6 }}>
+          <h1 style={{ ...h1, fontSize: 30 }}>
+            Almost there{firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p style={muted}>
+            {me.lifecycle_state === "pending_guardian"
+              ? "Thanks for confirming your email. Because you are under 18, we need a parent or guardian to confirm too. Our team will contact you by email to arrange that step. Your membership, certificate and profile open up as soon as that is done."
+              : me.lifecycle_state === "pending_review"
+                ? "Thanks for confirming your email. A team member is reviewing your details. This page will update as soon as your membership is confirmed."
+                : "Please confirm your email first. Check your inbox for the link we sent you."}
+          </p>
+        </header>
+        <button type="button" style={linkBtn} onClick={() => void signOut()}>
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
   if (editing) {
     return (
       <div style={panel}>

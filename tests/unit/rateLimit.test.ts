@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   decideWindow,
   GLOBAL_DAY,
+  GLOBAL_JOIN_DAY,
   PER_EMAIL_DAY,
+  PER_EMAIL_JOIN_DAY,
   PER_EMAIL_SHORT,
 } from "../../convex/lib/rateLimit";
 
@@ -42,6 +44,11 @@ describe("decideWindow (SEC-2 fixed windows)", () => {
     expect(PER_EMAIL_SHORT).toEqual({ limit: 3, windowMs: 60 * 60 * 1000 });
     expect(PER_EMAIL_DAY).toEqual({ limit: 10, windowMs: 24 * 60 * 60 * 1000 });
     expect(GLOBAL_DAY.windowMs).toBe(24 * 60 * 60 * 1000);
+  });
+
+  it("join policy constants match the spec (5/day per email, 300/day global)", () => {
+    expect(PER_EMAIL_JOIN_DAY).toEqual({ limit: 5, windowMs: 24 * 60 * 60 * 1000 });
+    expect(GLOBAL_JOIN_DAY).toEqual({ limit: 300, windowMs: 24 * 60 * 60 * 1000 });
   });
 
   it("the global cap stays below Resend's free-tier 100/day hard cap", () => {

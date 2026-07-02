@@ -3,10 +3,13 @@
 // stored name never depends on client behaviour.
 
 // Letters, spaces, hyphens, apostrophes only; Latin only; length-capped.
-// A pasted sentence fails the word-count or character rule.
+// A pasted sentence fails the word-count, word-length, or character rule:
+// at most 3 words per name PART (first or last), every word 2+ characters
+// (kills "I am here"-style fragments and stray initials), no doubled
+// punctuation.
 const NAME_PART_RE = /^[A-Za-z][A-Za-z' -]*$/;
 export const NAME_PART_MAX = 40;
-const NAME_PART_MAX_WORDS = 4;
+const NAME_PART_MAX_WORDS = 3;
 
 export const isValidNamePart = (raw: string): boolean => {
   const s = raw.trim();
@@ -16,7 +19,11 @@ export const isValidNamePart = (raw: string): boolean => {
   if (!NAME_PART_RE.test(s)) {
     return false;
   }
-  return s.split(/\s+/).length <= NAME_PART_MAX_WORDS;
+  if (/[-']{2}/.test(s)) {
+    return false;
+  }
+  const words = s.split(/\s+/);
+  return words.length <= NAME_PART_MAX_WORDS && words.every((w) => w.length >= 2);
 };
 
 // Particles that stay lowercase in Arab and European name conventions.
