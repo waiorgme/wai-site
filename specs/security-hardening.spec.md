@@ -27,18 +27,29 @@ server-side source of truth, §6 lifecycle, §8 audit rows), `02 PRD - Public Si
    reaching `active`. Net effect with (1): a new signup cannot reach `active` or a certificate without a DOB;
    an unknown-age account waits for human review.
 3. **SEC-2 (P0) Rate limiting on magic-link sends.** All sign-in emails (join and portal) pass through one
-   server-side choke point with: per-email limit 3 sends per 15 minutes AND 10 per 24h; a global limit of
-   200 sends per 24h (protects the Resend free-tier 100/day pre-launch and any misconfiguration after).
-   Exceeding a limit throws; the join and portal forms show a plain-language "too many attempts, wait and
-   retry" message (no jargon, no em dashes). Limits are constants in one file with a comment pointing at the
-   Send Limits decision.
+   server-side choke point with the vault's numbers: per-email limit 3 sends per hour AND 10 per 24h
+   (Stage 0 §8, verbatim); a global limit of 90 sends per 24h, deliberately below Resend's free-tier
+   100/day hard cap (`02 Email Send Limits - Free-Tier Check (Reference)`) so the app cap always trips
+   before the provider cap. The check runs INSIDE the transaction that creates/replaces the verification
+   code, so an over-limit or capped request can never invalidate a member's live link. Exceeding a limit
+   throws; the join and portal forms show a plain-language "too many attempts, wait and retry" message
+   (no jargon, no em dashes). Limits are constants in one file with comments pointing at the vault notes.
+   *AMENDED 2026-07-02 (Gate 4 loop):* the original criterion wrote 3 per 15 minutes and a 200/day global
+   cap; both conflicted with the vault (Stage 0 §8 says 3/hour, and 200/day cannot protect a 100/day
+   provider cap). Numbers corrected to the vault's; raise the global cap only when Resend Pro is
+   confirmed active (owner item).
 4. **SEC-4 (P1) Photo upload validated server-side.** `updateProfile` accepts a `photo_storage_id` only if
    the stored blob's `contentType` is image/jpeg, image/png, or image/webp AND size is 5 MB or less
    (checked via the `_storage` system table). SVG is rejected. On rejection the profile change is refused
    with a field-level error and nothing is patched.
-5. **SEC-5 (P1) Consent lane guard.** `writeConsent` refuses `pipeline=true` for lanes `minor` and
-   `restricted_unknown` (safeguarding: minors are blocked from the talent pipeline). Refusal returns an
-   error envelope, no consent row is written, and the attempt is auditable.
+5. **SEC-5 (P1) Consent lane guard.** Only the `standard` lane may consent into the talent pipeline, on
+   BOTH consent paths (join and `writeConsent`): `minor` and `restricted_unknown` are blocked by the
+   under-18 safeguards, and `ally` is blocked because the pipeline is women-only (Stage 0 §5: the
+   women-only pipeline/scholarship exclusion is enforced centrally). Refusal returns an error envelope
+   (settings) or forces an explicit `false` consent row (join), no `true` row is ever written, and every
+   refusal is audited.
+   *AMENDED 2026-07-02 (Gate 4 loop):* the original criterion named only `minor` and `restricted_unknown`
+   and only the `writeConsent` path; the join consent path and the vault's ally exclusion were missing.
 6. **SEC-6 (P2) Security headers.** `public/_headers` ships CSP (self + the Convex deployment origin +
    challenges.cloudflare.com for Turnstile + Google Fonts + images.unsplash.com until self-hosting lands),
    `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`,

@@ -16,11 +16,17 @@ export type RateLimitRule = {
   windowMs: number;
 };
 
-// Per email address: 3 sends per 15 minutes, 10 per 24 hours.
-export const PER_EMAIL_SHORT: RateLimitRule = { limit: 3, windowMs: 15 * 60 * 1000 };
+// Per email address: 3 sends per hour, 10 per 24 hours. Numbers are the
+// vault's, verbatim (Stage 0 §8: "Resend: rate-limited to 3 per email per
+// hour, 10/day").
+export const PER_EMAIL_SHORT: RateLimitRule = { limit: 3, windowMs: 60 * 60 * 1000 };
 export const PER_EMAIL_DAY: RateLimitRule = { limit: 10, windowMs: 24 * 60 * 60 * 1000 };
-// Across everyone: 200 sends per 24 hours.
-export const GLOBAL_DAY: RateLimitRule = { limit: 200, windowMs: 24 * 60 * 60 * 1000 };
+// Across everyone: 90 sends per 24 hours, deliberately BELOW Resend's
+// free-tier hard cap of 100/day ([[02 Email Send Limits - Free-Tier Check]]).
+// The app cap must trip first: our refusal is transactional and preserves any
+// live link, while an upstream refusal happens after the code swap and would
+// burn it. Raise only once Resend Pro is confirmed active (owner item).
+export const GLOBAL_DAY: RateLimitRule = { limit: 90, windowMs: 24 * 60 * 60 * 1000 };
 
 export type WindowState = { window_start: number; count: number };
 

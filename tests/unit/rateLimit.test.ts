@@ -38,9 +38,15 @@ describe("decideWindow (SEC-2 fixed windows)", () => {
     expect(d.next).toEqual({ window_start: NOW + RULE.windowMs, count: 1 });
   });
 
-  it("policy constants match the decided send limits", () => {
-    expect(PER_EMAIL_SHORT).toEqual({ limit: 3, windowMs: 15 * 60 * 1000 });
+  it("policy constants match the vault send limits (Stage 0: 3/hour, 10/day)", () => {
+    expect(PER_EMAIL_SHORT).toEqual({ limit: 3, windowMs: 60 * 60 * 1000 });
     expect(PER_EMAIL_DAY).toEqual({ limit: 10, windowMs: 24 * 60 * 60 * 1000 });
-    expect(GLOBAL_DAY).toEqual({ limit: 200, windowMs: 24 * 60 * 60 * 1000 });
+    expect(GLOBAL_DAY.windowMs).toBe(24 * 60 * 60 * 1000);
+  });
+
+  it("the global cap stays below Resend's free-tier 100/day hard cap", () => {
+    // If the upstream cap tripped first, the refusal would happen AFTER the
+    // verification-code swap and burn a member's live link. Our cap must win.
+    expect(GLOBAL_DAY.limit).toBeLessThan(100);
   });
 });

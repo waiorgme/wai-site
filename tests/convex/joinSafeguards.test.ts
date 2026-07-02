@@ -50,6 +50,70 @@ describe("join-path pipeline consent guard (SEC-5)", () => {
     expect(refusal[0].after_summary).toContain("lane=minor");
   });
 
+  it("an adult male (ally lane) cannot consent into the women-only pipeline at join", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.members.createPendingMember, {
+      ...joinArgs("ally@example.com", ADULT_DOB, true),
+      genderAnswer: "male" as const,
+    });
+
+    const consents = await t.run(async (ctx) =>
+      ctx.db.query("consentRecords").collect(),
+    );
+    const pipeline = consents.filter((c) => c.type === "pipeline");
+    expect(pipeline).toHaveLength(1);
+    expect(pipeline[0].value).toBe(false);
+
+    const audits = await t.run(async (ctx) =>
+      ctx.db.query("auditLog").collect(),
+    );
+    const refusal = audits.filter((a) => a.action === "writeConsent.refused");
+    expect(refusal).toHaveLength(1);
+    expect(refusal[0].after_summary).toContain("lane=ally");
+  });
+
+  it("writeConsent refuses pipeline=true for the ally lane, audited, no row", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await t.run(async (ctx) =>
+      ctx.db.insert("users", { email: "ally@example.com" }),
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.insert("members", {
+        email: "ally@example.com",
+        name: "Test Ally",
+        source: "new_signup",
+        lifecycle_state: "active",
+        date_of_birth: ADULT_DOB,
+        date_of_birth_source: "self_declared",
+        age_confidence: "declared",
+        guardian_consent_state: "not_required",
+        gender: "male",
+        career_stage_answer: "established",
+        member_lane: "ally",
+        created_at: Date.now(),
+        userId,
+      });
+    });
+
+    const asAlly = t.withIdentity({ subject: `${userId}|testsession` });
+    const result = await asAlly.mutation(api.members.writeConsent, {
+      type: "pipeline",
+      value: true,
+    });
+    expect(result).toEqual({ ok: false, error: "not_permitted" });
+
+    const consents = await t.run(async (ctx) =>
+      ctx.db.query("consentRecords").collect(),
+    );
+    expect(consents).toHaveLength(0);
+    const audits = await t.run(async (ctx) =>
+      ctx.db.query("auditLog").collect(),
+    );
+    expect(
+      audits.filter((a) => a.action === "writeConsent.refused"),
+    ).toHaveLength(1);
+  });
+
   it("an adult's ticked pipeline box is stored as true, no refusal", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(

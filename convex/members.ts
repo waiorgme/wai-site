@@ -303,15 +303,15 @@ export const createPendingMember = internalMutation({
 
     // §4.3 Write all three consent rows at join, including explicit false rows
     // for marketing and pipeline (Codex 5).
-    // SEC-5 safeguarding lane guard, join path: minors (and unknown-age
-    // accounts) are blocked from the talent pipeline, so a ticked pipeline box
-    // is FORCED to an explicit false row and the refusal is audited. Same rule
-    // as writeConsent below; without this the join form bypassed the guard.
+    // SEC-5 safeguarding lane guard, join path: minors and unknown-age
+    // accounts are blocked from the talent pipeline, and the pipeline is
+    // women-only, so allies are ineligible too (Stage 0 §5: ally keeps the
+    // two-option gender field but the women-only pipeline exclusion is
+    // enforced centrally). A ticked pipeline box is FORCED to an explicit
+    // false row and the refusal is audited. Same rule as writeConsent below;
+    // without this the join form bypassed the guard.
     let pipelineConsent = args.consents.pipeline;
-    if (
-      pipelineConsent &&
-      (lane === "minor" || lane === "restricted_unknown")
-    ) {
+    if (pipelineConsent && lane !== "standard") {
       pipelineConsent = false;
       await writeAudit(ctx, {
         actor: email,
@@ -367,14 +367,15 @@ export const writeConsent = mutation({
     if (member === null) {
       return { ok: false, error: "no_member" };
     }
-    // SEC-5 safeguarding lane guard: minors (and unknown-age accounts) are
-    // blocked from the talent pipeline, so they can never consent INTO it.
-    // The refusal is audited; no consent row is written.
+    // SEC-5 safeguarding lane guard: minors and unknown-age accounts are
+    // blocked from the talent pipeline, and it is women-only, so allies are
+    // ineligible too (Stage 0 §5 central women-only exclusion). Only the
+    // standard lane can consent INTO the pipeline. The refusal is audited;
+    // no consent row is written.
     if (
       args.type === "pipeline" &&
       args.value === true &&
-      (member.member_lane === "minor" ||
-        member.member_lane === "restricted_unknown")
+      member.member_lane !== "standard"
     ) {
       await writeAudit(ctx, {
         actor: member.email,

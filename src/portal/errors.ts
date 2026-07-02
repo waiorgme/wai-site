@@ -9,7 +9,7 @@ const isRateLimited = (err: unknown): boolean =>
   String(err).includes("rate_limited");
 
 const RATE_LIMIT_COPY =
-  "You have asked for a few sign-in links in a row. To keep accounts safe we pause sending for a short while. Please try again in 15 minutes. If it still does not work, try again tomorrow.";
+  "You have asked for a few sign-in links in a row. To keep accounts safe we pause sending for a short while. Please try again in about an hour. If it still does not work, try again tomorrow.";
 
 // For the portal sign-in form, where every failure is about sending the link.
 export const sendLinkErrorMessage = (err: unknown): string =>

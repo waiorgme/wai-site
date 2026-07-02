@@ -95,6 +95,45 @@ describe("magic-link send limits (SEC-2)", () => {
     expect(codes[0].code).toBe(sha256Hex(liveCode));
   });
 
+  it("the global daily cap refuses new sends but never touches a live link", async () => {
+    const t = convexTest(schema, modules);
+    // A member requests her link while the day is quiet.
+    await t.action(api.auth.signIn, {
+      provider: "resend",
+      params: { email: EMAIL },
+    });
+    const liveCode = codeFromEmail(sentEmails[0]);
+
+    // The rest of the day's global budget is spent (seeded directly; 90 real
+    // sends would test the same window logic 90 times over).
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("rateLimits")
+        .withIndex("by_key", (q) => q.eq("key", "signin24h:global"))
+        .unique();
+      if (row === null) {
+        throw new Error("global bucket missing");
+      }
+      await ctx.db.patch(row._id, { count: 90 });
+    });
+
+    // A different caller is refused by OUR cap (which sits below Resend's
+    // 100/day), and the first member's stored code is untouched.
+    await expect(
+      t.action(api.auth.signIn, {
+        provider: "resend",
+        params: { email: "someone-else@example.com" },
+      }),
+    ).rejects.toThrow(/rate_limited/);
+    expect(sentEmails).toHaveLength(1);
+
+    const codes = await t.run(async (ctx) =>
+      ctx.db.query("authVerificationCodes").collect(),
+    );
+    expect(codes).toHaveLength(1);
+    expect(codes[0].code).toBe(sha256Hex(liveCode));
+  });
+
   it("limits are per email address, not global, below the global cap", async () => {
     const t = convexTest(schema, modules);
     for (let i = 0; i < 3; i++) {
