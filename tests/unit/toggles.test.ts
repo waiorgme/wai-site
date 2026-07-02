@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canUsePipeline,
   canUseToggles,
   isPipelineSearchable,
   pipelineStateOnDecision,
@@ -16,6 +17,15 @@ describe("canUseToggles (locked off for minors + unknown age)", () => {
   it("minor and restricted_unknown are locked off", () => {
     expect(canUseToggles("minor")).toBe(false);
     expect(canUseToggles("restricted_unknown")).toBe(false);
+  });
+});
+
+describe("canUsePipeline (women-only, on top of the age locks)", () => {
+  it("only the standard lane can opt into the pipeline", () => {
+    expect(canUsePipeline("standard")).toBe(true);
+    expect(canUsePipeline("ally")).toBe(false);
+    expect(canUsePipeline("minor")).toBe(false);
+    expect(canUsePipeline("restricted_unknown")).toBe(false);
   });
 });
 
@@ -48,6 +58,8 @@ describe("isPipelineSearchable (what the partner surface must respect)", () => {
     expect(isPipelineSearchable(base)).toBe(true);
     expect(isPipelineSearchable({ ...base, member_lane: "minor" })).toBe(false);
     expect(isPipelineSearchable({ ...base, member_lane: "restricted_unknown" })).toBe(false);
+    // Women-only: an ally is never searchable, whatever her toggle state.
+    expect(isPipelineSearchable({ ...base, member_lane: "ally" })).toBe(false);
     expect(isPipelineSearchable({ ...base, pipeline_state: "review_pending" })).toBe(false);
     expect(isPipelineSearchable({ ...base, pipeline_state: "off" })).toBe(false);
     expect(isPipelineSearchable({ ...base, latest_pipeline_consent: false })).toBe(false);

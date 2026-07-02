@@ -8,7 +8,7 @@ import { writeAudit } from "./lib/audit";
 import { ageInYears, deriveAgeBlock, isValidDob } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
 import { dobConflicts, namesRoughlyMatch } from "./lib/claim";
-import { canUseToggles } from "./lib/toggles";
+import { canUsePipeline, canUseToggles } from "./lib/toggles";
 import { issueMembershipCertificate } from "./lib/certificates";
 import { fullName, isValidNamePart, nameCase } from "./lib/names";
 import {
@@ -908,6 +908,9 @@ export const getMySettings = query({
     }
     return {
       locked: !canUseToggles(member.member_lane),
+      // Women-only: the pipeline toggle never renders for the ally lane
+      // (server-enforced in setPipelineOptIn whatever the client shows).
+      pipeline_locked: !canUsePipeline(member.member_lane),
       directory_visible: member.directory_visible ?? false,
       pipeline_state: member.pipeline_state ?? "off",
     };
@@ -966,7 +969,9 @@ export const setPipelineOptIn = mutation({
     if (member === null) {
       return { ok: false, error: "not_signed_in" };
     }
-    if (!canUseToggles(member.member_lane)) {
+    // Women-only pipeline (Stage 0 §5): ONLY the standard lane can opt in.
+    // Ally is refused here exactly as at join, claim, and writeConsent.
+    if (!canUsePipeline(member.member_lane)) {
       await writeAudit(ctx, {
         actor: member.email,
         role: "member",

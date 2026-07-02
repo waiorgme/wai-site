@@ -8,6 +8,13 @@ import type { MemberLane } from "./memberLane";
 export const canUseToggles = (lane: MemberLane): boolean =>
   lane === "standard" || lane === "ally";
 
+// The talent pipeline is stricter: it is women-only (Stage 0 §5: ally is
+// never listed as a hireable candidate), so on top of the minor/unknown lock,
+// ONLY the standard lane can opt in. Same rule the join, claim, and
+// writeConsent paths already enforce.
+export const canUsePipeline = (lane: MemberLane): boolean =>
+  lane === "standard";
+
 export type PipelineState = "off" | "review_pending" | "on" | "rejected";
 
 // Member turns the pipeline toggle ON (with attestation): off/rejected may
@@ -26,14 +33,14 @@ export const pipelineStateOnDecision = (
 ): PipelineState => (decision === "approved" ? "on" : "rejected");
 
 // What the future partner-search surface must respect (recorded for that
-// slice): a member is searchable ONLY when all three hold. Lanes follow the
-// shipped join/claim precedent (standard + ally may consent into the
-// pipeline; minors and unknown-age never), pending any owner override.
+// slice): a member is searchable ONLY when all three hold. The lane rule is
+// the shipped join/claim/writeConsent precedent: the pipeline is women-only,
+// so ONLY standard; ally, minor and unknown-age are never searchable.
 export const isPipelineSearchable = (member: {
   member_lane: MemberLane;
   pipeline_state?: PipelineState;
   latest_pipeline_consent: boolean;
 }): boolean =>
-  canUseToggles(member.member_lane) &&
+  canUsePipeline(member.member_lane) &&
   member.pipeline_state === "on" &&
   member.latest_pipeline_consent;

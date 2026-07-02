@@ -71,6 +71,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
         </label>
       </section>
 
+      {/* The pipeline is women-only: the whole section never renders for the
+          ally lane (the server refuses it too, whatever the client shows). */}
+      {!settings.pipeline_locked && (
       <section style={{ display: "grid", gap: 8 }}>
         {settings.pipeline_state === "off" || settings.pipeline_state === "rejected" ? (
           <>
@@ -160,6 +163,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </section>
+      )}
 
       {error !== null && <p style={errorText}>{error}</p>}
       <button type="button" style={linkBtn} onClick={onClose}>
