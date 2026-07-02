@@ -1,6 +1,4 @@
 import { test, expect } from "@playwright/test";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 
 // Trust pages slice: privacy + safeguarding render from the vault drafts, the
 // discovery plumbing (robots, sitemap, canonical, hreflang) exists, and the
@@ -86,9 +84,18 @@ test("sitemap lists canonical trailing-slash URLs and skips private routes", asy
   expect(body).not.toContain("/verify");
 });
 
-test("404 page is built and friendly", async () => {
-  // Astro static: the 404 route builds to dist/404.html for the host to serve.
-  expect(existsSync(join(process.cwd(), "dist", "404.html"))).toBeTruthy();
+test("404 page renders its message and rescue links", async ({ page }) => {
+  // Astro static builds the route to /404.html; the host serves it for any
+  // missing path. Assert the RENDERED page, not just the artifact.
+  await page.goto("/404.html");
+  const main = page.locator("#main");
+  await expect(
+    main.getByRole("heading", { name: "Off the flight path" }),
+  ).toBeVisible();
+  await expect(main.getByText("That page doesn't exist")).toBeVisible();
+  await expect(main.getByRole("link", { name: "Home", exact: true })).toBeVisible();
+  await expect(main.getByRole("link", { name: "Join WAI-ME" })).toBeVisible();
+  await expect(main.getByRole("link", { name: "Contact" })).toBeVisible();
 });
 
 test("portal and verify carry noindex", async ({ page }) => {

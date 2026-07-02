@@ -13,9 +13,9 @@ interface Props {
   noindex?: boolean;
 }
 
-// One site constant so canonical URLs, og:url, hreflang and the sitemap all
-// agree. Matches the live domain.
-export const SITE = 'https://www.waiorg.me';
+// One site constant (site.config.mjs) so canonical URLs, og:url, hreflang,
+// the sitemap and astro.config's `site` all agree.
+import { SITE } from '../../site.config.mjs';
 
 const { title, description, lang = 'en', path, alternate, noindex = false } = Astro.props;
 const dir = lang === 'ar' ? 'rtl' : 'ltr';

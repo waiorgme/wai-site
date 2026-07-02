@@ -4,6 +4,7 @@ import { defineConfig } from 'astro/config';
 import { loadEnv } from 'vite';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
+import { SITE } from './site.config.mjs';
 
 // SEC-6: public/_headers is committed with wildcard *.convex.cloud/.site
 // origins as a template. At build time this hook narrows the CSP to the ONE
@@ -48,7 +49,7 @@ const convexCspHeaders = () => ({
 // The site URL is the canonical www form (matches the live domain and the
 // SITE constant in src/layouts/Base.astro).
 export default defineConfig({
-  site: 'https://www.waiorg.me',
+  site: SITE,
   integrations: [
     react(),
     sitemap({
