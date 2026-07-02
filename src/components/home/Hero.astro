@@ -5,8 +5,15 @@ import ConceptMark from '../primitives/ConceptMark.astro';
 ---
 <section class="hero" aria-labelledby="hero-h">
   <div class="hero-photo par-slow">
-    <img data-src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=2000&q=80&auto=format&fit=crop"
-         alt="Concept image: a commercial airliner climbing above a deck of clouds into a dawn sky. Placeholder, a real WAI-ME member photo will replace it." />
+    {/* LCP element: loads eagerly with high priority (PERF-1); the onload
+        class swap keeps the same fade-in the design system expects. The
+        Unsplash source stays until Mervat supplies a real member photo. */}
+    <img src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=2000&q=80&auto=format&fit=crop"
+         alt="Concept image: a commercial airliner climbing above a deck of clouds into a dawn sky. Placeholder, a real WAI-ME member photo will replace it."
+         loading="eager"
+         fetchpriority="high"
+         decoding="async"
+         onload="this.classList.add('loaded')" />
   </div>
   <div class="veil" aria-hidden="true"></div>
   <div class="dawn" aria-hidden="true"></div>

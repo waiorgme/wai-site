@@ -98,6 +98,26 @@ test("404 page renders its message and rescue links", async ({ page }) => {
   await expect(main.getByRole("link", { name: "Contact" })).toBeVisible();
 });
 
+test("share cards: absolute og:image on EN and AR home", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+    "content",
+    "https://www.waiorg.me/assets/share-card.png",
+  );
+  await page.goto("/ar/");
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+    "content",
+    "https://www.waiorg.me/assets/share-card-ar.png",
+  );
+});
+
+test("no third-party font stylesheets remain", async ({ page }) => {
+  await page.goto("/");
+  await expect(
+    page.locator('link[href*="fonts.googleapis.com"]'),
+  ).toHaveCount(0);
+});
+
 test("portal and verify carry noindex", async ({ page }) => {
   await page.goto("/portal");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(

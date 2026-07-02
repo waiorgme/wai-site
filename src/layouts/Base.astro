@@ -1,4 +1,15 @@
 ---
+// Self-hosted fonts (polish slice): no render-blocking third-party CSS.
+// The Arabic face is imported by the /ar pages themselves so English visitors
+// never download it.
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource/hanken-grotesk/400.css';
+import '@fontsource/hanken-grotesk/500.css';
+import '@fontsource/hanken-grotesk/600.css';
+import '@fontsource/hanken-grotesk/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/700.css';
 import '../styles/tokens.css';
 
 interface Props {
@@ -40,8 +51,9 @@ const skipLabel = lang === 'ar' ? 'تخطّي إلى المحتوى' : 'Skip to 
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#060d1c" />
-    <link rel="icon" type="image/png" href="/assets/wai-me-icon.png" />
-    <link rel="apple-touch-icon" href="/assets/wai-me-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/icon-512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     {canonical && <link rel="canonical" href={canonical} />}
     {canonical && <meta property="og:url" content={canonical} />}
@@ -54,12 +66,6 @@ const skipLabel = lang === 'ar' ? 'تخطّي إلى المحتوى' : 'Skip to 
       </>
     )}
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
     <slot name="head" />
   </head>
   <body>

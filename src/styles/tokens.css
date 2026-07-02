@@ -28,6 +28,7 @@
   --paper-mut: #5b6376; /* muted text on paper */
 
   --gold:      #d4a24c; /* recognition only */
+  --gold-deep: #8a6420; /* recognition only, for text on LIGHT surfaces (WCAG AA) */
   --gold-soft: #f0d49a;
 
   --white:    #ffffff;
@@ -36,8 +37,9 @@
   --hair-d:   rgba(255, 255, 255, .12);
   --hair-l:   rgba(15, 35, 63, .12);
 
-  /* type */
-  --display: "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
+  /* type: self-hosted via @fontsource (polish slice); the "Variable" name is
+     what the fontsource face registers as, the plain name kept as fallback. */
+  --display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
   --body:    "Hanken Grotesk", system-ui, -apple-system, sans-serif;
   --mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --arabic:  "IBM Plex Sans Arabic", "Hanken Grotesk", sans-serif;
@@ -106,7 +108,9 @@ p { margin: 0; }
   transition: color .2s var(--ease-out), background .2s var(--ease-out);
 }
 .lang-toggle .lt-opt[lang="ar"] { font-family: var(--arabic); letter-spacing: 0; font-size: 13px; }
-.lang-toggle .lt-opt[aria-current="true"] { background: var(--sky-core); color: #fff; }
+/* Dark text on the sky pill (matches the primary buttons) so the small
+   active label passes WCAG AA (P2-1). */
+.lang-toggle .lt-opt[aria-current="true"] { background: var(--sky-core); color: #04101f; font-weight: 700; }
 @media (hover: hover) { .lang-toggle .lt-opt:not([aria-current]):hover { color: #fff; } }
 
 /* Skip link (global: every page loads tokens.css via Base, including portal + verify) */

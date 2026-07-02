@@ -128,7 +128,9 @@
   background:radial-gradient(120% 120% at 90% 10%, rgba(212,162,76,.16), transparent 55%), #fff;
   border-color:rgba(212,162,76,.4);
 }
-.rung.is-gold .rung-name{ color:var(--gold); }
+/* --gold fails AA on the light card; --gold-deep is the same recognition
+   family tuned for light surfaces (A11Y-1). */
+.rung.is-gold .rung-name{ color:var(--gold-deep); }
 
 /* ============================================================
    5 · HOW TO JOIN  (DARK, steps)

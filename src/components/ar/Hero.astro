@@ -5,7 +5,8 @@ import ConceptMark from '../primitives/ConceptMark.astro';
 ---
 <section class="hero" aria-labelledby="hero-h">
   <div class="hero-photo par-slow">
-    <img data-src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=2000&q=80&auto=format&fit=crop"
+    <img src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=2000&q=80&auto=format&fit=crop"
+         loading="eager" fetchpriority="high" decoding="async" onload="this.classList.add('loaded')"
          alt="صورة تعبيرية: طائرة ركاب تصعد فوق بحرٍ من الغيوم نحو سماء الفجر. صورة مؤقتة، ستحلّ محلّها صورة فعلية لعضوة من المرأة في الطيران – الشرق الأوسط." />
   </div>
   <div class="veil" aria-hidden="true"></div>

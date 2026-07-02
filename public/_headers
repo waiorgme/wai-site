@@ -9,15 +9,16 @@
 #   origin from PUBLIC_CONVEX_URL, or strips them when it is unset. The file
 #   Cloudflare Pages serves from dist/ never contains a Convex wildcard.
 # - challenges.cloudflare.com is Turnstile (script + iframe + verify call).
-# - Google Fonts stays allowed until the self-hosted-fonts slice lands.
-# - images.unsplash.com stays allowed until the self-hosted-hero slice lands.
+# - Fonts are self-hosted (polish slice); no third-party font origins remain.
+# - images.unsplash.com stays allowed until real member photos replace the
+#   concept images (owner item).
 # - blob: images are the profile-photo preview; data: covers inline SVG uses.
 # - 'unsafe-inline' for styles is required by Astro's inlined component styles
 #   and React style attributes. Scripts allow 'unsafe-inline' for Astro's small
 #   inline bootstraps; tighten to hashes after the polish slice if possible.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://images.unsplash.com https://*.convex.cloud; connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://images.unsplash.com https://*.convex.cloud; connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

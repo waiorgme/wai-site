@@ -1,3 +1,10 @@
+/* Self-hosted Arabic face (polish slice): imported here so only /ar visitors
+   download it. Vite resolves the bare package specifiers at build time. */
+@import "@fontsource/ibm-plex-sans-arabic/400.css";
+@import "@fontsource/ibm-plex-sans-arabic/500.css";
+@import "@fontsource/ibm-plex-sans-arabic/600.css";
+@import "@fontsource/ibm-plex-sans-arabic/700.css";
+
 /* =====================================================================
    Arabic front-door — RTL adjustments (preview build)
    Scoped entirely to [dir="rtl"] so the six live English pages are untouched.
