@@ -3,7 +3,11 @@
 #
 # CSP notes:
 # - convex.cloud (https + wss) is the live data connection; convex.site hosts
-#   the auth HTTP endpoints the magic link passes through.
+#   the auth HTTP endpoints the magic link passes through. The *.convex
+#   wildcards below are a TEMPLATE only: the build (astro.config.mjs,
+#   wai:csp-convex-deployment-origin) rewrites them to the exact deployment
+#   origin from PUBLIC_CONVEX_URL, or strips them when it is unset. The file
+#   Cloudflare Pages serves from dist/ never contains a Convex wildcard.
 # - challenges.cloudflare.com is Turnstile (script + iframe + verify call).
 # - Google Fonts stays allowed until the self-hosted-fonts slice lands.
 # - images.unsplash.com stays allowed until the self-hosted-hero slice lands.

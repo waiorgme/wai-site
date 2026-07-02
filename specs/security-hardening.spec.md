@@ -9,9 +9,18 @@ server-side source of truth, §6 lifecycle, §8 audit rows), `02 PRD - Public Si
 ## Acceptance criteria
 
 1. **SEC-1 (P0) DOB required at the public join boundary.** `submitJoin` rejects a missing or malformed
-   `dobAnswer` server-side (ISO `YYYY-MM-DD`, a real calendar date, not in the future, not before 1900).
-   `createPendingMember` keeps an optional DOB only for the internal migration path (the 1,309 imported
-   members, who arrive without DOB by design and land in `restricted_unknown`).
+   `dobAnswer` server-side (ISO `YYYY-MM-DD`, a real calendar date, not in the future, not before 1900),
+   and rejects any DOB under the vault's minimum joining age of 13
+   (`01 Under-18 Members & Mentorship Safeguards (Decision)`) before any member or consent row is written.
+   `createPendingMember` serves the public join path only and requires the DOB end to end.
+   *AMENDED 2026-07-02 (Gate 4 loop):* the original criterion kept an optional DOB on
+   `createPendingMember` "for the internal migration path". That sentence pre-dated the decided
+   claim-wave design and is superseded by it: per the vault `02 Migration & Claim-Wave Plan (Decision)`,
+   the 1,309 legacy rows land in the separate `importedMembers` table (`convex/importedMembers.ts`,
+   `build/claim-wave` slice) and a `members` row is only created at claim, with the member present.
+   No migration code path calls `createPendingMember`, so an optional DOB there was an unreachable
+   loosening, not a feature; its no-DOB regression coverage belongs to the claim-wave slice's import
+   tests.
 2. **SEC-3 (P1) `restricted_unknown` is never auto-activated.** On magic-link verification,
    `beforeSessionCreation` routes: lane `minor` to `pending_guardian`, lanes `standard`/`ally` to `active`,
    lane `restricted_unknown` to `pending_review` (a legal §6 transition). Certificates are issued only on
