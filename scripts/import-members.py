@@ -108,7 +108,7 @@ def main():
             sys.exit(f"Column '{col}' missing; header: {header}")
 
     today = dt.date.today()
-    out, skipped, seen_emails, seen_row_ids = [], [], set(), set()
+    out, skipped, blockers, seen_emails, seen_row_ids = [], [], [], set(), set()
     max_legacy = 0
 
     for n, r in enumerate(rows_iter, start=2):
@@ -119,7 +119,11 @@ def main():
             continue
         email = email.lower()
         if email in seen_emails:
-            skipped.append((n, f"duplicate email {email}"))
+            # Two people, one email = the Stage 0 conflict model. Silently
+            # skipping would let the email holder claim whichever row the
+            # backend saw first, so a duplicate BLOCKS the import until a
+            # human resolves it (known case: cleaned-list row 646).
+            blockers.append((n, f"duplicate email {email}; resolve by hand before import"))
             continue
         seen_emails.add(email)
 
@@ -131,8 +135,14 @@ def main():
             continue
 
         legacy_number = parse_legacy_number(get("membership_number"))
-        if legacy_number:
-            max_legacy = max(max_legacy, legacy_number)
+        if not legacy_number:
+            # Every claimable migrated row must carry its legacy WAIME number:
+            # the certificate promise is her ORIGINAL number, never a fresh
+            # counter value (DATA-1). A missing/unparseable number blocks the
+            # import until a human fixes the sheet.
+            blockers.append((n, f"missing or unparseable membership_number for {email}"))
+            continue
+        max_legacy = max(max_legacy, legacy_number)
         dob = normalize_birthday(get("birthday"))
         gender = clean(get("gender"))
         gender = gender.lower() if gender and gender.lower() in ("female", "male") else None
@@ -175,6 +185,15 @@ def main():
           f"max legacy number: {max_legacy}  skipped: {len(skipped)}")
     for n, why in skipped[:10]:
         print(f"  skipped row {n}: {why}")
+
+    if blockers:
+        print(f"IMPORT BLOCKED: {len(blockers)} row(s) need a human before ANY import:")
+        for n, why in blockers:
+            print(f"  row {n}: {why}")
+        if dry_run:
+            print("dry run: nothing would be sent while blockers exist")
+            return
+        sys.exit(1)
 
     if dry_run:
         print("dry run: nothing sent")

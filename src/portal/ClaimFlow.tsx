@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { ageInYears, isValidDob } from "../../convex/lib/age";
 import {
   card,
   checkboxRow,
@@ -35,6 +36,14 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
   const [outcome, setOutcome] = useState<null | "conflict" | "minor">(null);
 
   const firstName = candidateName.split(" ")[0];
+
+  // The talent pipeline is women-only and never offered to minors (Stage 0
+  // lane rules, same as the join form): the option renders only when the
+  // declared gender is female and the declared DOB is not under 18. The
+  // server enforces the same rule whatever the client sends.
+  const declaredMinor =
+    dob !== "" && isValidDob(dob, Date.now()) && ageInYears(dob, Date.now()) < 18;
+  const showPipeline = gender === "female" && !declaredMinor;
 
   if (outcome === "conflict") {
     return (
@@ -83,7 +92,11 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
               dobAnswer: dob,
               genderAnswer: gender,
               attestation,
-              consents: { terms, marketing, pipeline },
+              consents: {
+                terms,
+                marketing,
+                pipeline: showPipeline ? pipeline : false,
+              },
             });
             if (result.ok === false) {
               if (result.error === "conflict") {
@@ -133,7 +146,12 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
                 name="claim-gender"
                 value="male"
                 checked={gender === "male"}
-                onChange={() => setGender("male")}
+                onChange={() => {
+                  // The women-only pipeline option hides for male claims;
+                  // clear any earlier tick so a hidden consent never submits.
+                  setGender("male");
+                  setPipeline(false);
+                }}
               />{" "}
               Male
             </label>
@@ -169,13 +187,15 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
           <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
           <span>Email me about events, opportunities and news. (optional)</span>
         </label>
-        <label style={checkboxRow}>
-          <input type="checkbox" checked={pipeline} onChange={(e) => setPipeline(e.target.checked)} />
-          <span>
-            Make my profile searchable by corporate partners with jobs,
-            internships and scholarships. You can change this anytime. (optional)
-          </span>
-        </label>
+        {showPipeline && (
+          <label style={checkboxRow}>
+            <input type="checkbox" checked={pipeline} onChange={(e) => setPipeline(e.target.checked)} />
+            <span>
+              Make my profile searchable by corporate partners with jobs,
+              internships and scholarships. You can change this anytime. (optional)
+            </span>
+          </label>
+        )}
 
         <button type="submit" disabled={busy} style={primaryBtn}>
           {busy ? "Claiming your membership…" : "Claim my membership"}

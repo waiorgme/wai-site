@@ -33,6 +33,39 @@ export function Dashboard() {
   const firstName = me?.name?.split(" ")[0];
   const membershipCert = certs?.find((c) => c.type === "membership") ?? null;
 
+  // Never flash the member dashboard while the member row or the claim
+  // candidate is still resolving.
+  if (me === undefined || (me === null && claim === undefined)) {
+    return (
+      <div style={panel}>
+        <p style={muted}>Loading…</p>
+      </div>
+    );
+  }
+
+  // Signed in, but no member row AND no imported record: an honest no-member
+  // state, never the member dashboard (Gate 4: an unlinked authenticated user
+  // must not be told "You're a member").
+  if (me === null && claim === null) {
+    return (
+      <div style={panel}>
+        <h1 style={h1}>We couldn't find your membership</h1>
+        <p style={muted}>
+          This email address isn't linked to a WAI-ME membership. If you joined
+          with a different address, sign out and use that one. If you think
+          this is a mistake, write to us at{" "}
+          <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+            support@waiorg.me
+          </a>{" "}
+          and we will sort it out.
+        </p>
+        <button type="button" style={linkBtn} onClick={() => void signOut()}>
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
   // Migrated member, signed in but not yet claimed: the claim step IS her
   // dashboard until it completes (Migration & Claim-Wave Plan, Decision 1).
   if (me === null && claim != null && claim.state === "claimable") {

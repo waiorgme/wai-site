@@ -633,6 +633,12 @@ export const getMyClaimCandidate = query({
     if (rows.length === 0) {
       return null;
     }
+    // Two people, one email = manual review (Stage 0 conflict model). The
+    // email holder learns nothing about either row; the import script refuses
+    // duplicate emails so this is defence in depth.
+    if (rows.length > 1) {
+      return { state: "held" };
+    }
     const unclaimed = claimableRow(rows, Date.now());
     if (unclaimed !== undefined) {
       return {
@@ -698,10 +704,49 @@ export const matchClaim = mutation({
       .query("importedMembers")
       .withIndex("by_normalized_email", (q) => q.eq("normalized_email", email))
       .collect();
+    // Two people, one email = conflict for a human, never a claim. Mark every
+    // affected row so the admin queue sees it; reveal nothing to the caller.
+    if (rows.length > 1) {
+      for (const r of rows) {
+        if (r.claim_state === "unclaimed") {
+          await ctx.db.patch(r._id, {
+            claim_state: "conflict",
+            conflict_reason: "duplicate_email",
+          });
+        }
+      }
+      await writeAudit(ctx, {
+        actor: email,
+        role: "member",
+        action: "matchClaim.conflict",
+        target_id: rows[0]._id,
+        after_summary: `duplicate email across ${rows.length} imported rows; routed to review`,
+        source: "system",
+      });
+      return { ok: false, error: "held" };
+    }
     const row = claimableRow(rows, now);
     if (row === undefined) {
       const held = rows.find((r) => r.claim_state !== "unclaimed");
       return { ok: false, error: held?.claim_state === "suppressed_minor" ? "minor" : "held" };
+    }
+    // A claimable migrated row must carry its legacy WAIME number: the
+    // certificate carries her ORIGINAL number, never a fresh counter value
+    // (DATA-1). The import script refuses such rows; this is defence in depth.
+    if (row.legacy_membership_number === undefined) {
+      await ctx.db.patch(row._id, {
+        claim_state: "conflict",
+        conflict_reason: "missing_legacy_number",
+      });
+      await writeAudit(ctx, {
+        actor: email,
+        role: "member",
+        action: "matchClaim.conflict",
+        target_id: row._id,
+        after_summary: "imported row has no legacy membership number; routed to review",
+        source: "system",
+      });
+      return { ok: false, error: "held" };
     }
 
     // Safeguarding: a claimant who is under 18 NOW goes to the guardian route,
@@ -781,19 +826,26 @@ export const matchClaim = mutation({
       await ctx.db.patch(memberId, { userId });
     }
 
-    // §4.3 claim consents, explicit false rows included. Safeguarding lane
-    // guard mirrors join: only standard/ally may enter the pipeline.
-    const pipelineAllowed = lane === "standard" || lane === "ally";
+    // §4.3 claim consents, explicit false rows included. SEC-5 safeguarding
+    // lane guard, same rule as join and settings: the pipeline is women-only
+    // and closed to minors/unknown-age, so ONLY the standard lane can consent
+    // into it. A ticked box from any other lane is forced to an explicit
+    // false row and the refusal is audited.
+    let pipelineConsent = args.consents.pipeline;
+    if (pipelineConsent && lane !== "standard") {
+      pipelineConsent = false;
+      await writeAudit(ctx, {
+        actor: email,
+        role: "member",
+        action: "writeConsent.refused",
+        target_id: memberId,
+        after_summary: `pipeline=true refused at claim lane=${lane}`,
+        source: "system",
+      });
+    }
     await insertConsent(ctx, memberId, "terms_privacy", args.consents.terms, now, "claim");
     await insertConsent(ctx, memberId, "marketing", args.consents.marketing, now, "claim");
-    await insertConsent(
-      ctx,
-      memberId,
-      "pipeline",
-      pipelineAllowed ? args.consents.pipeline : false,
-      now,
-      "claim",
-    );
+    await insertConsent(ctx, memberId, "pipeline", pipelineConsent, now, "claim");
 
     await ctx.db.patch(row._id, {
       claim_state: "claimed",
