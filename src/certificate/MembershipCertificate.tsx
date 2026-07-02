@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { QRCodeSVG } from "qrcode.react";
+// Self-hosted certificate faces (the confirmed design uses Sora/Inter,
+// distinct from the site tokens by design).
+import "@fontsource/sora/400.css";
+import "@fontsource/sora/600.css";
+import "@fontsource/sora/700.css";
+import "@fontsource/sora/800.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
 
 // The membership certificate, rendered to the confirmed design
 // ([[02 Certificate Design & Eligibility Rules (Draft)]]). Fixed A4-landscape
@@ -132,6 +142,10 @@ export function ScaledCertificate({ children }: { children: ReactNode }) {
   );
 }
 
+// The certificate's typography is part of the CONFIRMED design (vault:
+// certificate pack, 2026-06-24) and deliberately differs from the site
+// tokens. Sora/Inter are self-hosted below so the confirmed look never
+// depends on a third-party stylesheet (polish slice, Gate 3 fix 2).
 const fontBody = "'Inter', system-ui, sans-serif";
 const fontDisplay = "'Sora', 'Inter', sans-serif";
 const fontAr = "'IBM Plex Sans Arabic', sans-serif";

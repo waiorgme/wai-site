@@ -62,7 +62,7 @@ h1 { font-size: ${c.dir === "rtl" ? "80px" : "92px"}; line-height: ${c.dir === "
 <svg class="flight" viewBox="0 0 1200 630" aria-hidden="true">
   <path d="M-40 620 C 340 600, 640 500, 880 350 S 1160 120, 1260 40"
         fill="none" stroke="#6cc8ff" stroke-width="3" stroke-opacity="0.4" stroke-dasharray="2 10" stroke-linecap="round"/>
-  <circle cx="1050" cy="200" r="5" fill="#6cc8ff" fill-opacity="0.9"/>
+  ${c.dir === "rtl" ? "" : '<circle cx="1050" cy="200" r="5" fill="#6cc8ff" fill-opacity="0.9"/>'}
 </svg>
 <img class="logo" src="${logoData}" alt="">
 <div>
