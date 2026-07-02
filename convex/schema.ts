@@ -179,6 +179,10 @@ export default defineSchema({
     // When the CURRENT token was emailed; expiry runs 30 days from here.
     // Absent on rows created before this slice's send flow stamps them.
     token_sent_at: v.optional(v.number()),
+    // The consent PROOF (vault: what we record): when the guardian confirmed
+    // and which policy version they agreed to. Set only on confirmation.
+    confirmed_at: v.optional(v.number()),
+    policy_version: v.optional(v.string()),
     timestamp: v.number(),
   })
     .index("by_member", ["member_id"])

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { ClaimFlow } from "./ClaimFlow";
@@ -17,6 +17,10 @@ export function Dashboard() {
   const me = useQuery(api.members.getCurrentMember);
   const certs = useQuery(api.certificates.getMyCertificates);
   const claim = useQuery(api.members.getMyClaimCandidate, me === null ? {} : "skip");
+  const guardianStatus = useQuery(
+    api.guardians.myGuardianEmailStatus,
+    me?.lifecycle_state === "pending_guardian" ? {} : "skip",
+  );
   const ensureCert = useMutation(api.certificates.ensureMyMembershipCertificate);
   const [editing, setEditing] = useState(false);
   const [choosing, setChoosing] = useState(false);
@@ -112,7 +116,9 @@ export function Dashboard() {
           </h1>
           <p style={muted}>
             {me.lifecycle_state === "pending_guardian"
-              ? "Thanks for confirming your email. Because you are under 18, we have emailed your parent or guardian to confirm your membership. Ask them to check their inbox; your membership, certificate and profile open up the moment they press confirm."
+              ? guardianStatus?.sent
+                ? "Thanks for confirming your email. Because you are under 18, we have emailed your parent or guardian to confirm your membership. Ask them to check their inbox; your membership, certificate and profile open up the moment they press confirm."
+                : "Thanks for confirming your email. Because you are under 18, a parent or guardian needs to confirm your membership; we are preparing their email now. If nothing arrives within a few minutes, press the button below to send it."
               : me.lifecycle_state === "pending_review"
                 ? "Thanks for confirming your email. A team member is reviewing your details. This page will update as soon as your membership is confirmed."
                 : "Please confirm your email first. Check your inbox for the link we sent you."}
@@ -156,10 +162,9 @@ export function Dashboard() {
             <span style={eyebrow}>Your home base</span>
           </div>
           <p style={tileBody}>
-            As a member under 18, your home base is{" "}
+            {"As a member under 18, your home base is "}
             <strong style={{ color: "var(--white)" }}>Aviation for Girls</strong>
-            , the youth program run by our parent organisation, Women in
-            Aviation International. It's made for you, and it's free:
+            {", the youth program run by our parent organisation, Women in Aviation International. It's made for you, and it's free:"}
           </p>
           <ul style={{ ...tileBody, margin: 0, paddingInlineStart: 20, display: "grid", gap: 6 }}>
             <li>
@@ -173,10 +178,10 @@ export function Dashboard() {
               step by step.
             </li>
             <li>
-              <strong style={{ color: "var(--white)" }}>AFG Connect News</strong>{" "}
-              and the annual{" "}
+              <strong style={{ color: "var(--white)" }}>AFG Connect News</strong>
+              {" and the annual "}
               <strong style={{ color: "var(--white)" }}>Aviation for Girls magazine</strong>
-              , stories, opportunities, and people to look up to.
+              {", stories, opportunities, and people to look up to."}
             </li>
             <li>
               <strong style={{ color: "var(--white)" }}>Girls in Aviation Day:</strong>{" "}
@@ -378,10 +383,11 @@ function CertificateSection({
   );
 }
 
-// "Send it again" on the pending-guardian waiting panel. The server throttles
-// (1/hour, 3/day) and rotates the token on every send.
+// "Send it again" on the pending-guardian waiting panel. An ACTION whose
+// reply reflects what actually happened: "Sent" only after Resend accepted
+// the email. The server throttles (1/hour, 3/day) and rotates the token.
 function GuardianResend() {
-  const resend = useMutation(api.guardians.resendGuardianEmail);
+  const resend = useAction(api.guardians.resendGuardianEmail);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   return (

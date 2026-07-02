@@ -63,9 +63,17 @@ active; the "minor cert after guardian consent" fast-follow recorded 2026-06-30)
    (minor joins -> guardian row pending -> confirm -> active + cert + audit), expiry, single-use,
    idempotent re-confirm, resend throttle + token rotation, no-enumeration (invalid token),
    confirm never fires on lookup alone. E2E: the /guardian-confirm shell renders (heading,
-   noscript, neutral invalid-token state) - the suite runs without a Convex deployment, so
-   signed-in youth-dashboard rendering is exercised at the Convex layer (lane/lifecycle data
-   driving the branch) plus the design-review gate, not by Playwright sign-in.
+   guidance, noscript, noindex) - the suite runs without a Convex deployment, so token-state
+   rendering (invalid/confirmable/confirmed) and signed-in youth-dashboard rendering are
+   exercised at the Convex layer plus the design-review gate, not by Playwright sign-in.
+   *AMENDED 2026-07-02 (Gate 4 loop):* used-token lookups return the same neutral invalid as
+   unknown/expired tokens (criterion 2's no-enumeration rule wins at the query); the friendly
+   already-done reply exists only on the explicit confirm mutation (criterion 3). Expiry is
+   persisted by a scheduled marker armed at send time, not only on a confirm attempt. The
+   resend endpoint is an ACTION whose ok means Resend accepted the email; failures roll the
+   previous token back so the last DELIVERED link keeps working, and every refusal/failure
+   path is audited. The guardian row now carries the consent proof (confirmed_at +
+   policy_version), completing the vault's "what we record" list.
 
 ## Out of scope, recorded
 - At-18 graduation prompt (Stage 0 age-up flow) - its own slice.

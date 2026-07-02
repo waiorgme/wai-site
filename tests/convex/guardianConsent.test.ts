@@ -15,10 +15,15 @@ import schema from "../../convex/schema";
 const modules = import.meta.glob("../../convex/**/*.*s");
 
 const sentEmails: Array<{ to: string[]; subject: string; text: string }> = [];
+let failNextSend = false;
 vi.mock("resend", () => ({
   Resend: class {
     emails = {
       send: async (args: { to: string[]; subject: string; text: string }) => {
+        if (failNextSend) {
+          failNextSend = false;
+          return { error: { message: "boom" } };
+        }
         sentEmails.push(args);
         return { error: null };
       },
@@ -73,6 +78,7 @@ const tokenFromEmail = (email: { text: string }): string => {
 
 afterEach(() => {
   sentEmails.length = 0;
+  failNextSend = false;
   vi.unstubAllGlobals();
 });
 
@@ -138,6 +144,18 @@ describe("confirming", () => {
     expect(member?.guardian_consent_state).toBe("confirmed");
     expect(member?.date_of_birth_source).toBe("guardian_confirmed");
     expect(member?.age_confidence).toBe("confirmed");
+
+    // The consent PROOF the vault requires: action, when, which policy.
+    const proof = await t.run(async (ctx) => ctx.db.query("guardianConsents").first());
+    expect(proof?.confirmation_state).toBe("confirmed");
+    expect(proof?.confirmed_at).toBeDefined();
+    expect(proof?.policy_version).toBe("2026-07-02");
+
+    // A used token is NEUTRAL at lookup (no enumeration): same reply as an
+    // unknown token. The friendly already-done exists only on the mutation.
+    expect(await t.query(api.guardians.lookupGuardianToken, { token })).toEqual({
+      state: "invalid",
+    });
 
     const certs = await t.run(async (ctx) => ctx.db.query("certificates").collect());
     expect(certs).toHaveLength(1);
@@ -215,17 +233,15 @@ describe("resending", () => {
   };
 
   it("rotates the token (old link dies) and throttles to 1 per hour", async () => {
-    vi.useFakeTimers();
     const t = convexTest(schema, modules);
     const memberId = await seedPendingMinor(t);
     await t.action(internal.guardians.sendGuardianEmail, { memberId });
     const firstToken = tokenFromEmail(sentEmails[0]);
 
+    // The resend is an ACTION: ok means Resend actually accepted the email.
     const signedIn = await asMinor(t, memberId);
-    const first = await signedIn.mutation(api.guardians.resendGuardianEmail, {});
+    const first = await signedIn.action(api.guardians.resendGuardianEmail, {});
     expect(first).toEqual({ ok: true });
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
-    vi.useRealTimers();
     expect(sentEmails).toHaveLength(2);
     const secondToken = tokenFromEmail(sentEmails[1]);
     expect(secondToken).not.toBe(firstToken);
@@ -241,7 +257,7 @@ describe("resending", () => {
     ).toBe("confirmable");
 
     // Second resend inside the hour: throttled, audited, no email.
-    const second = await signedIn.mutation(api.guardians.resendGuardianEmail, {});
+    const second = await signedIn.action(api.guardians.resendGuardianEmail, {});
     expect(second).toEqual({ ok: false, error: "rate_limited" });
     expect(sentEmails).toHaveLength(2);
     const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
@@ -257,7 +273,60 @@ describe("resending", () => {
       await ctx.db.patch(memberId, { lifecycle_state: "active" });
     });
     const signedIn = await asMinor(t, memberId);
-    const result = await signedIn.mutation(api.guardians.resendGuardianEmail, {});
+    const result = await signedIn.action(api.guardians.resendGuardianEmail, {});
     expect(result).toEqual({ ok: false, error: "not_eligible" });
+  });
+
+  it("global daily cap: refused, audited, nothing rotated, no throttle burned", async () => {
+    const t = convexTest(schema, modules);
+    const memberId = await seedPendingMinor(t);
+    await t.action(internal.guardians.sendGuardianEmail, { memberId });
+    const liveToken = tokenFromEmail(sentEmails[0]);
+    // Spend the rest of the day's global budget (shared with magic links).
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("rateLimits")
+        .withIndex("by_key", (q) => q.eq("key", "signin24h:global"))
+        .unique();
+      await ctx.db.patch(row!._id, { count: 90 });
+    });
+    const signedIn = await asMinor(t, memberId);
+    const result = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(result).toEqual({ ok: false, error: "rate_limited" });
+    expect(sentEmails).toHaveLength(1);
+    // The emailed link is untouched and still works.
+    expect(
+      (await t.query(api.guardians.lookupGuardianToken, { token: liveToken })).state,
+    ).toBe("confirmable");
+    const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+    expect(
+      audits.filter(
+        (a) =>
+          a.action === "sendGuardianEmail.refused" &&
+          (a.after_summary ?? "").includes("global"),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("Resend failure: previous token restored, failure audited, member told the truth", async () => {
+    const t = convexTest(schema, modules);
+    const memberId = await seedPendingMinor(t);
+    await t.action(internal.guardians.sendGuardianEmail, { memberId });
+    const liveToken = tokenFromEmail(sentEmails[0]);
+
+    failNextSend = true;
+    const signedIn = await asMinor(t, memberId);
+    const result = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(result).toEqual({ ok: false, error: "send_failed" });
+    expect(sentEmails).toHaveLength(1); // nothing delivered
+
+    // The link that WAS emailed still works: the rollback restored its hash.
+    expect(
+      (await t.query(api.guardians.lookupGuardianToken, { token: liveToken })).state,
+    ).toBe("confirmable");
+    const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+    expect(
+      audits.filter((a) => a.action === "sendGuardianEmail.failed"),
+    ).toHaveLength(1);
   });
 });
