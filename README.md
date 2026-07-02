@@ -58,3 +58,17 @@ AGENTS.md                 operating guide for any AI agent in this repo
 The vault at `../WAI` governs all content. Nothing on the site is invented; if the vault is
 silent, the build stops and asks. Decisions and results are written back to the vault, never kept
 only in a model's memory.
+
+## License and reuse
+This repository is published for transparency: Women in Aviation Middle East runs on volunteers,
+and making the build public is what gives us free enforced branch protection, secret scanning and
+code analysis. Publication is not an open-source grant:
+
+- The **code** carries no open-source license. All rights reserved; you may read it, but no
+  license is granted to reuse it.
+- The **WAI-ME name, logo, and brand assets** are not licensed for any reuse.
+- The **site content** (copy, images, certificates, member-facing text) is all rights reserved.
+- **No member data lives in this repository.** The member list is read from a private vault at
+  import time only and never enters version control.
+
+Questions: support@waiorg.me.
