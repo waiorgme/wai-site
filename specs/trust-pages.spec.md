@@ -12,6 +12,19 @@ This slice does not invent legal terms. The /terms footer link stays pointing at
 Issam decides: (a) Claude drafts a `02 Membership Terms (Draft)` vault note for review, then builds
 the page from it, or (b) the Terms link is dropped at cutover until terms exist.
 
+## OPEN OWNER DECISION (raised to Issam 2026-07-02): privacy draft vs the shipped product
+The /privacy page renders the vault draft verbatim, but the Gate 3 review found the DRAFT ITSELF
+misdescribes the product in four places. The fix is a vault amendment (then re-flow the page), not a
+builder rewrite; these must not survive to launch:
+1. "What we collect ... mobile number" - the join form collects no mobile number.
+2. "What we collect" omits DATE OF BIRTH (collected from everyone) and guardian name/email
+   (collected for 13-17s). Collecting undisclosed personal data is the worst direction of mismatch.
+3. "use the 'manage my data' options in your member area" - no such portal UI exists yet
+   (email route is real). Reword or build before launch.
+4. "we note where each stores data" - the page never lists hosting regions; add a region note or
+   soften the sentence at the legal review.
+Also confirm before launch: the Cloudflare Web Analytics beacon is dashboard-injected (not in markup).
+
 ## Acceptance criteria
 
 1. **/privacy page (LEGAL-1).** Built verbatim from the vault draft Part 1 (headings + body),

@@ -15,7 +15,7 @@ the Spec gate stops (Stop-the-Line) until one exists in the vault.
 | Join | `/join` | `02 PRD Phase 2 - Public Site & Join Flow` §6.2-6.3 · `02 Signup & Onboarding Flow (Design)` · `02 Member Profile Field Spec (Talent Pipeline)` (career stages, looking-for options) · gender-field + plain-language hard rules |
 | Portal (dashboard, profile, certificate) | `/portal` | `02 Stage 0 - Technical Design (Public Site & Portal)` · `02 PRD Phase 3 - Member Portal` · `02 Member Profile Field Spec (Talent Pipeline)` · `02 Certificates - In-House Engine (Decision)` · `02 Certificate Design & Eligibility Rules (Draft)` |
 | Certificate verify | `/verify` | `02 Certificates - In-House Engine (Decision)` §6b (valid / superseded / revoked / not found) |
-| Privacy Policy | `/privacy` | `02 Privacy Policy & Guardian Consent (Draft)` Part 1 (verbatim; recorded deviations: internal Zoho-EU build instruction dropped, "see Part 2 below" resolved to the /safeguarding link) · combined legal review = launch gate |
+| Privacy Policy | `/privacy` | `02 Privacy Policy & Guardian Consent (Draft)` Part 1 (verbatim; recorded deviations: internal Zoho-EU build instruction dropped, "see Part 2 below" resolved to the /safeguarding link) · combined legal review = launch gate · known draft-vs-product mismatches raised to Issam 2026-07-02, pending owner decision (see specs/trust-pages.spec.md) |
 | Safeguarding | `/safeguarding` | `01 Under-18 Launch Copy (Drafts)` §3 public statement (verbatim) · `01 Under-18 Members & Mentorship Safeguards (Decision)` |
 | Not found | `/404` | Utility chrome only (no vault copy claim) |
 | Arabic Home | `/ar/` | `02 Public Website Content - Arabic Front Door (Draft)` · same layout notes as `/` |
