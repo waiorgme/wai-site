@@ -8,6 +8,7 @@ import { writeAudit } from "./lib/audit";
 import { ageInYears, deriveAgeBlock, isValidDob } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
 import { dobConflicts, namesRoughlyMatch } from "./lib/claim";
+import { canUseToggles } from "./lib/toggles";
 import { issueMembershipCertificate } from "./lib/certificates";
 import { fullName, isValidNamePart, nameCase } from "./lib/names";
 import {
@@ -218,11 +219,10 @@ export const updateProfile = mutation({
 
     // SAFE-1: mentorship is not available to minors or unknown-age lanes;
     // strip those "looking for" options server-side whatever the client sent
-    // (mirrors the join guard, which strips them at signup).
+    // (mirrors the join + claim guards).
     if (
       fields.looking_for !== undefined &&
-      (member.member_lane === "minor" ||
-        member.member_lane === "restricted_unknown")
+      !canUseToggles(member.member_lane)
     ) {
       fields.looking_for = fields.looking_for.filter(
         (o) => !o.toLowerCase().includes("mentor"),
@@ -878,6 +878,162 @@ export const matchClaim = mutation({
     }
 
     return { ok: true };
+  },
+});
+
+// ---------------------------------------------------------------------------
+// The two opt-in toggles (field spec Group H; Stage 0 §7). Both default OFF;
+// locked off server-side for minor/restricted_unknown lanes.
+// ---------------------------------------------------------------------------
+
+const memberForAuthedUser = async (ctx: QueryCtx | MutationCtx) => {
+  const userId = await getAuthUserId(ctx);
+  if (userId === null) {
+    return null;
+  }
+  return ctx.db
+    .query("members")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+};
+
+// The member's own settings panel state.
+export const getMySettings = query({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<null | {
+    locked: boolean;
+    directory_visible: boolean;
+    pipeline_state: "off" | "review_pending" | "on" | "rejected";
+  }> => {
+    const member = await memberForAuthedUser(ctx);
+    if (member === null) {
+      return null;
+    }
+    return {
+      locked: !canUseToggles(member.member_lane),
+      directory_visible: member.directory_visible ?? false,
+      pipeline_state: member.pipeline_state ?? "off",
+    };
+  },
+});
+
+export const setDirectoryVisible = mutation({
+  args: { value: v.boolean() },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const member = await memberForAuthedUser(ctx);
+    if (member === null) {
+      return { ok: false, error: "not_signed_in" };
+    }
+    if (!canUseToggles(member.member_lane)) {
+      await writeAudit(ctx, {
+        actor: member.email,
+        role: "member",
+        action: "setDirectoryVisible.refused",
+        target_id: member._id,
+        after_summary: `value=${args.value} refused lane=${member.member_lane}`,
+        source: "system",
+      });
+      return { ok: false, error: "not_permitted" };
+    }
+    await ctx.db.patch(member._id, { directory_visible: args.value });
+    await writeAudit(ctx, {
+      actor: member.email,
+      role: "member",
+      action: "setDirectoryVisible",
+      target_id: member._id,
+      after_summary: `directory_visible=${args.value}`,
+      source: "member",
+    });
+    return { ok: true };
+  },
+});
+
+// §7 setPipelineOptIn: ON requires the truthful-declaration attestation and
+// opens the eligibility review (profile reaches partners only after opt-in
+// AND an approved review). OFF is immediate and always allowed for eligible
+// lanes; explicit false consent row written.
+export const setPipelineOptIn = mutation({
+  args: { value: v.boolean(), attestation: v.optional(v.boolean()) },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    ok: boolean;
+    error?: string;
+    pipeline_state?: "off" | "review_pending" | "on" | "rejected";
+  }> => {
+    const member = await memberForAuthedUser(ctx);
+    if (member === null) {
+      return { ok: false, error: "not_signed_in" };
+    }
+    if (!canUseToggles(member.member_lane)) {
+      await writeAudit(ctx, {
+        actor: member.email,
+        role: "member",
+        action: "setPipelineOptIn.refused",
+        target_id: member._id,
+        after_summary: `value=${args.value} refused lane=${member.member_lane}`,
+        source: "system",
+      });
+      return { ok: false, error: "not_permitted" };
+    }
+    const now = Date.now();
+    const current = member.pipeline_state ?? "off";
+
+    if (args.value) {
+      if (args.attestation !== true) {
+        return { ok: false, error: "validation" };
+      }
+      if (current === "on" || current === "review_pending") {
+        return { ok: true, pipeline_state: current };
+      }
+      await insertConsent(ctx, member._id, "pipeline", true, now, "settings");
+      await ctx.db.insert("pipelineEligibilityReviews", {
+        member_id: member._id,
+        state: "pending",
+        timestamp: now,
+      });
+      await ctx.db.patch(member._id, { pipeline_state: "review_pending" });
+      await writeAudit(ctx, {
+        actor: member.email,
+        role: "member",
+        action: "setPipelineOptIn",
+        target_id: member._id,
+        after_summary: "pipeline=true attested; eligibility review opened",
+        source: "member",
+      });
+      return { ok: true, pipeline_state: "review_pending" };
+    }
+
+    // OFF: explicit false row, close any pending review as withdrawn.
+    await insertConsent(ctx, member._id, "pipeline", false, now, "settings");
+    const pending = await ctx.db
+      .query("pipelineEligibilityReviews")
+      .withIndex("by_member", (q) => q.eq("member_id", member._id))
+      .collect();
+    for (const review of pending) {
+      if (review.state === "pending") {
+        await ctx.db.patch(review._id, {
+          state: "rejected",
+          reason: "withdrawn_by_member",
+        });
+      }
+    }
+    await ctx.db.patch(member._id, { pipeline_state: "off" });
+    await writeAudit(ctx, {
+      actor: member.email,
+      role: "member",
+      action: "setPipelineOptIn",
+      target_id: member._id,
+      after_summary: "pipeline=false; pending review (if any) withdrawn",
+      source: "member",
+    });
+    return { ok: true, pipeline_state: "off" };
   },
 });
 

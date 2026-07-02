@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { ClaimFlow } from "./ClaimFlow";
 import { ProfileEditor } from "./ProfileEditor";
+import { Settings } from "./Settings";
 import {
   MembershipCertificate,
   ScaledCertificate,
@@ -18,8 +19,12 @@ export function Dashboard() {
   const claim = useQuery(api.members.getMyClaimCandidate, me === null ? {} : "skip");
   const ensureCert = useMutation(api.certificates.ensureMyMembershipCertificate);
   const [editing, setEditing] = useState(false);
+  const [choosing, setChoosing] = useState(false);
 
   const isActive = me != null && me.lifecycle_state === "active";
+  const isMinorLane =
+    me != null &&
+    (me.member_lane === "minor" || me.member_lane === "restricted_unknown");
 
   // Make sure an active member has her certificate (covers members who became
   // active before the engine existed). Idempotent server-side. Minors at
@@ -130,11 +135,21 @@ export function Dashboard() {
         </p>
         <ProfileEditor
           onClose={() => setEditing(false)}
-          hideMentorship={
-            me?.member_lane === "minor" ||
-            me?.member_lane === "restricted_unknown"
-          }
+          hideMentorship={isMinorLane}
         />
+      </div>
+    );
+  }
+
+  if (choosing) {
+    return (
+      <div style={panel}>
+        <h1 style={h1}>Your choices</h1>
+        <p style={muted}>
+          Who can find you, and how. Both are off unless you turn them on, and
+          you can change your mind anytime.
+        </p>
+        <Settings onClose={() => setChoosing(false)} />
       </div>
     );
   }
@@ -219,6 +234,16 @@ export function Dashboard() {
             Take part by attending an event, sharing a resource, or helping
             someone, and you become an Active Member.
           </p>
+        </Tile>
+
+        <Tile title="Your choices">
+          <p style={tileBody}>
+            Choose whether other members can find you, and whether trusted
+            partners can match you to opportunities.
+          </p>
+          <button type="button" style={linkBtn} onClick={() => setChoosing(true)}>
+            Manage my choices
+          </button>
         </Tile>
 
         <Tile title="Opportunities" soon>

@@ -23,7 +23,9 @@ import type * as lib_memberLane from "../lib/memberLane.js";
 import type * as lib_names from "../lib/names.js";
 import type * as lib_profile from "../lib/profile.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
+import type * as lib_toggles from "../lib/toggles.js";
 import type * as members from "../members.js";
+import type * as pipelineReviews from "../pipelineReviews.js";
 import type * as rateLimit from "../rateLimit.js";
 
 import type {
@@ -48,7 +50,9 @@ declare const fullApi: ApiFromModules<{
   "lib/names": typeof lib_names;
   "lib/profile": typeof lib_profile;
   "lib/rateLimit": typeof lib_rateLimit;
+  "lib/toggles": typeof lib_toggles;
   members: typeof members;
+  pipelineReviews: typeof pipelineReviews;
   rateLimit: typeof rateLimit;
 }>;
 

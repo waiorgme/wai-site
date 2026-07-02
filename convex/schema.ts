@@ -88,6 +88,18 @@ export default defineSchema({
     institution: v.optional(v.string()),
     looking_for: v.optional(v.array(v.string())),
     profile_complete: v.optional(v.boolean()),
+
+    // Group H, the two opt-in toggles (field spec): both default OFF (absent),
+    // locked off for under-18 and unknown-age lanes, enforced server-side.
+    directory_visible: v.optional(v.boolean()),
+    pipeline_state: v.optional(
+      v.union(
+        v.literal("off"),
+        v.literal("review_pending"),
+        v.literal("on"),
+        v.literal("rejected"),
+      ),
+    ),
   })
     .index("by_email", ["email"])
     .index("by_userId", ["userId"])
@@ -166,6 +178,22 @@ export default defineSchema({
     confirmation_token_hash: v.string(),
     timestamp: v.number(),
   }).index("by_member", ["member_id"]),
+
+  // §4 PipelineEligibilityReview (Codex 4): a profile reaches partners only
+  // after opt-in AND this review approves (Age & Gender Verification stance).
+  pipelineEligibilityReviews: defineTable({
+    member_id: v.id("members"),
+    state: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
+    reviewer: v.optional(v.string()),
+    reason: v.optional(v.string()),
+    timestamp: v.number(),
+  })
+    .index("by_member", ["member_id"])
+    .index("by_state", ["state"]),
 
   // §8 AuditLog: mandatory, immutable, append-only row per member-affecting write.
   auditLog: defineTable({
