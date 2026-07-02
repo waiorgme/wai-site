@@ -32,6 +32,9 @@ vi.mock("resend", () => ({
 }));
 
 process.env.AUTH_RESEND_KEY = "test-key";
+// The deployment's public origin: guardian links must be built from it
+// (never a hard-coded domain), same env the auth magic links use.
+process.env.SITE_URL = "http://localhost:4321";
 
 const MINOR_DOB = "2011-01-15"; // 15 in 2026
 
@@ -108,6 +111,12 @@ describe("sending the guardian email", () => {
     expect(email.text).toContain("/safeguarding/");
     expect(email.text).toContain("/privacy/");
     expect(email.text).toContain("support@waiorg.me");
+    // The confirm link targets THIS deployment's configured origin, so a
+    // staging token can never send a guardian to the production domain.
+    expect(email.text).toContain(
+      "http://localhost:4321/guardian-confirm/?token=",
+    );
+    expect(email.text).not.toContain("waiorg.me/guardian-confirm");
     expect(email.text).not.toContain("—"); // no em dashes
     const token = tokenFromEmail(email);
     // Only the HASH is stored, never the token.
@@ -117,6 +126,27 @@ describe("sending the guardian email", () => {
     expect(consent?.confirmation_token_hash).toBe(await hashGuardianToken(token));
     expect(consent?.confirmation_token_hash).not.toBe(token);
     expect(consent?.token_sent_at).toBeDefined();
+  });
+
+  it("fails closed when SITE_URL is not configured: no email, audited refusal", async () => {
+    const prev = process.env.SITE_URL;
+    delete process.env.SITE_URL;
+    try {
+      const t = convexTest(schema, modules);
+      const memberId = await seedPendingMinor(t);
+      await t.action(internal.guardians.sendGuardianEmail, { memberId });
+      expect(sentEmails).toHaveLength(0);
+      const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+      expect(
+        audits.filter(
+          (a) =>
+            a.action === "sendGuardianEmail.refused" &&
+            (a.after_summary ?? "").includes("SITE_URL"),
+        ),
+      ).toHaveLength(1);
+    } finally {
+      process.env.SITE_URL = prev;
+    }
   });
 
   it("does not send for ineligible members (active, adult, or already confirmed)", async () => {
@@ -385,6 +415,51 @@ describe("resending", () => {
     const retry = await signedIn.action(api.guardians.resendGuardianEmail, {});
     expect(retry).toEqual({ ok: true });
     expect(sentEmails).toHaveLength(2);
+  });
+
+  it("failure loops are bounded: the 6th failed attempt in a day is refused", async () => {
+    const t = convexTest(schema, modules);
+    const memberId = await seedPendingMinor(t);
+    await t.action(internal.guardians.sendGuardianEmail, { memberId });
+    const signedIn = await asMinor(t, memberId);
+
+    for (let i = 0; i < 5; i++) {
+      failNextSend = true;
+      const result = await signedIn.action(api.guardians.resendGuardianEmail, {});
+      expect(result).toEqual({ ok: false, error: "send_failed" });
+    }
+    // The failure bucket (5/day) is exhausted; even though the resend quota
+    // was released each time, the loop stops here.
+    failNextSend = true;
+    const sixth = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(sixth).toEqual({ ok: false, error: "rate_limited" });
+    expect(sentEmails).toHaveLength(1); // only the original hook send
+  });
+
+  it("global budget counts DELIVERED sends only: a failed send releases it", async () => {
+    const t = convexTest(schema, modules);
+    const memberId = await seedPendingMinor(t);
+    await t.action(internal.guardians.sendGuardianEmail, { memberId });
+    const before = await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("rateLimits")
+        .withIndex("by_key", (q) => q.eq("key", "signin24h:global"))
+        .unique();
+      return row?.count;
+    });
+
+    failNextSend = true;
+    const signedIn = await asMinor(t, memberId);
+    await signedIn.action(api.guardians.resendGuardianEmail, {});
+
+    const after = await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("rateLimits")
+        .withIndex("by_key", (q) => q.eq("key", "signin24h:global"))
+        .unique();
+      return row?.count;
+    });
+    expect(after).toBe(before);
   });
 
   it("Resend failure: previous token restored, failure audited, member told the truth", async () => {

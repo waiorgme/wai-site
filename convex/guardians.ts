@@ -26,7 +26,6 @@ import {
 import { POLICY_VERSION } from "./lib/policy";
 import { consumeKey, peekKey, releaseKey } from "./rateLimit";
 import { GLOBAL_DAY } from "./lib/rateLimit";
-import { SITE } from "../site.config.mjs";
 
 // The guardian-consent flow (Under-18 decision: a REAL confirmation step,
 // never a self-ticked box). A 13-17 member verifies her email, lands at
@@ -36,6 +35,22 @@ import { SITE } from "../site.config.mjs";
 // Per-member resend throttle (spec criterion 4): 1/hour, 3/day.
 const RESEND_HOUR = { limit: 1, windowMs: 60 * 60 * 1000 };
 const RESEND_DAY = { limit: 3, windowMs: 24 * 60 * 60 * 1000 };
+// Failed member-triggered sends get their own bounded bucket (consumed only
+// on failure, checked before any send): transient provider errors may be
+// retried, but nobody can loop failures all day.
+const FAIL_DAY = { limit: 5, windowMs: 24 * 60 * 60 * 1000 };
+
+// Guardian links are transactional mail for THIS deployment: the origin comes
+// from the same SITE_URL env the auth magic links use, never a hard-coded
+// domain (a staging token must never send a guardian to production). Fail
+// closed when unset.
+const guardianSiteUrl = (): string | null => {
+  const url = process.env.SITE_URL;
+  if (url === undefined || url === "") {
+    return null;
+  }
+  return url.replace(/\/$/, "");
+};
 
 // Rotate the token and reserve send budget, all in one transaction; every
 // refusal is audited and leaves NO side effects (nothing rotated, nothing
@@ -118,6 +133,21 @@ export const prepareGuardianSend = internalMutation({
       });
       return { ok: false, reason: "not_eligible" };
     }
+    // The link origin is deployment configuration; without it no email goes
+    // out (fail closed: a misassembled link to the wrong deployment is worse
+    // than a delayed email).
+    const siteUrl = guardianSiteUrl();
+    if (siteUrl === null) {
+      await writeAudit(ctx, {
+        actor: member.email,
+        role: "system",
+        action: "sendGuardianEmail.refused",
+        target_id: member._id,
+        after_summary: "SITE_URL not configured on this deployment",
+        source: "system",
+      });
+      return { ok: false, reason: "not_eligible" };
+    }
     // Rate limits, peek-first: EVERY applicable bucket is checked read-only
     // before ANY is consumed, so a refusal in one bucket never burns another
     // (member quota survives a global-cap refusal and vice versa). Guardian
@@ -148,6 +178,21 @@ export const prepareGuardianSend = internalMutation({
           },
         },
       );
+      // The failure-attempt bound: peeked here, consumed only when a send
+      // FAILS (in the rollback). Retrying a transient provider error stays
+      // possible; looping failures all day does not.
+      const failPeek = await peekKey(ctx, `guardianfail24h:${member._id}`, FAIL_DAY);
+      if (!failPeek.ok) {
+        await writeAudit(ctx, {
+          actor: member.email,
+          role: "member",
+          action: "resendGuardianEmail.refused",
+          target_id: member._id,
+          after_summary: "too many failed send attempts today",
+          source: "system",
+        });
+        return { ok: false, reason: "rate_limited" };
+      }
     }
     buckets.push({
       key: "signin24h:global",
@@ -213,7 +258,7 @@ export const prepareGuardianSend = internalMutation({
       text: renderGuardianEmail({
         guardianName: consent.guardian_name,
         applicantFirstName: firstName,
-        confirmUrl: `${SITE}/guardian-confirm/?token=${token}`,
+        confirmUrl: `${siteUrl}/guardian-confirm/?token=${token}`,
       }),
     };
   },
@@ -242,10 +287,15 @@ export const rollbackGuardianSend = internalMutation({
       token_sent_at: args.prevSentAt,
       confirmation_state: args.prevState,
     });
-    // A send that never happened must not burn the member's resend quota.
+    // Budget semantics match DELIVERED sends: a failed call releases the
+    // shared global bucket (nothing left the building) and the member's
+    // resend quota, but charges the bounded failure bucket, so transient
+    // errors are retryable while failure loops cannot drain anything.
+    await releaseKey(ctx, "signin24h:global", GLOBAL_DAY);
     if (args.releaseMemberQuota) {
       await releaseKey(ctx, `guardian1h:${args.memberId}`, RESEND_HOUR);
       await releaseKey(ctx, `guardian24h:${args.memberId}`, RESEND_DAY);
+      await consumeKey(ctx, `guardianfail24h:${args.memberId}`, FAIL_DAY);
     }
     await writeAudit(ctx, {
       actor: `guardianConsent:${args.consentId}`,
