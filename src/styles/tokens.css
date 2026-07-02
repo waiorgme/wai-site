@@ -77,8 +77,20 @@ img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; }
 h1, h2, h3, h4 { font-family: var(--display); font-weight: 700; line-height: 1.02; letter-spacing: -0.02em; margin: 0; }
-p { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { margin: 0; text-wrap: pretty; }
 :focus-visible { outline: 3px solid var(--sky-glow); outline-offset: 3px; border-radius: 6px; }
+
+::selection { background: rgba(108, 200, 255, .9); color: #04101f; }
+
+/* Cross-document page transitions: a quiet crossfade between pages, so the
+   fixed glass nav appears to hold still while content changes underneath.
+   Progressive enhancement; browsers without support just navigate. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  ::view-transition-old(root) { animation-duration: .22s; animation-timing-function: var(--ease-out); }
+  ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: var(--ease-out); }
+}
 
 :root { --nav-h: 76px; } /* floating glass nav clearance (legal/utility pages) */
 
