@@ -6,13 +6,18 @@ verbatim), `01 Under-18 Launch Copy (Drafts)` §3 (the public safeguarding state
 `02 PRD Phase 2` §6.5 (privacy + safeguarding pages are P0), audit register LEGAL-1, UX-1, SEO-1
 (sitemap/robots/canonical/hreflang/404 part), SEC-6 follow-through (robots), brand locks.
 
-## STOP-THE-LINE, raised to Issam
-The footer links to a **Terms and Conditions** page, but the vault holds NO membership-terms copy.
-This slice does not invent legal terms. The /terms footer link stays pointing at the old site until
-Issam decides: (a) Claude drafts a `02 Membership Terms (Draft)` vault note for review, then builds
-the page from it, or (b) the Terms link is dropped at cutover until terms exist.
+## STOP-THE-LINE - RESOLVED 2026-07-02
+The footer linked a Terms page with no vault terms copy behind it. Issam decided: Claude drafts,
+building on the live site's old T&C. Done: vault note `02 Membership Terms & Website Conditions
+(Draft)` (goes into the combined legal review), /terms built verbatim from it, both footers now
+link internally.
 
-## OPEN OWNER DECISION (raised to Issam 2026-07-02): privacy draft vs the shipped product
+## OWNER DECISION - RESOLVED 2026-07-02 (Issam: "amend draft now")
+The four mismatches below were fixed in the vault draft (see its changelog) and re-flowed onto the
+page the same day; POLICY_VERSION bumped to 2026-07-02. The legal review checks the amended text.
+Original finding kept for the record:
+
+### (was) privacy draft vs the shipped product
 The /privacy page renders the vault draft verbatim, but the Gate 3 review found the DRAFT ITSELF
 misdescribes the product in four places. The fix is a vault amendment (then re-flow the page), not a
 builder rewrite; these must not survive to launch:

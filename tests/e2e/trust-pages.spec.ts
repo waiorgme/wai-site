@@ -11,7 +11,7 @@ test("privacy policy page renders with its sections", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Privacy Policy" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Who we are" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your rights" })).toBeVisible();
-  await expect(page.getByText("Last updated: 24 June 2026")).toBeVisible();
+  await expect(page.getByText("Last updated: 2 July 2026")).toBeVisible();
 });
 
 test("safeguarding page renders with its commitments", async ({ page }) => {
@@ -27,11 +27,23 @@ test("safeguarding page renders with its commitments", async ({ page }) => {
   await expect(link).toBeVisible();
 });
 
-test("footer privacy link is internal on every language", async ({ page }) => {
+test("footer legal links are internal on every language", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('footer a[href="/privacy"]')).toBeVisible();
+  await expect(page.locator('footer a[href="/terms"]')).toBeVisible();
   await page.goto("/ar/");
   await expect(page.locator('footer a[href="/privacy"]')).toBeVisible();
+  await expect(page.locator('footer a[href="/terms"]')).toBeVisible();
+});
+
+test("terms page renders membership terms, not the old boilerplate", async ({ page }) => {
+  await page.goto("/terms");
+  await expect(
+    page.getByRole("heading", { name: "Membership Terms & Website Conditions" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The house rules" })).toBeVisible();
+  await expect(page.getByText("Membership is free.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Governing law" })).toBeVisible();
 });
 
 test("robots.txt and sitemap ship in the build", async ({ request }) => {
