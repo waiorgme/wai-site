@@ -529,22 +529,17 @@ export const writeConsent = mutation({
     if (member.lifecycle_state !== "active") {
       return { ok: false, error: "not_active" };
     }
-    // SEC-5 safeguarding lane guard: minors and unknown-age accounts are
-    // blocked from the talent pipeline, and it is women-only, so allies are
-    // ineligible too (Stage 0 §5 central women-only exclusion). Only the
-    // standard lane can consent INTO the pipeline. The refusal is audited;
-    // no consent row is written.
-    if (
-      args.type === "pipeline" &&
-      args.value === true &&
-      member.member_lane !== "standard"
-    ) {
+    // Pipeline consent has exactly ONE path: setPipelineOptIn, which carries
+    // the attestation and opens the eligibility review. Accepting it here
+    // would let a caller append a pipeline consent row without either
+    // (Gate 3 finding on the toggles slice). Refusal audited.
+    if (args.type === "pipeline") {
       await writeAudit(ctx, {
         actor: member.email,
         role: "member",
         action: "writeConsent.refused",
         target_id: member._id,
-        after_summary: `pipeline=true refused lane=${member.member_lane}`,
+        after_summary: `pipeline via writeConsent refused (use setPipelineOptIn) lane=${member.member_lane}`,
         source: "system",
       });
       return { ok: false, error: "not_permitted" };

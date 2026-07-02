@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { pipelineStateOnDecision } from "./lib/toggles";
 import { writeAudit } from "./lib/audit";
 
@@ -50,9 +50,11 @@ export const decide = internalMutation({
   },
 });
 
-// List pending reviews for the wave-run ops routine:
+// Pending reviews for the recorded ops routine (see specs/optin-toggles.spec.md
+// and the field spec vault note): Issam runs this twice a week and decides
+// each within 3 working days.
 //   npx convex run pipelineReviews:pendingCount
-export const pendingCount = internalMutation({
+export const pendingCount = internalQuery({
   args: {},
   handler: async (ctx): Promise<{ pending: number }> => {
     const rows = await ctx.db

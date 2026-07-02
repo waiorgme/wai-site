@@ -41,6 +41,14 @@ approved review), `01 Under-18 Members & Mentorship Safeguards (Decision)`, audi
 9. **No behaviour beyond this spec.** The ally question (may allies enter the pipeline?) follows
    the join/claim precedent already shipped: allowed, pending any owner override.
 
+## Ops obligation (Gate 3 fix; recorded in the vault field-spec note too)
+The pending copy promises "A team member checks this once". Honoured by a NAMED routine: **Issam
+runs `npx convex run pipelineReviews:pendingCount` twice a week** (and after any comms push that
+mentions opportunities) **and decides each pending review within 3 working days** via
+`npx convex run pipelineReviews:decide '{"reviewId":"...","decision":"approved","reviewer":"Issam"}'`.
+Pipeline consent has exactly one path (setPipelineOptIn); writeConsent refuses the pipeline type
+outright so no consent row can ever skip the attestation + review.
+
 ## Out of scope, recorded
 - The partner talent-search surface and the brokered-introduction flow (Phase 3 slice).
 - The admin review UI (fallback = npx convex run, per Stage 0).
