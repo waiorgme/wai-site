@@ -78,6 +78,8 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 700; line-height: 1.0
 p { margin: 0; }
 :focus-visible { outline: 3px solid var(--sky-glow); outline-offset: 3px; border-radius: 6px; }
 
+:root { --nav-h: 76px; } /* floating glass nav clearance (legal/utility pages) */
+
 .wrap { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: var(--gutter); }
 
 .sr-only {

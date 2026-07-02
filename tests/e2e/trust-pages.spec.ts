@@ -45,20 +45,33 @@ test("robots.txt and sitemap ship in the build", async ({ request }) => {
 });
 
 test("canonical + reciprocal hreflang on the EN/AR pair", async ({ page }) => {
+  // Trailing-slash form everywhere: matches the directory-format build, the
+  // sitemap output, and the Cloudflare Pages redirect behaviour.
   await page.goto("/about");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://www.waiorg.me/about",
+    "https://www.waiorg.me/about/",
   );
   await expect(page.locator('link[hreflang="ar"]')).toHaveAttribute(
     "href",
-    "https://www.waiorg.me/ar/about",
+    "https://www.waiorg.me/ar/about/",
   );
   await page.goto("/ar/about");
   await expect(page.locator('link[hreflang="en"]')).toHaveAttribute(
     "href",
-    "https://www.waiorg.me/about",
+    "https://www.waiorg.me/about/",
   );
+});
+
+test("sitemap lists canonical trailing-slash URLs and skips private routes", async ({ request }) => {
+  const index = await (await request.get("/sitemap-index.xml")).text();
+  const m = index.match(/<loc>([^<]+)<\/loc>/);
+  expect(m).not.toBeNull();
+  const sitemapUrl = new URL(m![1]).pathname;
+  const body = await (await request.get(sitemapUrl)).text();
+  expect(body).toContain("https://www.waiorg.me/about/");
+  expect(body).not.toContain("/portal");
+  expect(body).not.toContain("/verify");
 });
 
 test("404 page is built and friendly", async () => {
