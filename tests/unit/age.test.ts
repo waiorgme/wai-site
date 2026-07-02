@@ -4,6 +4,7 @@ import {
   computeMinorUntil,
   deriveAgeBlock,
   isValidDob,
+  meetsMinimumJoinAge,
 } from "../../convex/lib/age";
 
 // A fixed "now": 2026-07-02T12:00:00Z.
@@ -50,6 +51,23 @@ describe("isValidDob (SEC-1)", () => {
   it("rejects future dates and pre-1900 dates", () => {
     expect(isValidDob("2027-01-01", NOW)).toBe(false);
     expect(isValidDob("1899-12-31", NOW)).toBe(false);
+  });
+});
+
+describe("meetsMinimumJoinAge (13+ vault lock)", () => {
+  it("rejects an under-13 applicant", () => {
+    // 12 years old today.
+    expect(meetsMinimumJoinAge("2014-01-15", NOW)).toBe(false);
+    // 13th birthday is tomorrow: still 12 today.
+    expect(meetsMinimumJoinAge("2013-07-03", NOW)).toBe(false);
+  });
+
+  it("accepts from the 13th birthday itself", () => {
+    // 13th birthday is today.
+    expect(meetsMinimumJoinAge("2013-07-02", NOW)).toBe(true);
+    // Comfortably a teenager and an adult.
+    expect(meetsMinimumJoinAge("2010-01-15", NOW)).toBe(true);
+    expect(meetsMinimumJoinAge("1990-01-15", NOW)).toBe(true);
   });
 });
 

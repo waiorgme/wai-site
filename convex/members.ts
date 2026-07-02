@@ -5,7 +5,7 @@ import type { MutationCtx } from "./_generated/server";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { writeAudit } from "./lib/audit";
-import { deriveAgeBlock, isValidDob } from "./lib/age";
+import { deriveAgeBlock, isValidDob, meetsMinimumJoinAge } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
 import {
   isProfileComplete,
@@ -30,7 +30,9 @@ type CreateResult =
   | { ok: true; already: true; route: "sign_in" }
   | { ok: true; memberId: Id<"members">; lifecycle_state: "email_unverified" };
 
-type JoinResult = { ok: false; error: "validation" } | CreateResult;
+type JoinResult =
+  | { ok: false; error: "validation" | "underage" }
+  | CreateResult;
 
 // The logged-in member's own summary, keyed off the Convex Auth user id.
 // Returns null when signed out or before the auth user is linked to a member.
@@ -230,6 +232,12 @@ export const submitJoin = action({
     if (!isValidDob(args.dobAnswer, Date.now())) {
       return { ok: false, error: "validation" } as const;
     }
+    // Vault lock: minimum joining age is 13; under-13s are never signed up as
+    // their own members. Rejected BEFORE any member or consent row exists. The
+    // distinct error lets the form show the decided gentle-refusal copy.
+    if (!meetsMinimumJoinAge(args.dobAnswer, Date.now())) {
+      return { ok: false, error: "underage" } as const;
+    }
     const human = await verifyTurnstile(args.turnstileToken);
     if (!human) {
       return { ok: false, error: "validation" } as const;
@@ -245,13 +253,17 @@ export const submitJoin = action({
   },
 });
 
+// Serves the PUBLIC join path only, so DOB is required here too (defence in
+// depth behind submitJoin's checks). The 1,309 migrated members, who arrive
+// without DOB by design, are created by the claim-wave import path, never
+// through this mutation.
 export const createPendingMember = internalMutation({
   args: {
     name: v.string(),
     email: v.string(),
     careerStageAnswer: v.string(),
     genderAnswer: v.union(v.literal("female"), v.literal("male")),
-    dobAnswer: v.optional(v.string()),
+    dobAnswer: v.string(),
     consents: consentArgs,
   },
   handler: async (ctx, args): Promise<CreateResult> => {
@@ -291,9 +303,28 @@ export const createPendingMember = internalMutation({
 
     // §4.3 Write all three consent rows at join, including explicit false rows
     // for marketing and pipeline (Codex 5).
+    // SEC-5 safeguarding lane guard, join path: minors (and unknown-age
+    // accounts) are blocked from the talent pipeline, so a ticked pipeline box
+    // is FORCED to an explicit false row and the refusal is audited. Same rule
+    // as writeConsent below; without this the join form bypassed the guard.
+    let pipelineConsent = args.consents.pipeline;
+    if (
+      pipelineConsent &&
+      (lane === "minor" || lane === "restricted_unknown")
+    ) {
+      pipelineConsent = false;
+      await writeAudit(ctx, {
+        actor: email,
+        role: "visitor",
+        action: "writeConsent.refused",
+        target_id: memberId,
+        after_summary: `pipeline=true refused at join lane=${lane}`,
+        source: "system",
+      });
+    }
     await insertConsent(ctx, memberId, "terms_privacy", args.consents.terms, now);
     await insertConsent(ctx, memberId, "marketing", args.consents.marketing, now);
-    await insertConsent(ctx, memberId, "pipeline", args.consents.pipeline, now);
+    await insertConsent(ctx, memberId, "pipeline", pipelineConsent, now);
 
     await writeAudit(ctx, {
       actor: email,
@@ -313,7 +344,7 @@ export const createPendingMember = internalMutation({
 });
 
 // §7 writeConsent: a member changes her OWN consent after join (settings). Keyed
-// off the auth user — never a passed memberId — so one member can't write a
+// off the auth user - never a passed memberId - so one member can't write a
 // consent row for another. Join/claim consent is written internally, not here.
 export const writeConsent = mutation({
   args: {

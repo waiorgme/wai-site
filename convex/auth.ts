@@ -5,12 +5,11 @@ import Resend from "@auth/core/providers/resend";
 import { Resend as ResendAPI } from "resend";
 import { ConvexError } from "convex/values";
 import { convexAuth } from "@convex-dev/auth/server";
-import type { GenericActionCtx } from "convex/server";
-import type { DataModel, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { internal } from "./_generated/api";
 import { issueMembershipCertificate } from "./lib/certificates";
+import { consumeKey } from "./rateLimit";
 import {
   GLOBAL_DAY,
   PER_EMAIL_DAY,
@@ -37,10 +36,14 @@ const memberForUser = async (
 
 // SEC-2: every sign-in email (join AND portal) passes through this one choke
 // point, so the rate limits cannot be sidestepped by picking another form.
-// Blocks throw RATE_LIMITED_MARKER, which the client maps to plain-language
-// "wait and retry" copy. Limits live in convex/lib/rateLimit.ts.
+// It runs inside the auth:store "createVerificationCode" MUTATION, before the
+// library deletes and replaces the stored code: a throw here aborts that whole
+// transaction, so an over-limit request can never invalidate a member's
+// already-emailed link (the Codex Gate 4 blocker). Blocks throw
+// RATE_LIMITED_MARKER, which the client maps to plain-language "wait and
+// retry" copy. Limits live in convex/lib/rateLimit.ts.
 const enforceSendLimits = async (
-  ctx: GenericActionCtx<DataModel>,
+  ctx: MutationCtx,
   email: string,
 ): Promise<void> => {
   const checks: Array<{ key: string; rule: RateLimitRule }> = [
@@ -49,11 +52,7 @@ const enforceSendLimits = async (
     { key: "signin24h:global", rule: GLOBAL_DAY },
   ];
   for (const { key, rule } of checks) {
-    const res = await ctx.runMutation(internal.rateLimit.consume, {
-      key,
-      limit: rule.limit,
-      windowMs: rule.windowMs,
-    });
+    const res = await consumeKey(ctx, key, rule);
     if (!res.ok) {
       // ConvexError, not Error: plain Error messages are redacted to "Server
       // Error" on production deployments, so the client would never see the
@@ -71,19 +70,21 @@ const WaiMagicLink = Resend({
   maxAge: 60 * 15,
 });
 
-// The runtime calls sendVerificationRequest(args, ctx) — see
-// @convex-dev/auth/dist/server/implementation/signIn.js — but the @auth/core
-// type declares only the first parameter, hence the narrow cast below. The ctx
-// gives us the deployment's mutation runner for the rate-limit buckets.
-WaiMagicLink.sendVerificationRequest = (async (
-  {
-    identifier: email,
-    url,
-    provider,
-  }: { identifier: string; url: string; provider: { apiKey?: string } },
-  ctx: GenericActionCtx<DataModel>,
-) => {
-  await enforceSendLimits(ctx, email.toLowerCase());
+// Sends the actual email. Rate limiting does NOT live here: by the time the
+// runtime calls sendVerificationRequest, the library has already deleted and
+// replaced the stored verification code (signIn.js calls
+// callCreateVerificationCode first), so a throw at this stage would leave a
+// member's live link invalidated without a replacement. The limits are
+// enforced in afterUserCreatedOrUpdated below, inside that same transaction.
+WaiMagicLink.sendVerificationRequest = (async ({
+  identifier: email,
+  url,
+  provider,
+}: {
+  identifier: string;
+  url: string;
+  provider: { apiKey?: string };
+}) => {
   const resend = new ResendAPI(provider.apiKey as string);
   const { error } = await resend.emails.send({
     from: process.env.AUTH_EMAIL_FROM ?? "WAI-ME <noreply@updates.waiorg.me>",
@@ -102,19 +103,29 @@ WaiMagicLink.sendVerificationRequest = (async (
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [WaiMagicLink],
   callbacks: {
-    // Link the auth user to the member at creation (matched by email). User
-    // creation happens when signIn is initiated — BEFORE the email is verified —
-    // so we only link here; we do NOT advance the lifecycle.
-    async afterUserCreatedOrUpdated(baseCtx, { userId }) {
+    // Runs inside the auth:store mutation. Two jobs:
+    // 1. SEC-2 rate limits. `type === "email"` means "a sign-in email is about
+    //    to be sent": this callback fires BEFORE the library deletes and
+    //    replaces the stored verification code, in the SAME transaction, so an
+    //    over-limit throw rolls everything back and the member's existing link
+    //    keeps working. (`type === "verification"` is link redemption; it is
+    //    never rate limited here.)
+    // 2. Link the auth user to the member at creation (matched by email). User
+    //    creation happens when signIn is initiated, BEFORE the email is
+    //    verified, so we only link here; we do NOT advance the lifecycle.
+    async afterUserCreatedOrUpdated(baseCtx, { userId, type, profile }) {
       // The auth callback's ctx is generically typed; cast to our app's
       // MutationCtx so the members schema + indexes are known.
       const ctx = baseCtx as unknown as MutationCtx;
+      if (type === "email" && typeof profile.email === "string") {
+        await enforceSendLimits(ctx, profile.email.toLowerCase());
+      }
       const member = await memberForUser(ctx, userId);
       if (member !== null && member.userId === undefined) {
         await ctx.db.patch(member._id, { userId });
       }
     },
-    // Fires only on actual authentication — after the magic link is verified and
+    // Fires only on actual authentication - after the magic link is verified and
     // just before the session is created. This is the real "email verified"
     // signal, so we advance the lifecycle here (§6): minors → pending_guardian,
     // unknown age → pending_review (SEC-3: never auto-activated, a human looks
@@ -143,7 +154,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         source: "system",
       });
       // The first win: issue the membership certificate the moment the email is
-      // verified — but ONLY for members who reach `active` here. Minors get it
+      // verified - but ONLY for members who reach `active` here. Minors get it
       // after guardian confirmation (a later slice); unknown-age accounts get it
       // after human review. Idempotent.
       if (next === "active") {

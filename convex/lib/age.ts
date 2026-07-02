@@ -37,6 +37,15 @@ export const isValidDob = (dob: string, now: number): boolean => {
   return year >= 1900 && parsed.getTime() <= now;
 };
 
+// Vault lock: minimum joining age is 13; under-13s are never signed up as
+// their own members ([[01 Under-18 Members & Mentorship Safeguards (Decision)]]).
+export const MIN_JOIN_AGE = 13;
+
+// True when a (valid) DOB meets the 13+ floor on the reference day. The 13th
+// birthday itself is eligible.
+export const meetsMinimumJoinAge = (dobIso: string, now: number): boolean =>
+  ageInYears(dobIso, now) >= MIN_JOIN_AGE;
+
 type AgeBlock = {
   date_of_birth: string | undefined;
   date_of_birth_source: "self_declared" | "migrated" | "guardian_confirmed" | "unknown";

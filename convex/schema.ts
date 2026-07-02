@@ -176,8 +176,8 @@ export default defineSchema({
     .index("by_actor_time", ["actor", "timestamp"]),
 
   // §4.5 Certificate. Membership type auto-issues on join (the first win); all
-  // other types are approve-first (later slice). The public verification page —
-  // not the image — is the proof, so each row carries an UNGUESSABLE verify_token
+  // other types are approve-first (later slice). The public verification page -
+  // not the image - is the proof, so each row carries an UNGUESSABLE verify_token
   // (the public lookup key; the human-facing WAIME-MEM-#### label is derived from
   // the membership number and is never the lookup key, so the member list can't
   // be enumerated) and a `status` so verification tells the truth: valid /
