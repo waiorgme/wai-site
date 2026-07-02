@@ -97,6 +97,14 @@ describe("sending the guardian email", () => {
     expect(email.text).toContain("Dear Mona Haddad,");
     expect(email.text).toContain("Layla has asked to join");
     expect(email.text).toContain("never share a young member's details");
+    // The vault draft's own sentences, verbatim.
+    expect(email.text).toContain(
+      "To give your consent, please click below. If you'd prefer not to, simply ignore this email and the account won't be activated.",
+    );
+    expect(email.text).toContain(
+      "You can read how we protect young members here:",
+    );
+    expect(email.text).toContain("and how we handle data here:");
     expect(email.text).toContain("/safeguarding/");
     expect(email.text).toContain("/privacy/");
     expect(email.text).toContain("support@waiorg.me");
@@ -218,6 +226,15 @@ describe("confirming", () => {
     expect(consent?.confirmation_state).toBe("expired");
     const member = await t.run(async (ctx) => ctx.db.get(memberId));
     expect(member?.lifecycle_state).toBe("pending_guardian");
+
+    // §8: expiring a minor's consent window leaves audit evidence, PII-free.
+    const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+    const expiryAudit = audits.filter(
+      (a) => a.action === "captureGuardianConsent.expired",
+    );
+    expect(expiryAudit).toHaveLength(1);
+    expect(expiryAudit[0].after_summary ?? "").not.toContain("Mona");
+    expect(expiryAudit[0].after_summary ?? "").not.toContain("guardian@example.com");
   });
 });
 

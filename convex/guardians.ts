@@ -277,6 +277,16 @@ export const expireGuardianToken = internalMutation({
       return;
     }
     await ctx.db.patch(args.consentId, { confirmation_state: "expired" });
+    // §8: expiring a minor's consent window is a member-affecting write; the
+    // safeguarding trail records it (no guardian PII in the summary).
+    await writeAudit(ctx, {
+      actor: `guardianConsent:${args.consentId}`,
+      role: "system",
+      action: "captureGuardianConsent.expired",
+      target_id: consent.member_id,
+      after_summary: "guardian confirmation token expired after 30 days",
+      source: "system",
+    });
   },
 });
 
@@ -446,6 +456,16 @@ export const confirmGuardianConsent = mutation({
     ) {
       if (consent.confirmation_state === "pending") {
         await ctx.db.patch(consent._id, { confirmation_state: "expired" });
+        // §8: same expiry evidence as the scheduled marker (no guardian PII).
+        await writeAudit(ctx, {
+          actor: `guardianConsent:${consent._id}`,
+          role: "system",
+          action: "captureGuardianConsent.expired",
+          target_id: consent.member_id,
+          after_summary:
+            "guardian confirmation token expired after 30 days (confirm attempt)",
+          source: "system",
+        });
       }
       return { state: "invalid" };
     }
