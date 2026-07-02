@@ -308,6 +308,68 @@ describe("resending", () => {
     ).toHaveLength(1);
   });
 
+  it("a failed resend never resurrects an EXPIRED row as pending", async () => {
+    const t = convexTest(schema, modules);
+    const memberId = await seedPendingMinor(t);
+    await t.action(internal.guardians.sendGuardianEmail, { memberId });
+    await t.run(async (ctx) => {
+      const consent = await ctx.db.query("guardianConsents").first();
+      await ctx.db.patch(consent!._id, { confirmation_state: "expired" });
+    });
+
+    failNextSend = true;
+    const signedIn = await asMinor(t, memberId);
+    const result = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(result).toEqual({ ok: false, error: "send_failed" });
+
+    const consent = await t.run(async (ctx) => ctx.db.query("guardianConsents").first());
+    expect(consent?.confirmation_state).toBe("expired");
+  });
+
+  it("a failed resend releases the member's quota: the immediate retry succeeds", async () => {
+    const t = convexTest(schema, modules);
+    const memberId = await seedPendingMinor(t);
+    await t.action(internal.guardians.sendGuardianEmail, { memberId });
+
+    failNextSend = true;
+    const signedIn = await asMinor(t, memberId);
+    const failed = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(failed).toEqual({ ok: false, error: "send_failed" });
+
+    // The 1/hour bucket was given back, so the retry goes straight through.
+    const retry = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(retry).toEqual({ ok: true });
+    expect(sentEmails).toHaveLength(2);
+  });
+
+  it("a global-cap refusal never burns the member's own quota", async () => {
+    const t = convexTest(schema, modules);
+    const memberId = await seedPendingMinor(t);
+    await t.action(internal.guardians.sendGuardianEmail, { memberId });
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("rateLimits")
+        .withIndex("by_key", (q) => q.eq("key", "signin24h:global"))
+        .unique();
+      await ctx.db.patch(row!._id, { count: 90 });
+    });
+    const signedIn = await asMinor(t, memberId);
+    const refused = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(refused).toEqual({ ok: false, error: "rate_limited" });
+
+    // Budget frees up (a new day, operationally): her hourly quota is intact.
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("rateLimits")
+        .withIndex("by_key", (q) => q.eq("key", "signin24h:global"))
+        .unique();
+      await ctx.db.patch(row!._id, { count: 1 });
+    });
+    const retry = await signedIn.action(api.guardians.resendGuardianEmail, {});
+    expect(retry).toEqual({ ok: true });
+    expect(sentEmails).toHaveLength(2);
+  });
+
   it("Resend failure: previous token restored, failure audited, member told the truth", async () => {
     const t = convexTest(schema, modules);
     const memberId = await seedPendingMinor(t);

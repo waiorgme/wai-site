@@ -24,7 +24,7 @@ import {
   isGuardianTokenExpired,
 } from "./lib/guardianToken";
 import { POLICY_VERSION } from "./lib/policy";
-import { consumeKey } from "./rateLimit";
+import { consumeKey, peekKey, releaseKey } from "./rateLimit";
 import { GLOBAL_DAY } from "./lib/rateLimit";
 import { SITE } from "../site.config.mjs";
 
@@ -57,8 +57,11 @@ export const prepareGuardianSend = internalMutation({
     | {
         ok: true;
         consentId: Id<"guardianConsents">;
+        memberId: Id<"members">;
         prevHash: string;
         prevSentAt?: number;
+        prevState: "pending" | "expired";
+        releaseMemberQuota: boolean;
         to: string;
         subject: string;
         text: string;
@@ -115,40 +118,62 @@ export const prepareGuardianSend = internalMutation({
       });
       return { ok: false, reason: "not_eligible" };
     }
-    // The member's own resend throttle, consumed atomically with the send.
+    // Rate limits, peek-first: EVERY applicable bucket is checked read-only
+    // before ANY is consumed, so a refusal in one bucket never burns another
+    // (member quota survives a global-cap refusal and vice versa). Guardian
+    // emails share the Resend budget with magic links (criterion 4).
+    const buckets: Array<{
+      key: string;
+      rule: { limit: number; windowMs: number };
+      refusal: { action: string; role: string; summary: string };
+    }> = [];
     if (args.viaMemberResend === true) {
-      for (const [key, rule] of [
-        [`guardian1h:${member._id}`, RESEND_HOUR] as const,
-        [`guardian24h:${member._id}`, RESEND_DAY] as const,
-      ]) {
-        const res = await consumeKey(ctx, key, rule);
-        if (!res.ok) {
-          await writeAudit(ctx, {
-            actor: member.email,
-            role: "member",
+      buckets.push(
+        {
+          key: `guardian1h:${member._id}`,
+          rule: RESEND_HOUR,
+          refusal: {
             action: "resendGuardianEmail.refused",
-            target_id: member._id,
-            after_summary: "resend throttled",
-            source: "system",
-          });
-          return { ok: false, reason: "rate_limited" };
-        }
+            role: "member",
+            summary: "resend throttled",
+          },
+        },
+        {
+          key: `guardian24h:${member._id}`,
+          rule: RESEND_DAY,
+          refusal: {
+            action: "resendGuardianEmail.refused",
+            role: "member",
+            summary: "resend throttled",
+          },
+        },
+      );
+    }
+    buckets.push({
+      key: "signin24h:global",
+      rule: GLOBAL_DAY,
+      refusal: {
+        action: "sendGuardianEmail.refused",
+        role: "system",
+        summary: "global daily send cap reached",
+      },
+    });
+    for (const bucket of buckets) {
+      const res = await peekKey(ctx, bucket.key, bucket.rule);
+      if (!res.ok) {
+        await writeAudit(ctx, {
+          actor: member.email,
+          role: bucket.refusal.role,
+          action: bucket.refusal.action,
+          target_id: member._id,
+          after_summary: bucket.refusal.summary,
+          source: "system",
+        });
+        return { ok: false, reason: "rate_limited" };
       }
     }
-    // Guardian emails share the Resend budget with magic links (criterion 4):
-    // consume the same global daily bucket, inside this transaction. Refusal
-    // is audited and rotates nothing.
-    const budget = await consumeKey(ctx, "signin24h:global", GLOBAL_DAY);
-    if (!budget.ok) {
-      await writeAudit(ctx, {
-        actor: member.email,
-        role: "system",
-        action: "sendGuardianEmail.refused",
-        target_id: member._id,
-        after_summary: "global daily send cap reached",
-        source: "system",
-      });
-      return { ok: false, reason: "rate_limited" };
+    for (const bucket of buckets) {
+      await consumeKey(ctx, bucket.key, bucket.rule);
     }
 
     const token = generateGuardianToken();
@@ -178,8 +203,11 @@ export const prepareGuardianSend = internalMutation({
     return {
       ok: true,
       consentId: consent._id,
+      memberId: member._id,
       prevHash: consent.confirmation_token_hash,
       prevSentAt: consent.token_sent_at,
+      prevState: consent.confirmation_state as "pending" | "expired",
+      releaseMemberQuota: args.viaMemberResend === true,
       to: consent.guardian_email,
       subject: GUARDIAN_EMAIL_SUBJECT,
       text: renderGuardianEmail({
@@ -196,18 +224,29 @@ export const prepareGuardianSend = internalMutation({
 export const rollbackGuardianSend = internalMutation({
   args: {
     consentId: v.id("guardianConsents"),
+    memberId: v.id("members"),
     prevHash: v.string(),
     prevSentAt: v.optional(v.number()),
+    prevState: v.union(v.literal("pending"), v.literal("expired")),
+    releaseMemberQuota: v.boolean(),
   },
   handler: async (ctx, args): Promise<void> => {
     const consent = await ctx.db.get(args.consentId);
     if (consent === null || consent.confirmation_state !== "pending") {
       return;
     }
+    // Restore EVERYTHING the prepare changed, including the state: a failed
+    // send must never resurrect an expired row as pending.
     await ctx.db.patch(args.consentId, {
       confirmation_token_hash: args.prevHash,
       token_sent_at: args.prevSentAt,
+      confirmation_state: args.prevState,
     });
+    // A send that never happened must not burn the member's resend quota.
+    if (args.releaseMemberQuota) {
+      await releaseKey(ctx, `guardian1h:${args.memberId}`, RESEND_HOUR);
+      await releaseKey(ctx, `guardian24h:${args.memberId}`, RESEND_DAY);
+    }
     await writeAudit(ctx, {
       actor: `guardianConsent:${args.consentId}`,
       role: "system",
@@ -269,8 +308,11 @@ const performGuardianSend = async (
   } catch {
     await ctx.runMutation(internal.guardians.rollbackGuardianSend, {
       consentId: prepared.consentId,
+      memberId: prepared.memberId,
       prevHash: prepared.prevHash,
       prevSentAt: prepared.prevSentAt,
+      prevState: prepared.prevState,
+      releaseMemberQuota: prepared.releaseMemberQuota,
     });
     return "send_failed";
   }

@@ -42,6 +42,46 @@ export const consumeKey = async (
   return { ok: true, retryAfterMs: 0 };
 };
 
+// Read-only check: would one more event fit? Writes nothing, so a caller can
+// verify EVERY applicable bucket before consuming ANY of them (a refusal in
+// one bucket must not burn another). Convex mutations are serialisable, so a
+// peek-then-consume inside one mutation is race-safe.
+export const peekKey = async (
+  ctx: MutationCtx,
+  key: string,
+  rule: RateLimitRule,
+): Promise<{ ok: boolean; retryAfterMs: number }> => {
+  const now = Date.now();
+  const row = await ctx.db
+    .query("rateLimits")
+    .withIndex("by_key", (q) => q.eq("key", key))
+    .unique();
+  const decision = decideWindow(
+    row === null ? null : { window_start: row.window_start, count: row.count },
+    rule,
+    now,
+  );
+  return { ok: decision.allowed, retryAfterMs: decision.retryAfterMs };
+};
+
+// Give one consumed event back (a send that never happened must not burn the
+// member's quota). No-op when the bucket is missing or its window has rolled.
+export const releaseKey = async (
+  ctx: MutationCtx,
+  key: string,
+  rule: RateLimitRule,
+): Promise<void> => {
+  const now = Date.now();
+  const row = await ctx.db
+    .query("rateLimits")
+    .withIndex("by_key", (q) => q.eq("key", key))
+    .unique();
+  if (row === null || now - row.window_start >= rule.windowMs || row.count <= 0) {
+    return;
+  }
+  await ctx.db.patch(row._id, { count: row.count - 1 });
+};
+
 // Action-callable wrapper. Returns { ok } or { ok: false, retryAfterMs }.
 export const consume = internalMutation({
   args: {
