@@ -33,9 +33,19 @@ Also confirm before launch: the Cloudflare Web Analytics beacon is dashboard-inj
 ## Acceptance criteria
 
 1. **/privacy page (LEGAL-1).** Built verbatim from the vault draft Part 1 (headings + body),
-   styled with the site's own tokens, EN nav + footer. "Last updated" = 24 June 2026 (the
-   POLICY_VERSION already stamped on consent rows). The pre-launch legal review remains a launch
-   gate tracked in Tasks; the page itself carries no draft banner (staging site).
+   styled with the site's own tokens, EN nav + footer. "Last updated" = 2 July 2026, matching the
+   amended draft and the bumped POLICY_VERSION (2026-07-02) stamped on consent rows. *(AMENDED
+   2026-07-02: this criterion originally said 24 June 2026; superseded the same day when Issam
+   resolved the LEGAL-2 mismatches by amending the vault draft, see the resolved owner-decision
+   section above.)* The pre-launch legal review remains a launch gate tracked in Tasks; the page
+   itself carries no draft banner (staging site).
+   **Data-request route (PRD §6.5 P0) - DEFERRED, recorded 2026-07-02:** the PRD asked for a
+   "request your data / delete your data" route creating a DataRequest via `submitDataRequest`
+   (Stage 0 §7). The Issam-approved LEGAL-2 amendment made the privacy policy say, verbatim: "To
+   exercise any of these, email support@waiorg.me" and "(As the member area grows, these options
+   will also appear there directly.)" - the email route IS the launch mechanism; the DataRequest
+   table + action + admin handling belong to the recorded next-priority admin-panel slice. The
+   deferral note is also recorded in the vault PRD §6.5.
 2. **/safeguarding page.** Built verbatim from the vault's public statement ("Keeping Our Young
    Members Safe"), same treatment. The privacy-policy cross-reference links to /privacy.
 3. **Footer updates (EN + AR):** Privacy Policy links to /privacy (internal), a Safeguarding link
