@@ -9,6 +9,7 @@ import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { issueMembershipCertificate } from "./lib/certificates";
+import { ensurePipelineReviewOnActivation } from "./lib/pipeline";
 import { consumeKey } from "./rateLimit";
 import {
   GLOBAL_DAY,
@@ -159,6 +160,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // after human review. Idempotent.
       if (next === "active") {
         await issueMembershipCertificate(ctx, member);
+        // Pipeline invariant: if she gave the attested pipeline consent at
+        // join, the eligibility review opens NOW, when the member is real.
+        await ensurePipelineReviewOnActivation(ctx, member);
       }
     },
   },

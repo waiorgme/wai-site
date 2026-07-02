@@ -114,7 +114,7 @@ describe("join-path pipeline consent guard (SEC-5)", () => {
     ).toHaveLength(1);
   });
 
-  it("an adult's ticked pipeline box is stored as true, no refusal", async () => {
+  it("an adult's ticked (attested) pipeline box is stored as true, and the review opens at activation", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(
       internal.members.createPendingMember,
@@ -134,6 +134,24 @@ describe("join-path pipeline consent guard (SEC-5)", () => {
     expect(
       audits.filter((a) => a.action === "writeConsent.refused"),
     ).toHaveLength(0);
+
+    // The pipeline invariant (optin-toggles spec): the join capture is only
+    // half the story; when the member activates, the eligibility review
+    // opens, so no true consent is ever actionable without attestation AND
+    // review. (Activation runs in the auth hook; exercised here directly.)
+    await t.run(async (ctx) => {
+      const member = await ctx.db.query("members").first();
+      await ctx.db.patch(member!._id, { lifecycle_state: "active" });
+      const activated = await ctx.db.get(member!._id);
+      const { ensurePipelineReviewOnActivation } = await import(
+        "../../convex/lib/pipeline"
+      );
+      await ensurePipelineReviewOnActivation(ctx, activated!);
+    });
+    const reviews = await t.run(async (ctx) =>
+      ctx.db.query("pipelineEligibilityReviews").collect(),
+    );
+    expect(reviews).toHaveLength(1);
   });
 });
 

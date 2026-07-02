@@ -132,6 +132,32 @@ describe("legacy membership number is mandatory for a migrated certificate", () 
   });
 });
 
+describe("claim-path pipeline invariant (attestation + review, never skipped)", () => {
+  it("a standard member's attested claim consent opens the eligibility review", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert(
+        "importedMembers",
+        importedRow("optin@example.com", { gender: "female" }),
+      );
+    });
+    const asClaimant = await signedInAs(t, "optin@example.com");
+    const result = await asClaimant.mutation(
+      api.members.matchClaim,
+      claimArgs({ consents: { terms: true, marketing: false, pipeline: true } }),
+    );
+    expect(result).toEqual({ ok: true });
+
+    const reviews = await t.run(async (ctx) =>
+      ctx.db.query("pipelineEligibilityReviews").collect(),
+    );
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0].state).toBe("pending");
+    const members = await t.run(async (ctx) => ctx.db.query("members").collect());
+    expect(members[0].pipeline_state).toBe("review_pending");
+  });
+});
+
 describe("claim-path pipeline lane guard (women-only, same rule as join)", () => {
   it("a male (ally lane) claim with pipeline ticked stores explicit false plus an audited refusal", async () => {
     const t = convexTest(schema, modules);

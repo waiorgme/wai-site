@@ -15,12 +15,16 @@ approved review), `01 Under-18 Members & Mentorship Safeguards (Decision)`, audi
    indexes by_member and by_state).
 2. **setDirectoryVisible (member)**: keyed off the auth user; lanes `minor` and `restricted_unknown`
    are refused server-side (locked off); audited.
-3. **setPipelineOptIn (member)**: keyed off the auth user; lanes `minor`/`restricted_unknown`
-   refused. ON requires `attestation: true`, writes a `pipeline` consent row (value true, source
-   settings), opens a PipelineEligibilityReview (pending) idempotently, sets
-   `pipeline_state = review_pending`. OFF writes the explicit false consent row, sets
-   `pipeline_state = off`, and closes any pending review as rejected with reason
-   `withdrawn_by_member`. Audited both ways.
+3. **setPipelineOptIn (member)**: keyed off the auth user. ON requires an `active` lifecycle, the
+   `standard` lane (the pipeline is women-only, matching criterion 7's partner filter and the
+   shipped join/claim/writeConsent rule), and `attestation: true`; it writes a `pipeline` consent
+   row (value true, source settings), opens a PipelineEligibilityReview (pending) idempotently,
+   and sets `pipeline_state = review_pending`. OFF is REVOCATION and is always available to the
+   owning authenticated member, whatever her current lane or lifecycle (privacy decision: pipeline
+   consent must be revocable): explicit false consent row, `pipeline_state = off`, any pending
+   review closed as rejected with reason `withdrawn_by_member`. Audited both ways.
+   *AMENDED 2026-07-02 (Gate 4 loop):* original text named only the minor/unknown lanes and had
+   no lifecycle gate or revocation carve-out.
 4. **decidePipelineReview (admin fallback, internal)**: run by Issam via `npx convex run` until the
    admin surface exists (Stage 0: the fallback path). Approves/rejects a pending review, sets the
    member's `pipeline_state` (`on` / `rejected`), audits with reviewer name. Idempotent per review.
@@ -38,16 +42,28 @@ approved review), `01 Under-18 Members & Mentorship Safeguards (Decision)`, audi
    filter = `pipeline_state == "on"` AND lane standard AND latest pipeline consent true).
 8. **Tests**: unit tests for the new pure rules (toggle eligibility by lane, pipeline state
    machine transitions); suites stay green.
-9. **No behaviour beyond this spec.** The ally question (may allies enter the pipeline?) follows
-   the join/claim precedent already shipped: allowed, pending any owner override.
+9. **No behaviour beyond this spec.**
+   *AMENDED 2026-07-02 (Gate 4 loop):* the original ally sentence here ("allowed, pending any
+   owner override") contradicted criterion 7's own partner filter (lane standard) and the
+   women-only rule the security-hardening, join and claim slices shipped after this spec was
+   written (Stage 0 §5: ally is never listed as a hireable candidate). Corrected: allies may use
+   the directory toggle and give mentorship, but can NEVER opt into or appear in the talent
+   pipeline.
 
 ## Ops obligation (Gate 3 fix; recorded in the vault field-spec note too)
 The pending copy promises "A team member checks this once". Honoured by a NAMED routine: **Issam
 runs `npx convex run pipelineReviews:pendingCount` twice a week** (and after any comms push that
 mentions opportunities) **and decides each pending review within 3 working days** via
 `npx convex run pipelineReviews:decide '{"reviewId":"...","decision":"approved","reviewer":"Issam"}'`.
-Pipeline consent has exactly one path (setPipelineOptIn); writeConsent refuses the pipeline type
-outright so no consent row can ever skip the attestation + review.
+The pipeline INVARIANT: a true pipeline consent row is never actionable without the
+truthful-declaration attestation AND an eligibility review. Three capture points honour it:
+`setPipelineOptIn` (attestation in the panel, review opened inline), the attested join form
+(PRD §6.3 requires the consent line at join; the review opens when the member reaches `active`),
+and the attested claim form (review opens at claim, the member is active immediately).
+`writeConsent` refuses the pipeline type outright, so no path can skip the pair.
+*AMENDED 2026-07-02 (Gate 4 loop):* the original "exactly one path (setPipelineOptIn)" sentence
+conflicted with PRD §6.3's join-form consent line, which the SHIP-ed join-form-compliance slice
+implements; restated as the invariant above so both specs hold.
 
 ## Out of scope, recorded
 - The partner talent-search surface and the brokered-introduction flow (Phase 3 slice).

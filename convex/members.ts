@@ -9,6 +9,7 @@ import { ageInYears, deriveAgeBlock, isValidDob } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
 import { dobConflicts, namesRoughlyMatch } from "./lib/claim";
 import { canUsePipeline, canUseToggles } from "./lib/toggles";
+import { ensurePipelineReviewOnActivation } from "./lib/pipeline";
 import { issueMembershipCertificate } from "./lib/certificates";
 import { fullName, isValidNamePart, nameCase } from "./lib/names";
 import {
@@ -870,6 +871,9 @@ export const matchClaim = mutation({
         member,
         row.legacy_membership_number,
       );
+      // Pipeline invariant: an attested pipeline consent given on the claim
+      // form opens the eligibility review now (the member is active already).
+      await ensurePipelineReviewOnActivation(ctx, member);
     }
 
     return { ok: true };
@@ -899,6 +903,7 @@ export const getMySettings = query({
     ctx,
   ): Promise<null | {
     locked: boolean;
+    pipeline_locked: boolean;
     directory_visible: boolean;
     pipeline_state: "off" | "review_pending" | "on" | "rejected";
   }> => {
@@ -927,16 +932,25 @@ export const setDirectoryVisible = mutation({
     if (member === null) {
       return { ok: false, error: "not_signed_in" };
     }
-    if (!canUseToggles(member.member_lane)) {
-      await writeAudit(ctx, {
-        actor: member.email,
-        role: "member",
-        action: "setDirectoryVisible.refused",
-        target_id: member._id,
-        after_summary: `value=${args.value} refused lane=${member.member_lane}`,
-        source: "system",
-      });
-      return { ok: false, error: "not_permitted" };
+    // ENABLING needs an active membership and an eligible lane. DISABLING is
+    // always available to the owning member: someone reclassified (for
+    // example a corrected DOB moved her lane) must still be able to withdraw
+    // her visibility.
+    if (args.value === true) {
+      if (member.lifecycle_state !== "active") {
+        return { ok: false, error: "not_active" };
+      }
+      if (!canUseToggles(member.member_lane)) {
+        await writeAudit(ctx, {
+          actor: member.email,
+          role: "member",
+          action: "setDirectoryVisible.refused",
+          target_id: member._id,
+          after_summary: `value=${args.value} refused lane=${member.member_lane}`,
+          source: "system",
+        });
+        return { ok: false, error: "not_permitted" };
+      }
     }
     await ctx.db.patch(member._id, { directory_visible: args.value });
     await writeAudit(ctx, {
@@ -951,10 +965,12 @@ export const setDirectoryVisible = mutation({
   },
 });
 
-// §7 setPipelineOptIn: ON requires the truthful-declaration attestation and
-// opens the eligibility review (profile reaches partners only after opt-in
-// AND an approved review). OFF is immediate and always allowed for eligible
-// lanes; explicit false consent row written.
+// §7 setPipelineOptIn: ON requires an active membership, the standard lane,
+// and the truthful-declaration attestation; it opens the eligibility review
+// (profile reaches partners only after opt-in AND an approved review). OFF is
+// REVOCATION and is always available to the owning member whatever her
+// current lane or lifecycle (privacy decision: pipeline consent must be
+// revocable); explicit false consent row written, pending review withdrawn.
 export const setPipelineOptIn = mutation({
   args: { value: v.boolean(), attestation: v.optional(v.boolean()) },
   handler: async (
@@ -969,18 +985,25 @@ export const setPipelineOptIn = mutation({
     if (member === null) {
       return { ok: false, error: "not_signed_in" };
     }
-    // Women-only pipeline (Stage 0 §5): ONLY the standard lane can opt in.
-    // Ally is refused here exactly as at join, claim, and writeConsent.
-    if (!canUsePipeline(member.member_lane)) {
-      await writeAudit(ctx, {
-        actor: member.email,
-        role: "member",
-        action: "setPipelineOptIn.refused",
-        target_id: member._id,
-        after_summary: `value=${args.value} refused lane=${member.member_lane}`,
-        source: "system",
-      });
-      return { ok: false, error: "not_permitted" };
+    // Guards apply to ENABLING only; turning OFF is revocation and must stay
+    // open to everyone who owns the row, whatever her current lane/lifecycle.
+    if (args.value === true) {
+      if (member.lifecycle_state !== "active") {
+        return { ok: false, error: "not_active" };
+      }
+      // Women-only pipeline (Stage 0 §5): ONLY the standard lane can opt in.
+      // Ally is refused here exactly as at join, claim, and writeConsent.
+      if (!canUsePipeline(member.member_lane)) {
+        await writeAudit(ctx, {
+          actor: member.email,
+          role: "member",
+          action: "setPipelineOptIn.refused",
+          target_id: member._id,
+          after_summary: `value=${args.value} refused lane=${member.member_lane}`,
+          source: "system",
+        });
+        return { ok: false, error: "not_permitted" };
+      }
     }
     const now = Date.now();
     const current = member.pipeline_state ?? "off";
