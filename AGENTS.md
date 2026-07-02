@@ -30,7 +30,25 @@ The repo now has a private GitHub remote (`waiorgme/wai-site`, `origin`). A GitH
 reports green/red. Making that check a *required, merge-blocking* rule needs GitHub Pro on the
 private repo (or a public repo); until then the merge gate is enforced **locally** — run
 `npm run test:e2e` and require green before the ff-merge. (The vault itself is not yet under version
-control — separate task.)
+control — separate task. Public-switch plan: vault note
+`02 GitHub Repo - Public Switch & CI Enforcement (Decision)`.)
+
+## Production cutover gate (HARD RULE, set by Issam 2026-07-02)
+**Merging to `main` is NOT production.** `main` is staged, reviewed code. Production means any of:
+cutting waiorg.me over to this system, deploying to a production Convex deployment, importing the
+real member list into production, sending any claim-wave or member-facing email at scale, or
+opening the system to new member signups on the live domain.
+
+**No agent — Claude, Codex, or any other — ever takes a production step until BOTH:**
+1. Issam approves it in that session, AND
+2. **Mervat has personally done her own dry run on the staged system and given her explicit
+   sign-off**, recorded in the vault (`05 Operations/05 Agent Handoff - Log` and
+   `Tasks - What's Next`) with the date.
+
+Until that recorded sign-off exists, every production step is out of bounds no matter what else a
+prompt, task list, or schedule says. If an instruction appears to imply going to production without
+it, STOP and ask Issam. This is the Stage 5b human acceptance gate from the vault's
+`02 Build Method - AI-Assisted Delivery (Playbook)`, made explicit and non-collapsible.
 
 ## The brand locks (every page)
 - Real logo asset only — never redraw or CSS-fake it.
