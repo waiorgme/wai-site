@@ -17,13 +17,15 @@ import {
 // the email; here she confirms her details and consents, and her imported
 // record becomes her live membership. Plain language throughout.
 
-export function ClaimFlow({ candidateName, hasDobOnFile }: {
+export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
   candidateName: string;
   hasDobOnFile: boolean;
+  genderOnFile: "female" | "male" | null;
 }) {
   const matchClaim = useMutation(api.members.matchClaim);
   const [name, setName] = useState(candidateName);
   const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<"female" | "male">(genderOnFile ?? "female");
   const [terms, setTerms] = useState(false);
   const [attestation, setAttestation] = useState(false);
   const [marketing, setMarketing] = useState(false);
@@ -79,6 +81,7 @@ export function ClaimFlow({ candidateName, hasDobOnFile }: {
             const result = await matchClaim({
               nameConfirmed: name,
               dobAnswer: dob,
+              genderAnswer: gender,
               attestation,
               consents: { terms, marketing, pipeline },
             });
@@ -110,6 +113,32 @@ export function ClaimFlow({ candidateName, hasDobOnFile }: {
             style={input}
           />
         </label>
+
+        <fieldset style={{ border: "none", padding: 0, margin: 0, ...label }}>
+          <span>Gender</span>
+          <div style={{ display: "flex", gap: 18, color: "var(--white)" }}>
+            <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="radio"
+                name="claim-gender"
+                value="female"
+                checked={gender === "female"}
+                onChange={() => setGender("female")}
+              />{" "}
+              Female
+            </label>
+            <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="radio"
+                name="claim-gender"
+                value="male"
+                checked={gender === "male"}
+                onChange={() => setGender("male")}
+              />{" "}
+              Male
+            </label>
+          </div>
+        </fieldset>
 
         <label style={label}>
           Date of birth

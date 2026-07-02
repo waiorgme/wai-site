@@ -64,8 +64,20 @@ exist), audit register DATA-1 (numbering reconciliation).
    WhatsApp fallback, and guardian consent flow are later work; the §4.6 ActivityLog funnel stays
    deferred (recorded in the join spec).
 
+## Wave-run obligations (Gate 3 fix 3; recorded in the vault plan too)
+The claim UI promises "a team member will check and email you". That promise is honoured by a
+NAMED ops routine during the wave, not by code: while the wave runs, Issam checks
+`importedMembers` by `claim_state` (`conflict` + newly `suppressed_minor`) DAILY (Convex dashboard
+or `npx convex run`), and the team emails those members within 2 working days. Aged-up members
+unsuppress automatically at claim time (file-DOB check) and on any re-import with current data.
+Also a pre-condition of the real import: **Mervat/Issam set the founding-member cutoff first**
+(FOUNDING_MEMBER_LIMIT is a placeholder; certificates are shareable and a wrong founding badge can
+only be fixed by superseding).
+
 ## Out of scope, recorded
 - Real import run + UAT on the dev deployment (Issam; Claude is code-only there).
-- Founding-member cutoff rule (owner decision; FOUNDING_MEMBER_LIMIT placeholder stands).
+- Founding-member cutoff rule (owner decision; now a NAMED pre-condition of the import, above).
 - Guardian-consent email flow for suppressed minors (minor-cert slice).
 - The claim-wave email copy for EmailOctopus (comms task, vault-side).
+- One duplicate-email pair in the cleaned list (dry run flagged row 646); resolve by hand before
+  the import (Stage 0 wants two-people-one-email routed to manual review).

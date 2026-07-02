@@ -40,6 +40,7 @@ export function Dashboard() {
       <ClaimFlow
         candidateName={claim.name}
         hasDobOnFile={claim.has_dob_on_file}
+        genderOnFile={claim.gender_on_file}
       />
     );
   }

@@ -43,18 +43,25 @@ export const importBatch = internalMutation({
     let updated = 0;
     let unchanged = 0;
     let skipped_claimed = 0;
+    let suppressed = 0;
 
     for (const row of args.rows) {
       const { suppressed_minor, ...fields } = row;
-      const existing = await ctx.db
+      if (suppressed_minor) {
+        suppressed += 1;
+      }
+      // Idempotent on the STABLE legacy_row_id (derived from the legacy
+      // membership number, not a sheet position), so a corrected email on
+      // re-import updates the same row instead of duplicating the member
+      // under two addresses.
+      const match = await ctx.db
         .query("importedMembers")
-        .withIndex("by_normalized_email", (q) =>
-          q.eq("normalized_email", row.normalized_email),
+        .withIndex("by_legacy_row_id", (q) =>
+          q.eq("legacy_row_id", row.legacy_row_id),
         )
-        .collect();
-      const match = existing.find((r) => r.legacy_row_id === row.legacy_row_id);
+        .unique();
 
-      if (match === undefined) {
+      if (match === null) {
         await ctx.db.insert("importedMembers", {
           ...fields,
           claim_state: suppressed_minor ? "suppressed_minor" : "unclaimed",
@@ -65,9 +72,17 @@ export const importBatch = internalMutation({
         // Never rewrite a row a member has already acted on.
         skipped_claimed += 1;
       } else if (match.legacy_row_hash !== row.legacy_row_hash) {
+        // Suppression follows the CURRENT data both ways: newly-minor rows are
+        // suppressed, and a previously-suppressed member whose data now shows
+        // her an adult (aged up / corrected DOB) becomes claimable again.
+        const nextState = suppressed_minor
+          ? ("suppressed_minor" as const)
+          : match.claim_state === "suppressed_minor"
+            ? ("unclaimed" as const)
+            : match.claim_state;
         await ctx.db.patch(match._id, {
           ...fields,
-          claim_state: suppressed_minor ? "suppressed_minor" : match.claim_state,
+          claim_state: nextState,
         });
         updated += 1;
       } else {
@@ -80,7 +95,7 @@ export const importBatch = internalMutation({
       role: "admin_fallback",
       action: "importBatch",
       target_id: "importedMembers",
-      after_summary: `inserted=${inserted} updated=${updated} unchanged=${unchanged} skipped_claimed=${skipped_claimed}`,
+      after_summary: `inserted=${inserted} updated=${updated} unchanged=${unchanged} skipped_claimed=${skipped_claimed} suppressed_minor=${suppressed}`,
       source: "agent",
     });
 

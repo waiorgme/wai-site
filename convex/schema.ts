@@ -131,7 +131,8 @@ export default defineSchema({
     linked_member_id: v.optional(v.id("members")),
   })
     .index("by_normalized_email", ["normalized_email"])
-    .index("by_claim_state", ["claim_state"]),
+    .index("by_claim_state", ["claim_state"])
+    .index("by_legacy_row_id", ["legacy_row_id"]),
 
   // §4.3 ConsentRecord (append-only). Explicit false rows are written too, so
   // "she declined" is never confused with "never asked" (Codex 5).

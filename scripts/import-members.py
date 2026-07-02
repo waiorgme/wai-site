@@ -3,10 +3,12 @@
 
 Usage (Issam runs this; Claude is code-only on the deployment):
 
+    # counts only, touches nothing (the default):
     python3 scripts/import-members.py \
         "/Users/ismac/Documents/Projects/WAI/03 Members/WAI-ME Member List (Cleaned) 2026-06-13.xlsx"
 
-    # add --dry-run to see counts without touching the deployment
+    # actually push to the configured Convex deployment:
+    python3 scripts/import-members.py "<same path>" --live
 
 What it does (spec: specs/claim-wave.spec.md):
 - reads the "Members (Cleaned)" sheet
@@ -79,8 +81,9 @@ def created_at_iso(raw):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if a != "--dry-run"]
-    dry_run = "--dry-run" in sys.argv
+    args = [a for a in sys.argv[1:] if a not in ("--dry-run", "--live")]
+    # Safe by default: pushing to the deployment is an explicit opt-in.
+    dry_run = "--live" not in sys.argv
     if len(args) != 1:
         sys.exit(__doc__)
     xlsx = Path(args[0])
@@ -105,7 +108,7 @@ def main():
             sys.exit(f"Column '{col}' missing; header: {header}")
 
     today = dt.date.today()
-    out, skipped, seen_emails = [], [], set()
+    out, skipped, seen_emails, seen_row_ids = [], [], set(), set()
     max_legacy = 0
 
     for n, r in enumerate(rows_iter, start=2):
@@ -134,8 +137,17 @@ def main():
         gender = clean(get("gender"))
         gender = gender.lower() if gender and gender.lower() in ("female", "male") else None
 
+        # STABLE row identity (never a sheet position, which shifts when rows
+        # are added/removed): the legacy membership number when present,
+        # otherwise the original email. Re-imports with corrected emails
+        # update the same row instead of duplicating the member.
+        row_id = f"waime:{legacy_number}" if legacy_number else f"email:{email}"
+        if row_id in seen_row_ids:
+            skipped.append((n, f"duplicate legacy id {row_id}; resolve by hand"))
+            continue
+        seen_row_ids.add(row_id)
         row = {
-            "legacy_row_id": f"cleaned-2026-06-13:{n}",
+            "legacy_row_id": row_id,
             "normalized_email": email,
             "name": name,
             "mobile": clean(get("mobile")),

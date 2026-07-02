@@ -579,16 +579,39 @@ const authedEmail = async (ctx: QueryCtx | MutationCtx): Promise<string | null> 
   return typeof email === "string" ? email.toLowerCase() : null;
 };
 
+// A row is claimable when unclaimed, or when it was suppressed as a minor but
+// the DOB ON FILE now makes her an adult (aged up during the wave). The
+// file-DOB check keeps this safe: nothing a caller declares can unsuppress.
+const claimableRow = <
+  T extends { claim_state: string; dob_if_known?: string },
+>(
+  rows: T[],
+  now: number,
+): T | undefined =>
+  rows.find(
+    (r) =>
+      r.claim_state === "unclaimed" ||
+      (r.claim_state === "suppressed_minor" &&
+        r.dob_if_known !== undefined &&
+        ageInYears(r.dob_if_known, now) >= 18),
+  );
+
 // What the signed-in-but-unlinked visitor may see about her own imported row.
-// Deliberately minimal: her name and whether a DOB is on file. Nothing else
-// leaves the server before the claim completes.
+// Deliberately minimal: her name, whether a DOB is on file, and the recorded
+// gender (needed so the claim form never fabricates one). Nothing else leaves
+// the server before the claim completes.
 export const getMyClaimCandidate = query({
   args: {},
   handler: async (
     ctx,
   ): Promise<
     | null
-    | { state: "claimable"; name: string; has_dob_on_file: boolean }
+    | {
+        state: "claimable";
+        name: string;
+        has_dob_on_file: boolean;
+        gender_on_file: "female" | "male" | null;
+      }
     | { state: "held" }
   > => {
     const email = await authedEmail(ctx);
@@ -610,12 +633,13 @@ export const getMyClaimCandidate = query({
     if (rows.length === 0) {
       return null;
     }
-    const unclaimed = rows.find((r) => r.claim_state === "unclaimed");
+    const unclaimed = claimableRow(rows, Date.now());
     if (unclaimed !== undefined) {
       return {
         state: "claimable",
         name: unclaimed.name,
         has_dob_on_file: unclaimed.dob_if_known !== undefined,
+        gender_on_file: unclaimed.gender ?? null,
       };
     }
     // suppressed_minor / conflict / claim_in_progress / claimed all get the
@@ -631,6 +655,7 @@ export const matchClaim = mutation({
   args: {
     nameConfirmed: v.string(),
     dobAnswer: v.string(),
+    genderAnswer: v.union(v.literal("female"), v.literal("male")),
     attestation: v.boolean(),
     consents: consentArgs,
   },
@@ -673,7 +698,7 @@ export const matchClaim = mutation({
       .query("importedMembers")
       .withIndex("by_normalized_email", (q) => q.eq("normalized_email", email))
       .collect();
-    const row = rows.find((r) => r.claim_state === "unclaimed");
+    const row = claimableRow(rows, now);
     if (row === undefined) {
       const held = rows.find((r) => r.claim_state !== "unclaimed");
       return { ok: false, error: held?.claim_state === "suppressed_minor" ? "minor" : "held" };
@@ -712,7 +737,10 @@ export const matchClaim = mutation({
     }
 
     const name = nameCase(args.nameConfirmed);
-    const gender = row.gender ?? "female";
+    // Gender is DECLARED by the member on the claim form (prefilled from the
+    // record when one is on file); never fabricated server-side. The
+    // attestation she ticks covers exactly what she entered.
+    const gender = args.genderAnswer;
     const ageBlock = {
       date_of_birth: args.dobAnswer,
       date_of_birth_source: "self_declared" as const,
