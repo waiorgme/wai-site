@@ -28,11 +28,7 @@ import {
   type ProfileFields,
 } from "./lib/profile";
 
-// Current privacy-policy version stamped onto every consent row. Bump when the
-// policy text changes so we can always show what a member agreed to and when.
-// 2026-07-02: LEGAL-2 amendment (accurate collection list, truthful data-rights
-// route) - see the vault privacy draft's changelog.
-const POLICY_VERSION = "2026-07-02";
+import { POLICY_VERSION } from "./lib/policy";
 
 const consentArgs = v.object({
   terms: v.boolean(),

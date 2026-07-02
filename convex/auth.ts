@@ -8,6 +8,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { issueMembershipCertificate } from "./lib/certificates";
 import { ensurePipelineReviewOnActivation } from "./lib/pipeline";
 import { consumeKey } from "./rateLimit";
@@ -163,6 +164,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // Pipeline invariant: if she gave the attested pipeline consent at
         // join, the eligibility review opens NOW, when the member is real.
         await ensurePipelineReviewOnActivation(ctx, member);
+      }
+      // 13-17: her email is verified, so the guardian's confirmation email
+      // goes out now (Under-18 decision: a real confirmation step). Scheduled:
+      // the send is an action (Resend network call), never inside this txn.
+      if (next === "pending_guardian") {
+        await ctx.scheduler.runAfter(0, internal.guardians.sendGuardianEmail, {
+          memberId: member._id,
+        });
       }
     },
   },

@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as certificates from "../certificates.js";
+import type * as guardians from "../guardians.js";
 import type * as http from "../http.js";
 import type * as importedMembers from "../importedMembers.js";
 import type * as lib_age from "../lib/age.js";
@@ -20,7 +21,10 @@ import type * as lib_countries from "../lib/countries.js";
 import type * as lib_joinValidation from "../lib/joinValidation.js";
 import type * as lib_lifecycle from "../lib/lifecycle.js";
 import type * as lib_memberLane from "../lib/memberLane.js";
+import type * as lib_guardianEmail from "../lib/guardianEmail.js";
+import type * as lib_guardianToken from "../lib/guardianToken.js";
 import type * as lib_names from "../lib/names.js";
+import type * as lib_pipeline from "../lib/pipeline.js";
 import type * as lib_profile from "../lib/profile.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_toggles from "../lib/toggles.js";
@@ -37,6 +41,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   certificates: typeof certificates;
+  guardians: typeof guardians;
   http: typeof http;
   importedMembers: typeof importedMembers;
   "lib/age": typeof lib_age;
@@ -47,7 +52,10 @@ declare const fullApi: ApiFromModules<{
   "lib/joinValidation": typeof lib_joinValidation;
   "lib/lifecycle": typeof lib_lifecycle;
   "lib/memberLane": typeof lib_memberLane;
+  "lib/guardianEmail": typeof lib_guardianEmail;
+  "lib/guardianToken": typeof lib_guardianToken;
   "lib/names": typeof lib_names;
+  "lib/pipeline": typeof lib_pipeline;
   "lib/profile": typeof lib_profile;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/toggles": typeof lib_toggles;
