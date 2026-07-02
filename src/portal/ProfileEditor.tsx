@@ -72,7 +72,15 @@ const EMPTY: Form = {
   looking_for: [],
 };
 
-export function ProfileEditor({ onClose }: { onClose: () => void }) {
+export function ProfileEditor({
+  onClose,
+  hideMentorship = false,
+}: {
+  onClose: () => void;
+  // Safeguarding: mentorship options are never offered to members under 18
+  // (the server strips them too).
+  hideMentorship?: boolean;
+}) {
   const profile = useQuery(api.members.getMyProfile);
   const updateProfile = useMutation(api.members.updateProfile);
   const generateUploadUrl = useMutation(api.members.generatePhotoUploadUrl);
@@ -378,10 +386,18 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
       <Section title="What you're looking for" />
       <Field
         labelText="Looking for"
-        tip="What would help you most right now? Tick anything - a job, a scholarship, a mentor, or just meeting other women in aviation."
+        tip={
+          hideMentorship
+            ? "What would help you most right now? Tick anything - a scholarship, an event, or meeting other women in aviation."
+            : "What would help you most right now? Tick anything - a job, a scholarship, a mentor, or just meeting other women in aviation."
+        }
       >
         <Chips
-          options={LOOKING_FOR}
+          options={
+            hideMentorship
+              ? LOOKING_FOR.filter((o) => !o.toLowerCase().includes("mentor"))
+              : LOOKING_FOR
+          }
           selected={form.looking_for}
           onToggle={(v) => toggle("looking_for", v)}
         />

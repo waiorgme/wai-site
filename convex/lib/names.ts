@@ -38,7 +38,20 @@ export const isValidNamePart = (raw: string): boolean => {
   if (words.length > NAME_PART_MAX_WORDS || words.some((w) => w.length < 2)) {
     return false;
   }
-  return words.every((w) => !NOT_NAME_WORDS.has(w.toLowerCase()));
+  if (words.some((w) => NOT_NAME_WORDS.has(w.toLowerCase()))) {
+    return false;
+  }
+  // Three plain words in ONE name part ("aviation opens doors") is sentence
+  // territory: allowed only when a known name particle anchors it
+  // ("de la Cruz", "abd al Rahman"). Two-word parts stay free-form
+  // ("Mary Jane", "bint Rashid").
+  if (
+    words.length === 3 &&
+    !words.some((w) => LOWERCASE_PARTICLES.has(w.toLowerCase()))
+  ) {
+    return false;
+  }
+  return true;
 };
 
 // Particles that stay lowercase in Arab and European name conventions.

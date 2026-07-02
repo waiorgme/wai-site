@@ -53,6 +53,14 @@ describe("isValidNamePart", () => {
     // certificate confirm step is the human backstop for those.
   });
 
+  it("rejects three plain words with no name particle (sentence-shaped)", () => {
+    expect(isValidNamePart("aviation opens doors")).toBe(false);
+    expect(isValidNamePart("flying feels great")).toBe(false);
+    // Particle-anchored three-word parts remain valid names.
+    expect(isValidNamePart("de la Cruz")).toBe(true);
+    expect(isValidNamePart("abd al Rahman")).toBe(true);
+  });
+
   it("rejects trailing or leading separators", () => {
     expect(isValidNamePart("Sara-")).toBe(false);
     expect(isValidNamePart("O'Brien'")).toBe(false);

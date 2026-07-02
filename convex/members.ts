@@ -212,6 +212,19 @@ export const updateProfile = mutation({
       }
     }
 
+    // SAFE-1: mentorship is not available to minors or unknown-age lanes;
+    // strip those "looking for" options server-side whatever the client sent
+    // (mirrors the join guard, which strips them at signup).
+    if (
+      fields.looking_for !== undefined &&
+      (member.member_lane === "minor" ||
+        member.member_lane === "restricted_unknown")
+    ) {
+      fields.looking_for = fields.looking_for.filter(
+        (o) => !o.toLowerCase().includes("mentor"),
+      );
+    }
+
     const merged = { ...member, ...fields };
     const profile_complete = isProfileComplete(merged);
 

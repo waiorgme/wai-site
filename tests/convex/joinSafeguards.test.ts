@@ -338,6 +338,47 @@ describe("pending_guardian lockout (unusable until guardian confirms)", () => {
   });
 });
 
+describe("SAFE-1: active minors cannot re-add mentorship via profile edit", () => {
+  it("mentorship looking-for values are stripped server-side for the minor lane", async () => {
+    const t = convexTest(schema, modules);
+    // A guardian-confirmed minor: lane stays minor, lifecycle is active.
+    const userId = await t.run(async (ctx) =>
+      ctx.db.insert("users", { email: "activeminor@example.com" }),
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.insert("members", {
+        email: "activeminor@example.com",
+        name: "Active Minor",
+        source: "new_signup",
+        lifecycle_state: "active",
+        date_of_birth: MINOR_DOB,
+        date_of_birth_source: "guardian_confirmed",
+        age_confidence: "confirmed",
+        minor_until: "2029-01-15",
+        guardian_consent_state: "confirmed",
+        gender: "female",
+        career_stage_answer: "Studying / cadet",
+        member_lane: "minor",
+        created_at: Date.now(),
+        userId,
+      });
+    });
+    const asMinor = t.withIdentity({ subject: `${userId}|testsession` });
+    const result = await asMinor.mutation(api.members.updateProfile, {
+      looking_for: ["Jobs", "Mentorship (as mentee)"],
+    });
+    expect(result.ok).toBe(true);
+
+    const saved = await t.run(async (ctx) =>
+      ctx.db
+        .query("members")
+        .withIndex("by_email", (q) => q.eq("email", "activeminor@example.com"))
+        .unique(),
+    );
+    expect(saved?.looking_for).toEqual(["Jobs"]);
+  });
+});
+
 describe("under-13 join boundary (13+ vault lock)", () => {
   it("submitJoin rejects an under-13 DOB before any row is written", async () => {
     const t = convexTest(schema, modules);

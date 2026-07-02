@@ -65,7 +65,13 @@ export function Dashboard() {
           The more you add, the better we can match you to opportunities, events
           and people. Nothing is required, so add what you like, anytime.
         </p>
-        <ProfileEditor onClose={() => setEditing(false)} />
+        <ProfileEditor
+          onClose={() => setEditing(false)}
+          hideMentorship={
+            me?.member_lane === "minor" ||
+            me?.member_lane === "restricted_unknown"
+          }
+        />
       </div>
     );
   }
