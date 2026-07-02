@@ -111,6 +111,39 @@ test("share cards: absolute og:image on EN and AR home", async ({ page }) => {
   );
 });
 
+test("share cards: EVERY public EN page carries absolute og:image + twitter:image", async ({
+  page,
+}) => {
+  const enPages = [
+    "/",
+    "/about",
+    "/membership",
+    "/get-involved",
+    "/events",
+    "/contact",
+    "/join",
+    "/privacy",
+    "/safeguarding",
+    "/terms",
+    "/404.html",
+  ];
+  for (const path of enPages) {
+    await page.goto(path);
+    await expect(
+      page.locator('meta[property="og:image"]'),
+      `og:image on ${path}`,
+    ).toHaveAttribute("content", "https://www.waiorg.me/assets/share-card.png");
+    await expect(
+      page.locator('meta[name="twitter:image"]'),
+      `twitter:image on ${path}`,
+    ).toHaveAttribute("content", "https://www.waiorg.me/assets/share-card.png");
+    await expect(
+      page.locator('meta[name="twitter:card"]'),
+      `twitter:card on ${path}`,
+    ).toHaveAttribute("content", "summary_large_image");
+  }
+});
+
 test("no third-party font stylesheets remain", async ({ page }) => {
   await page.goto("/");
   await expect(
