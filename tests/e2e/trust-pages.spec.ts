@@ -144,6 +144,23 @@ test("share cards: EVERY public EN page carries absolute og:image + twitter:imag
   }
 });
 
+test("guardian-confirm page renders its shell (heading, guidance, noscript, noindex)", async ({
+  page,
+}) => {
+  await page.goto("/guardian-confirm");
+  // No token: the island renders the guidance card without any Convex query.
+  await expect(
+    page.getByRole("heading", { name: "Guardian confirmation" }),
+  ).toBeVisible();
+  await expect(page.getByText("open it from the link in the email")).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+  const noscript = page.locator("noscript");
+  await expect(noscript).toHaveCount(1);
+});
+
 test("no third-party font stylesheets remain", async ({ page }) => {
   await page.goto("/");
   await expect(

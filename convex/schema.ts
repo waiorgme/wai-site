@@ -176,8 +176,13 @@ export default defineSchema({
       v.literal("expired"),
     ),
     confirmation_token_hash: v.string(),
+    // When the CURRENT token was emailed; expiry runs 30 days from here.
+    // Absent on rows created before this slice's send flow stamps them.
+    token_sent_at: v.optional(v.number()),
     timestamp: v.number(),
-  }).index("by_member", ["member_id"]),
+  })
+    .index("by_member", ["member_id"])
+    .index("by_token_hash", ["confirmation_token_hash"]),
 
   // §4 PipelineEligibilityReview (Codex 4): a profile reaches partners only
   // after opt-in AND this review approves (Age & Gender Verification stance).

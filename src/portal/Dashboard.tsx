@@ -112,12 +112,92 @@ export function Dashboard() {
           </h1>
           <p style={muted}>
             {me.lifecycle_state === "pending_guardian"
-              ? "Thanks for confirming your email. Because you are under 18, we need a parent or guardian to confirm too. Our team will contact you by email to arrange that step. Your membership, certificate and profile open up as soon as that is done."
+              ? "Thanks for confirming your email. Because you are under 18, we have emailed your parent or guardian to confirm your membership. Ask them to check their inbox; your membership, certificate and profile open up the moment they press confirm."
               : me.lifecycle_state === "pending_review"
                 ? "Thanks for confirming your email. A team member is reviewing your details. This page will update as soon as your membership is confirmed."
                 : "Please confirm your email first. Check your inbox for the link we sent you."}
           </p>
         </header>
+        {me.lifecycle_state === "pending_guardian" && <GuardianResend />}
+        <button type="button" style={linkBtn} onClick={() => void signOut()}>
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
+  // An ACTIVE member under 18 gets the youth dashboard (Under-18 Launch Copy
+  // §2, verbatim): her certificate plus the Aviation for Girls home base, in
+  // place of the adult tiles. Nothing the protected experience excludes
+  // (mentoring, directory, pipeline, settings toggles) is rendered; the
+  // servers refuse them too.
+  if (isActive && me?.member_lane === "minor") {
+    return (
+      <div style={wrap}>
+        <header style={{ display: "grid", gap: 6 }}>
+          <h1 style={{ ...h1, fontSize: 30 }}>
+            Welcome to Women in Aviation Middle East.
+          </h1>
+          <p style={muted}>
+            You're part of a regional community of women and girls who love
+            aviation, and your journey starts here.
+          </p>
+        </header>
+
+        <CertificateSection
+          me={me}
+          certs={certs}
+          isActive={isActive}
+          membershipCert={membershipCert}
+        />
+
+        <section style={{ ...card, width: "100%" }}>
+          <div style={cardHead}>
+            <span style={eyebrow}>Your home base</span>
+          </div>
+          <p style={tileBody}>
+            As a member under 18, your home base is{" "}
+            <strong style={{ color: "var(--white)" }}>Aviation for Girls</strong>
+            , the youth program run by our parent organisation, Women in
+            Aviation International. It's made for you, and it's free:
+          </p>
+          <ul style={{ ...tileBody, margin: 0, paddingInlineStart: 20, display: "grid", gap: 6 }}>
+            <li>
+              <strong style={{ color: "var(--white)" }}>The Aviation for Girls app:</strong>{" "}
+              aviation content, activities, and stories from women already
+              flying, building, and leading.
+            </li>
+            <li>
+              <strong style={{ color: "var(--white)" }}>AFG Engage:</strong>{" "}
+              online lessons that introduce aviation and aerospace careers,
+              step by step.
+            </li>
+            <li>
+              <strong style={{ color: "var(--white)" }}>AFG Connect News</strong>{" "}
+              and the annual{" "}
+              <strong style={{ color: "var(--white)" }}>Aviation for Girls magazine</strong>
+              , stories, opportunities, and people to look up to.
+            </li>
+            <li>
+              <strong style={{ color: "var(--white)" }}>Girls in Aviation Day:</strong>{" "}
+              a global event you can take part in.
+            </li>
+          </ul>
+          <a
+            href="https://www.wai.org/youth-education"
+            target="_blank"
+            rel="noopener"
+            style={{ ...primaryBtn, textDecoration: "none", display: "inline-block", justifySelf: "start" }}
+          >
+            Explore Aviation for Girls →
+          </a>
+          <p style={tileBody}>
+            When you turn 18, your WAI-ME membership opens up fully, mentoring,
+            events, opportunities, and the wider network. Until then, this is
+            your runway. We're glad you're here.
+          </p>
+        </section>
+
         <button type="button" style={linkBtn} onClick={() => void signOut()}>
           Sign out
         </button>
@@ -166,55 +246,12 @@ export function Dashboard() {
         </p>
       </header>
 
-      <section style={{ ...card, width: "100%" }}>
-        <div style={cardHead}>
-          <span style={eyebrow}>Your membership certificate</span>
-          {membershipCert?.is_founding && (
-            <span style={badge}>Founding Member</span>
-          )}
-        </div>
-
-        {me === undefined || certs === undefined ? (
-          <p style={muted}>Loading…</p>
-        ) : membershipCert === null ? (
-          <p style={muted}>
-            {isActive
-              ? "Preparing your certificate…"
-              : me?.lifecycle_state === "pending_review"
-                ? "Thanks for confirming your email. A team member is reviewing your details. This page will update as soon as your membership is confirmed."
-                : me?.lifecycle_state === "pending_guardian"
-                  ? "Thanks for confirming your email. Because you are under 18, we need a parent or guardian to confirm too. Our team will contact you by email to arrange that step."
-                  : "Your certificate is issued once your email is confirmed."}
-          </p>
-        ) : (
-          <>
-            <ScaledCertificate>
-              <MembershipCertificate
-                recipientName={membershipCert.recipient_name}
-                membershipNumber={membershipCert.membership_number}
-                certId={`WAIME-MEM-${membershipCert.membership_number}`}
-                dateLabel={membershipCert.issued_date_label}
-                isFounding={membershipCert.is_founding}
-                verifyUrl={verifyUrlFor(membershipCert.verify_token)}
-              />
-            </ScaledCertificate>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-              <a
-                href={`/verify?id=${membershipCert.verify_token}`}
-                target="_blank"
-                rel="noopener"
-                style={{ ...primaryBtn, textDecoration: "none", display: "inline-block" }}
-              >
-                View &amp; verify
-              </a>
-              <ShareButton token={membershipCert.verify_token} />
-              <span style={{ ...muted, fontSize: 13 }}>
-                Membership Number WAIME-{membershipCert.membership_number}
-              </span>
-            </div>
-          </>
-        )}
-      </section>
+      <CertificateSection
+        me={me}
+        certs={certs}
+        isActive={isActive}
+        membershipCert={membershipCert}
+      />
 
       <div style={grid}>
         <Tile title="Your profile">
@@ -268,6 +305,117 @@ export function Dashboard() {
       <button type="button" style={linkBtn} onClick={() => void signOut()}>
         Sign out
       </button>
+    </div>
+  );
+}
+
+// The certificate card, shared by the adult and youth dashboards.
+function CertificateSection({
+  me,
+  certs,
+  isActive,
+  membershipCert,
+}: {
+  me: ReturnType<typeof useQuery<typeof api.members.getCurrentMember>>;
+  certs: ReturnType<typeof useQuery<typeof api.certificates.getMyCertificates>>;
+  isActive: boolean;
+  membershipCert:
+    | NonNullable<
+        ReturnType<typeof useQuery<typeof api.certificates.getMyCertificates>>
+      >[number]
+    | null;
+}) {
+  return (
+    <section style={{ ...card, width: "100%" }}>
+      <div style={cardHead}>
+        <span style={eyebrow}>Your membership certificate</span>
+        {membershipCert?.is_founding && (
+          <span style={badge}>Founding Member</span>
+        )}
+      </div>
+
+      {me === undefined || certs === undefined ? (
+        <p style={muted}>Loading…</p>
+      ) : membershipCert === null ? (
+        <p style={muted}>
+          {isActive
+            ? "Preparing your certificate…"
+            : me?.lifecycle_state === "pending_review"
+              ? "Thanks for confirming your email. A team member is reviewing your details. This page will update as soon as your membership is confirmed."
+              : me?.lifecycle_state === "pending_guardian"
+                ? "Thanks for confirming your email. Because you are under 18, we have emailed your parent or guardian to confirm your membership."
+                : "Your certificate is issued once your email is confirmed."}
+        </p>
+      ) : (
+        <>
+          <ScaledCertificate>
+            <MembershipCertificate
+              recipientName={membershipCert.recipient_name}
+              membershipNumber={membershipCert.membership_number}
+              certId={`WAIME-MEM-${membershipCert.membership_number}`}
+              dateLabel={membershipCert.issued_date_label}
+              isFounding={membershipCert.is_founding}
+              verifyUrl={verifyUrlFor(membershipCert.verify_token)}
+            />
+          </ScaledCertificate>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+            <a
+              href={`/verify?id=${membershipCert.verify_token}`}
+              target="_blank"
+              rel="noopener"
+              style={{ ...primaryBtn, textDecoration: "none", display: "inline-block" }}
+            >
+              View &amp; verify
+            </a>
+            <ShareButton token={membershipCert.verify_token} />
+            <span style={{ ...muted, fontSize: 13 }}>
+              Membership Number WAIME-{membershipCert.membership_number}
+            </span>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+// "Send it again" on the pending-guardian waiting panel. The server throttles
+// (1/hour, 3/day) and rotates the token on every send.
+function GuardianResend() {
+  const resend = useMutation(api.guardians.resendGuardianEmail);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
+      <button
+        type="button"
+        style={linkBtn}
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setMessage(null);
+          try {
+            const res = await resend({});
+            setMessage(
+              res.ok
+                ? "Sent. Ask your parent or guardian to check their inbox, including spam."
+                : res.error === "rate_limited"
+                  ? "We sent that email recently. Please wait an hour before sending it again."
+                  : "We couldn't send that just now. Please try again later or email support@waiorg.me.",
+            );
+          } catch {
+            setMessage(
+              "We couldn't send that just now. Please try again later or email support@waiorg.me.",
+            );
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Sending…" : "Send the guardian email again"}
+      </button>
+      {message !== null && (
+        <p style={{ ...muted, fontSize: 13, margin: 0 }}>{message}</p>
+      )}
     </div>
   );
 }

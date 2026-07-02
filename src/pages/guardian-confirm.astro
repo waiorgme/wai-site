@@ -1,0 +1,61 @@
+---
+import Base from "../layouts/Base.astro";
+import { GuardianConfirmApp } from "../portal/GuardianConfirmApp";
+---
+
+<Base
+  title="Guardian confirmation - Women in Aviation Middle East"
+  description="Confirm a young member's Women in Aviation Middle East membership."
+  noindex
+  path="/guardian-confirm/"
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Women in Aviation Middle East" />
+    <meta property="og:title" content="Guardian confirmation" />
+    <meta
+      property="og:image"
+      content="https://www.waiorg.me/assets/share-card.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:image"
+      content="https://www.waiorg.me/assets/share-card.png"
+    />
+  </Fragment>
+
+  <main id="main" class="guardian">
+    <noscript>
+      <p class="nojs">
+        This confirmation page needs JavaScript, and it looks like your browser
+        has it switched off. Turn it on and reload this page, or email
+        <a href="mailto:support@waiorg.me">support@waiorg.me</a> and we will
+        record your consent by email instead.
+      </p>
+    </noscript>
+    <GuardianConfirmApp client:only="react" />
+  </main>
+</Base>
+
+<style>
+  .nojs {
+    color: var(--mist-mut);
+    max-width: 52ch;
+    text-align: center;
+    padding-top: 30vh;
+  }
+  .nojs a {
+    color: var(--sky);
+  }
+  .guardian {
+    min-height: 100dvh;
+    display: grid;
+    place-items: start center;
+    padding: var(--gutter);
+    background: radial-gradient(
+      1200px 600px at 50% -10%,
+      var(--navy),
+      var(--ink) 60%
+    );
+  }
+</style>
