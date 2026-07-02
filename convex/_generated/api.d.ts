@@ -11,9 +11,11 @@
 import type * as auth from "../auth.js";
 import type * as certificates from "../certificates.js";
 import type * as http from "../http.js";
+import type * as importedMembers from "../importedMembers.js";
 import type * as lib_age from "../lib/age.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_certificates from "../lib/certificates.js";
+import type * as lib_claim from "../lib/claim.js";
 import type * as lib_countries from "../lib/countries.js";
 import type * as lib_joinValidation from "../lib/joinValidation.js";
 import type * as lib_lifecycle from "../lib/lifecycle.js";
@@ -34,9 +36,11 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   certificates: typeof certificates;
   http: typeof http;
+  importedMembers: typeof importedMembers;
   "lib/age": typeof lib_age;
   "lib/audit": typeof lib_audit;
   "lib/certificates": typeof lib_certificates;
+  "lib/claim": typeof lib_claim;
   "lib/countries": typeof lib_countries;
   "lib/joinValidation": typeof lib_joinValidation;
   "lib/lifecycle": typeof lib_lifecycle;

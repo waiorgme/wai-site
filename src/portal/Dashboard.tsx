@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
+import { ClaimFlow } from "./ClaimFlow";
 import { ProfileEditor } from "./ProfileEditor";
 import {
   MembershipCertificate,
@@ -14,6 +15,7 @@ export function Dashboard() {
   const { signOut } = useAuthActions();
   const me = useQuery(api.members.getCurrentMember);
   const certs = useQuery(api.certificates.getMyCertificates);
+  const claim = useQuery(api.members.getMyClaimCandidate, me === null ? {} : "skip");
   const ensureCert = useMutation(api.certificates.ensureMyMembershipCertificate);
   const [editing, setEditing] = useState(false);
 
@@ -30,6 +32,33 @@ export function Dashboard() {
 
   const firstName = me?.name?.split(" ")[0];
   const membershipCert = certs?.find((c) => c.type === "membership") ?? null;
+
+  // Migrated member, signed in but not yet claimed: the claim step IS her
+  // dashboard until it completes (Migration & Claim-Wave Plan, Decision 1).
+  if (me === null && claim != null && claim.state === "claimable") {
+    return (
+      <ClaimFlow
+        candidateName={claim.name}
+        hasDobOnFile={claim.has_dob_on_file}
+      />
+    );
+  }
+  if (me === null && claim != null && claim.state === "held") {
+    return (
+      <div style={panel}>
+        <h1 style={h1}>Almost there</h1>
+        <p style={muted}>
+          Your record needs a quick look from our team before it opens. We will
+          email you at this address. If you think that's a mistake, write to us
+          at{" "}
+          <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+            support@waiorg.me
+          </a>
+          .
+        </p>
+      </div>
+    );
+  }
 
   // Safeguarding: until the account is `active`, the portal shows ONLY the
   // waiting state. A pending_guardian minor (or pending_review unknown-age

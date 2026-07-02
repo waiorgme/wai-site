@@ -61,6 +61,9 @@ export default defineSchema({
     career_stage_answer: v.optional(v.string()),
     member_lane: memberLane,
     created_at: v.number(),
+    // For migrated members: when she FIRST joined WAI-ME (from the legacy
+    // list), so "member since" stays truthful across the migration.
+    original_joined_at: v.optional(v.string()),
 
     // §4.1 profile fields (talent-pipeline spec). All optional, filled after
     // join through completeness nudges; option values validated at the
@@ -103,6 +106,14 @@ export default defineSchema({
     legacy_position: v.optional(v.string()),
     legacy_company: v.optional(v.string()),
     legacy_bio: v.optional(v.string()),
+    // Carried from the cleaned list (claim-wave slice): the member's legacy
+    // WAIME-### number (kept on her certificate, DATA-1), recorded gender,
+    // countries, and her original join date.
+    gender: v.optional(v.union(v.literal("female"), v.literal("male"))),
+    nationality: v.optional(v.string()),
+    country_of_residence: v.optional(v.string()),
+    legacy_membership_number: v.optional(v.number()),
+    legacy_created_at: v.optional(v.string()),
     claim_state: v.union(
       v.literal("unclaimed"),
       v.literal("claim_in_progress"),

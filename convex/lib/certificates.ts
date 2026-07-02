@@ -43,9 +43,13 @@ const nextMembershipNumber = async (ctx: MutationCtx): Promise<number> => {
 
 // Issue the member's membership certificate. Idempotent: one per member, keyed
 // on `membership:<memberId>`. Returns the certificate id (existing or new).
+// Migrated members pass their LEGACY WAIME-### number (DATA-1: they keep it);
+// new signups draw the next number from the counter, whose floor the import
+// raises above every legacy number so the ranges never collide.
 export const issueMembershipCertificate = async (
   ctx: MutationCtx,
   member: Doc<"members">,
+  explicitNumber?: number,
 ): Promise<Id<"certificates">> => {
   const idempotency_key = `membership:${member._id}`;
   const existing = await ctx.db
@@ -58,7 +62,7 @@ export const issueMembershipCertificate = async (
     return existing._id;
   }
 
-  const number = await nextMembershipNumber(ctx);
+  const number = explicitNumber ?? (await nextMembershipNumber(ctx));
   const now = Date.now();
   // Unguessable public lookup key (128-bit). The WAIME-MEM-#### the member sees
   // is only a display label, never the verification key — so no one can walk the

@@ -1,13 +1,15 @@
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { writeAudit } from "./lib/audit";
-import { deriveAgeBlock } from "./lib/age";
+import { ageInYears, deriveAgeBlock, isValidDob } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
-import { fullName, isValidNamePart } from "./lib/names";
+import { dobConflicts, namesRoughlyMatch } from "./lib/claim";
+import { issueMembershipCertificate } from "./lib/certificates";
+import { fullName, isValidNamePart, nameCase } from "./lib/names";
 import {
   dobGate,
   isValidCareerStage,
@@ -557,6 +559,244 @@ export const writeConsent = mutation({
       after_summary: `${args.type}=${args.value}`,
       source: "member",
     });
+    return { ok: true };
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Claim wave (Stage 0 §4.2/§7; Migration & Claim-Wave Plan Decision 1).
+// The magic link has already proven EMAIL CONTROL; everything here is keyed
+// off the authenticated user's email, never a caller-supplied row id.
+// ---------------------------------------------------------------------------
+
+const authedEmail = async (ctx: QueryCtx | MutationCtx): Promise<string | null> => {
+  const userId = await getAuthUserId(ctx);
+  if (userId === null) {
+    return null;
+  }
+  const user = await ctx.db.get(userId);
+  const email = (user as { email?: string } | null)?.email;
+  return typeof email === "string" ? email.toLowerCase() : null;
+};
+
+// What the signed-in-but-unlinked visitor may see about her own imported row.
+// Deliberately minimal: her name and whether a DOB is on file. Nothing else
+// leaves the server before the claim completes.
+export const getMyClaimCandidate = query({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<
+    | null
+    | { state: "claimable"; name: string; has_dob_on_file: boolean }
+    | { state: "held" }
+  > => {
+    const email = await authedEmail(ctx);
+    if (email === null) {
+      return null;
+    }
+    // Already a member? Then there is nothing to claim.
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .unique();
+    if (member !== null) {
+      return null;
+    }
+    const rows = await ctx.db
+      .query("importedMembers")
+      .withIndex("by_normalized_email", (q) => q.eq("normalized_email", email))
+      .collect();
+    if (rows.length === 0) {
+      return null;
+    }
+    const unclaimed = rows.find((r) => r.claim_state === "unclaimed");
+    if (unclaimed !== undefined) {
+      return {
+        state: "claimable",
+        name: unclaimed.name,
+        has_dob_on_file: unclaimed.dob_if_known !== undefined,
+      };
+    }
+    // suppressed_minor / conflict / claim_in_progress / claimed all get the
+    // same neutral "held" so nothing sensitive is revealed.
+    return { state: "held" };
+  },
+});
+
+// §7 matchClaim: first login + confirm = the claim. Creates the Member row
+// from the imported record, writes claim consents (explicit false rows), and
+// issues the certificate with the LEGACY number.
+export const matchClaim = mutation({
+  args: {
+    nameConfirmed: v.string(),
+    dobAnswer: v.string(),
+    attestation: v.boolean(),
+    consents: consentArgs,
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    | { ok: true; already?: true }
+    | { ok: false; error: "not_signed_in" | "validation" | "conflict" | "held" | "minor" }
+  > => {
+    const email = await authedEmail(ctx);
+    if (email === null) {
+      return { ok: false, error: "not_signed_in" };
+    }
+
+    // Idempotency: an existing member row means the claim already happened.
+    const existingMember = await ctx.db
+      .query("members")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .unique();
+    if (existingMember !== null) {
+      return { ok: true, already: true };
+    }
+
+    if (!args.consents.terms || !args.attestation) {
+      return { ok: false, error: "validation" };
+    }
+    const now = Date.now();
+    const confirmed = args.nameConfirmed.trim();
+    if (
+      confirmed.length < 2 ||
+      confirmed.length > 90 ||
+      confirmed.split(/\s+/).length > 6 ||
+      !isValidDob(args.dobAnswer, now)
+    ) {
+      return { ok: false, error: "validation" };
+    }
+
+    const rows = await ctx.db
+      .query("importedMembers")
+      .withIndex("by_normalized_email", (q) => q.eq("normalized_email", email))
+      .collect();
+    const row = rows.find((r) => r.claim_state === "unclaimed");
+    if (row === undefined) {
+      const held = rows.find((r) => r.claim_state !== "unclaimed");
+      return { ok: false, error: held?.claim_state === "suppressed_minor" ? "minor" : "held" };
+    }
+
+    // Safeguarding: a claimant who is under 18 NOW goes to the guardian route,
+    // never auto-active, whatever the imported row says.
+    if (ageInYears(args.dobAnswer, now) < 18) {
+      await ctx.db.patch(row._id, { claim_state: "suppressed_minor" });
+      await writeAudit(ctx, {
+        actor: email,
+        role: "member",
+        action: "matchClaim.suppressedMinor",
+        target_id: row._id,
+        after_summary: "claimant is under 18; routed to guardian flow",
+        source: "system",
+      });
+      return { ok: false, error: "minor" };
+    }
+
+    // DOB mismatch vs the record on file = conflict for a human (Stage 0 §4.2).
+    if (dobConflicts(args.dobAnswer, row.dob_if_known)) {
+      await ctx.db.patch(row._id, {
+        claim_state: "conflict",
+        conflict_reason: "dob_mismatch_at_claim",
+      });
+      await writeAudit(ctx, {
+        actor: email,
+        role: "member",
+        action: "matchClaim.conflict",
+        target_id: row._id,
+        after_summary: "declared DOB differs from the record on file",
+        source: "system",
+      });
+      return { ok: false, error: "conflict" };
+    }
+
+    const name = nameCase(args.nameConfirmed);
+    const gender = row.gender ?? "female";
+    const ageBlock = {
+      date_of_birth: args.dobAnswer,
+      date_of_birth_source: "self_declared" as const,
+      age_confidence: "declared" as const,
+      minor_until: undefined,
+      guardian_consent_state: "not_required" as const,
+    };
+    const lane = evaluateMemberLane(
+      {
+        gender,
+        date_of_birth: ageBlock.date_of_birth,
+        age_confidence: ageBlock.age_confidence,
+      },
+      now,
+    );
+
+    const memberId = await ctx.db.insert("members", {
+      email,
+      name,
+      mobile: row.mobile,
+      source: "migrated",
+      lifecycle_state: "active",
+      ...ageBlock,
+      gender,
+      nationality: row.nationality,
+      country_of_residence: row.country_of_residence,
+      current_job_title: row.legacy_position,
+      current_employer: row.legacy_company,
+      bio: row.legacy_bio,
+      member_lane: lane,
+      created_at: now,
+      original_joined_at: row.legacy_created_at,
+    });
+
+    // Link the auth user so the session resolves to the new member row.
+    const userId = await getAuthUserId(ctx);
+    if (userId !== null) {
+      await ctx.db.patch(memberId, { userId });
+    }
+
+    // §4.3 claim consents, explicit false rows included. Safeguarding lane
+    // guard mirrors join: only standard/ally may enter the pipeline.
+    const pipelineAllowed = lane === "standard" || lane === "ally";
+    await insertConsent(ctx, memberId, "terms_privacy", args.consents.terms, now, "claim");
+    await insertConsent(ctx, memberId, "marketing", args.consents.marketing, now, "claim");
+    await insertConsent(
+      ctx,
+      memberId,
+      "pipeline",
+      pipelineAllowed ? args.consents.pipeline : false,
+      now,
+      "claim",
+    );
+
+    await ctx.db.patch(row._id, {
+      claim_state: "claimed",
+      linked_member_id: memberId,
+      match_signals: {
+        email: true,
+        name: namesRoughlyMatch(name, row.name),
+        mobile: false,
+        dob: row.dob_if_known !== undefined,
+      },
+    });
+
+    await writeAudit(ctx, {
+      actor: email,
+      role: "member",
+      action: "matchClaim",
+      target_id: memberId,
+      after_summary: `claimed legacy row ${row.legacy_row_id} lane=${lane} lifecycle=active`,
+      source: "member",
+    });
+
+    // The first win, with her own legacy number (DATA-1).
+    const member = await ctx.db.get(memberId);
+    if (member !== null) {
+      await issueMembershipCertificate(
+        ctx,
+        member,
+        row.legacy_membership_number,
+      );
+    }
+
     return { ok: true };
   },
 });
