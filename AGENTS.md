@@ -23,14 +23,20 @@ committed directly to `main`, and `main` is never force-pushed.
 
 - **Branch (start of `/build-page <name>`):** branch off main with `git switch -c build/<name>`.
 - **During the gates:** commit gate work and fix loops on `build/<name>` (conventional commits).
-- **Merge (only after approval + `/handoff`):** the full test suite must be green (`npm run test:e2e`), then `git switch main && git merge --ff-only build/<name> && git branch -d build/<name>`. If the fast-forward is refused, stop and ask rather than forcing.
+- **Merge (only after approval + `/handoff`):** the full test suite must be green locally
+  (`npm test` + `npm run test:e2e` + `npx tsc --noEmit`), then push the branch and open a PR:
+  `gh pr create --fill`. The required "Build & E2E tests" check must pass, then
+  `gh pr merge --squash --delete-branch` (or merge, per the change's shape). Direct pushes to
+  `main` are refused by the ruleset; if anything is refused, stop and ask rather than forcing.
 
-The repo now has a private GitHub remote (`waiorgme/wai-site`, `origin`). A GitHub Actions workflow
-(`.github/workflows/ci.yml`) runs the build + full E2E suite on every push and PR to `main` and
-reports green/red. Making that check a *required, merge-blocking* rule needs GitHub Pro on the
-private repo (or a public repo); until then the merge gate is enforced **locally** — run
-`npm run test:e2e` and require green before the ff-merge. (The vault itself is not yet under version
-control — separate task. Public-switch plan: vault note
+The repo is PUBLIC (`waiorgme/wai-site`, flipped 2026-07-02 per the vault decision note, executed
+with all pre-switch scans clean). Enforcement is no longer convention: an active ruleset on `main`
+requires a pull request and the green "Build & E2E tests" check, and blocks force pushes and
+branch deletion (proven by a refused direct push, recorded in the vault handoff log). Secret
+scanning + push protection, Dependabot alerts + security updates, and CodeQL default setup are on.
+Remember what public means: never commit member data, secrets, or anything Mervat/board
+confidential; the import script reads the member list from the vault at run time only. (The vault
+itself is not under version control — separate task. Decision + checklist: vault note
 `02 GitHub Repo - Public Switch & CI Enforcement (Decision)`.)
 
 ## Production cutover gate (HARD RULE, set by Issam 2026-07-02)
