@@ -606,7 +606,119 @@ footer .bottom .legal-links a{ margin-inline-end:18px; }
 }
 
 /* ============================================================
-   15 · REDUCED MOTION  (calm and fully usable underneath)
+   15 · ELEVATION PASS  (design-elevation slice, 2026-07)
+   Deeper craft inside the adopted v3 system: film grain, the
+   flight path threading past the hero, specular card light,
+   micro-choreography. No copy, no palette, no new sections.
+   ============================================================ */
+
+/* -- cinematic film grain over the public pages (this stylesheet is only
+      imported by the marketing surfaces). One fixed compositing layer,
+      pointer-transparent, killed for print. -- */
+body::after{
+  content:""; position:fixed; inset:0; z-index:250; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='140'%20height='140'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.85'%20numOctaves='2'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='140'%20height='140'%20filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:140px 140px;
+  mix-blend-mode:overlay; opacity:.055;
+}
+@media print{ body::after{ content:none; } }
+
+/* -- the dawn breathes: an almost-subliminal 14-18s swell on the horizon
+      glow in the hero and the join band. -- */
+@media (prefers-reduced-motion: no-preference){
+  .hero .dawn{ animation:dawnBreathe 14s ease-in-out infinite alternate; }
+  .join .dawn{ animation:dawnBreathe 18s ease-in-out infinite alternate; }
+  @keyframes dawnBreathe{
+    from{ opacity:.82; transform:translateY(1.5%); }
+    to{   opacity:1;   transform:translateY(-1.5%); }
+  }
+  .hero .glow-orb.a{ animation:orbDrift 22s ease-in-out infinite alternate; }
+  @keyframes orbDrift{
+    from{ transform:translate3d(0,0,0); }
+    to{   transform:translate3d(-3%,4%,0); }
+  }
+}
+
+/* -- scroll hint: a thin luminous line that keeps falling toward the next
+      section, replacing a static label with an instrument cue. -- */
+.hero .scroll-hint::before{
+  content:""; inline-size:1px; block-size:34px; border-radius:1px;
+  background:linear-gradient(180deg, var(--sky-glow), transparent);
+}
+@media (prefers-reduced-motion: no-preference){
+  .hero .scroll-hint::before{
+    animation:hintFall 2.4s var(--ease-io) infinite;
+    transform-origin:top;
+  }
+  @keyframes hintFall{
+    0%{ transform:scaleY(0); opacity:0; }
+    35%{ transform:scaleY(1); opacity:1; }
+    100%{ transform:scaleY(1) translateY(10px); opacity:0; }
+  }
+}
+
+/* -- the eyebrow tick draws itself in with its section, so every section
+      opener begins with the same drawn-line gesture as the flight path. -- */
+.eyebrow .tick{ transform-origin:0 50%; }
+[dir="rtl"] .eyebrow .tick{ transform-origin:100% 50%; }
+.js :is(.reveal .eyebrow, .eyebrow.reveal) .tick{
+  transform:scaleX(0);
+  transition:transform .9s var(--ease-out) .25s;
+}
+.js :is(.reveal.in .eyebrow, .eyebrow.reveal.in) .tick{ transform:scaleX(1); }
+
+/* -- specular card light: cards catch the pointer like brushed instrument
+      glass. JS writes --mx/--my; hover fades the sheen in. -- */
+.lume{ position:relative; }
+.lume::after{
+  content:""; position:absolute; inset:0; border-radius:inherit; z-index:1;
+  background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),
+    rgba(108,200,255,.10), transparent 65%);
+  opacity:0; transition:opacity .45s var(--ease-out);
+  pointer-events:none;
+}
+.lume:hover::after{ opacity:1; }
+
+/* -- pillar roundels answer the hover -- */
+.pillar .roundel{ transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out); }
+@media (hover:hover){
+  .pillar:hover .roundel{ transform:scale(1.07); box-shadow:0 0 0 5px rgba(1,139,225,.07); }
+  .pillar.p4:hover .roundel{ box-shadow:0 0 0 5px rgba(212,162,76,.1); }
+}
+
+/* -- member spotlight slot: a reserved boarding pass, not an empty box.
+      The dotted climb route + punched edges are decorative (aria-hidden);
+      the copy inside is unchanged. -- */
+.spotlight .slot{
+  min-block-size:230px;
+  display:flex; flex-direction:column; justify-content:space-between; gap:30px;
+}
+.spotlight .slot::before,
+.spotlight .slot::after{
+  content:""; position:absolute; inset-block-start:50%; margin-block-start:-9px;
+  inline-size:18px; block-size:18px; border-radius:50%;
+  background:var(--paper); border:1px dashed rgba(15,35,63,.28);
+}
+.spotlight .slot::before{ inset-inline-start:-10px; }
+.spotlight .slot::after{ inset-inline-end:-10px; }
+.spotlight .slot .slot-route{ inline-size:100%; block-size:auto; display:block; color:var(--sky-core); }
+.spotlight .slot .slot-route .flightline{ stroke:currentColor; }
+.spotlight .slot .slot-route .pt{ fill:currentColor; }
+
+/* -- the flight path returns for the final ascent in the join band -- */
+.join .flight-svg{ position:absolute; inset:0; z-index:-1; inline-size:100%; block-size:100%; pointer-events:none; opacity:.55; }
+
+/* -- footer opens on a dawn horizon hairline -- */
+footer.site{ position:relative; }
+footer.site::before{
+  content:""; position:absolute; inset-block-start:0; inset-inline:0; block-size:2px;
+  background:linear-gradient(90deg, transparent 4%, var(--dawn-1) 30%, var(--dawn-2) 55%, var(--sky) 82%, transparent 98%);
+  opacity:.8;
+}
+[dir="rtl"] footer.site::before{ transform:scaleX(-1); }
+
+/* ============================================================
+   16 · REDUCED MOTION  (calm and fully usable underneath)
    ============================================================ */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;

@@ -12,6 +12,12 @@ import Photo from '../primitives/Photo.astro';
         <h2 id="spot-h">Meet the women shaping the region's skies.</h2>
         <div class="slot">
           <span class="awaiting">Awaiting a real member, with her own words</span>
+          {/* decorative climb route: the seat is reserved, the path is drawn */}
+          <svg class="slot-route" viewBox="0 0 360 84" aria-hidden="true">
+            <circle class="pt" cx="8" cy="74" r="3.5" fill-opacity=".9"/>
+            <path class="flightline draw" d="M8 74 C 96 70, 168 50, 224 36 S 330 12, 352 9" pathLength="1" stroke-opacity=".5"/>
+            <circle class="pt" cx="352" cy="9" r="3.5" fill-opacity=".9"/>
+          </svg>
         </div>
       </div>
       <div class="portrait reveal" style="--i:1">

@@ -131,6 +131,28 @@
     });
   }
 
+  /* ---- specular card light: cards catch the pointer (elevation slice).
+          One delegated, rAF-throttled listener; CSS paints the sheen. ---- */
+  if(canHover && !RM){
+    var lumeSel = [
+      ".fd-cell",".out-card",".pillar",".ev-card",".logo-cell",
+      ".who-card",".tier-card",".step-card",".get-card",".receive-card",
+      ".impact-card",".mv-card",".board-card",".amb-card",".recent-card",".ev-arch-card"
+    ].join(",");
+    document.querySelectorAll(lumeSel).forEach(function(c){ c.classList.add("lume"); });
+    var lumeRaf = null;
+    document.addEventListener("pointermove", function(e){
+      var card = e.target && e.target.closest ? e.target.closest(".lume") : null;
+      if(!card || lumeRaf) return;
+      lumeRaf = requestAnimationFrame(function(){
+        lumeRaf = null;
+        var r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", (((e.clientX - r.left) / r.width) * 100).toFixed(2) + "%");
+        card.style.setProperty("--my", (((e.clientY - r.top) / r.height) * 100).toFixed(2) + "%");
+      });
+    }, { passive:true });
+  }
+
   /* ---- nav pill indicator: glides behind the active page link, follows hover/focus ---- */
   var navLinks = document.querySelector(".nav .links");
   if(navLinks){

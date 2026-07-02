@@ -1,5 +1,6 @@
 ---
 import Button from '../primitives/Button.astro';
+import JoinFlightPath from '../primitives/JoinFlightPath.astro';
 
 // Closing call to action. Reuses the home join-band "dawn" treatment (the one emotional
 // gradient beat). Copy is verbatim from the About spec; button labels match the home
@@ -8,6 +9,7 @@ import Button from '../primitives/Button.astro';
 <section class="join" id="join" aria-labelledby="cta-h">
   <div class="dawn" aria-hidden="true"></div>
   <div class="glow-orb" aria-hidden="true"></div>
+  <JoinFlightPath />
   <div class="wrap">
     <div class="inner">
       <h2 id="cta-h" class="reveal">There is room for you in this.</h2>

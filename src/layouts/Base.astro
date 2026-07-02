@@ -47,7 +47,12 @@ const skipLabel = lang === 'ar' ? 'تخطّي إلى المحتوى' : 'Skip to 
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script is:inline>document.documentElement.classList.add('js');</script>
+    <script is:inline>
+      // Reveal-gating opt-in: only hide .reveal content when the observer that
+      // un-hides it can actually run. No IO / reduced-motion => content just shows.
+      if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('js');
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#060d1c" />
