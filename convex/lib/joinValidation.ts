@@ -65,7 +65,7 @@ export const isValidCareerStage = (c: string): boolean =>
 // Guardian full name: same character alphabet as member names, 2-80 chars,
 // at most 6 words (a full name, not a message), every word at least 2 chars.
 export const GUARDIAN_NAME_MAX = 80;
-const GUARDIAN_NAME_RE = /^[A-Za-z][A-Za-z' -]*$/;
+const GUARDIAN_NAME_RE = /^[A-Za-z](?:[A-Za-z' -]*[A-Za-z])?$/;
 export const isValidGuardianName = (raw: string): boolean => {
   const s = raw.trim();
   if (s.length < 2 || s.length > GUARDIAN_NAME_MAX || !GUARDIAN_NAME_RE.test(s)) {

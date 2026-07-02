@@ -2,14 +2,26 @@
 // Case. Pure functions, unit-tested. The server applies these too, so the
 // stored name never depends on client behaviour.
 
-// Letters, spaces, hyphens, apostrophes only; Latin only; length-capped.
-// A pasted sentence fails the word-count, word-length, or character rule:
-// at most 3 words per name PART (first or last), every word 2+ characters
-// (kills "I am here"-style fragments and stray initials), no doubled
-// punctuation.
-const NAME_PART_RE = /^[A-Za-z][A-Za-z' -]*$/;
+// Letters, spaces, hyphens, apostrophes only; Latin only; length-capped;
+// must START and END with a letter (no trailing "Sara-" / "O'Brien'").
+// A pasted sentence fails the word-count, word-length, character, or
+// common-word rule: at most 3 words per name PART (first or last), every
+// word 2+ characters, no doubled punctuation, and no everyday English filler
+// words ("please join me" is not a name). Name particles (bin, al, de, van)
+// stay allowed. A 3-word phrase built from rarer words can still slip
+// through any structural rule; the certificate confirm step ("Your
+// certificate will read ...") is the human backstop for those.
+const NAME_PART_RE = /^[A-Za-z](?:[A-Za-z' -]*[A-Za-z])?$/;
 export const NAME_PART_MAX = 40;
 const NAME_PART_MAX_WORDS = 3;
+
+// Everyday sentence words that are not names. Kept small and high-signal so
+// no real name is rejected; legitimate particles live in LOWERCASE_PARTICLES.
+const NOT_NAME_WORDS = new Set([
+  "the", "and", "for", "with", "from", "your", "you", "please", "join",
+  "add", "me", "am", "is", "are", "was", "want", "would", "like", "hello",
+  "hi", "hey", "test", "asdf", "name", "here", "now", "yes", "no",
+]);
 
 export const isValidNamePart = (raw: string): boolean => {
   const s = raw.trim();
@@ -23,7 +35,10 @@ export const isValidNamePart = (raw: string): boolean => {
     return false;
   }
   const words = s.split(/\s+/);
-  return words.length <= NAME_PART_MAX_WORDS && words.every((w) => w.length >= 2);
+  if (words.length > NAME_PART_MAX_WORDS || words.some((w) => w.length < 2)) {
+    return false;
+  }
+  return words.every((w) => !NOT_NAME_WORDS.has(w.toLowerCase()));
 };
 
 // Particles that stay lowercase in Arab and European name conventions.

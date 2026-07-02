@@ -46,8 +46,17 @@ describe("isValidNamePart", () => {
   it("rejects short sentence fragments and padded phrases (adversarial)", () => {
     expect(isValidNamePart("I am here")).toBe(false); // 1-char word
     expect(isValidNamePart("please add me now")).toBe(false); // 4 words
-    // A 3-word letters-only phrase is structurally a name; the certificate
-    // confirm step ("Your certificate will read ...") is the human backstop.
+    expect(isValidNamePart("please join me")).toBe(false); // filler words
+    expect(isValidNamePart("add me here")).toBe(false); // filler words
+    expect(isValidNamePart("test")).toBe(false); // filler word
+    // A rare-word 3-word phrase can still pass any structural rule; the
+    // certificate confirm step is the human backstop for those.
+  });
+
+  it("rejects trailing or leading separators", () => {
+    expect(isValidNamePart("Sara-")).toBe(false);
+    expect(isValidNamePart("O'Brien'")).toBe(false);
+    expect(isValidNamePart("-Sara")).toBe(false);
   });
 
   it("still accepts real multi-word name parts", () => {

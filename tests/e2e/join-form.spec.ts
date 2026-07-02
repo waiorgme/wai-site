@@ -40,6 +40,17 @@ test("a 13-17 date of birth reveals the guardian branch and hides the partner-se
   await expect(page.getByText("Make my profile searchable")).toHaveCount(0);
 });
 
+test("selecting Male hides the women-only partner-search option", async ({ page }) => {
+  await page.goto("/join");
+  await expect(page.getByText("Make my profile searchable")).toBeVisible();
+  await page.getByRole("radio", { name: "Male", exact: true }).check();
+  // The talent pipeline is women-only (Stage 0 lane rules): a male applicant
+  // is never shown a consent the server would refuse.
+  await expect(page.getByText("Make my profile searchable")).toHaveCount(0);
+  await page.getByRole("radio", { name: "Female", exact: true }).check();
+  await expect(page.getByText("Make my profile searchable")).toBeVisible();
+});
+
 test("honeypot field exists but is not visible", async ({ page }) => {
   await page.goto("/join");
   const honeypot = page.locator('input[name="website"]');

@@ -216,6 +216,30 @@ describe("submitJoin bot hardening (Turnstile before any stored state)", () => {
     expect(sixth).toEqual({ ok: false, error: "rate_limited" });
   });
 
+  it("global join cap: once 300 joins are consumed in a day, a fresh email is refused", async () => {
+    const t = convexTest(schema, modules);
+    stubTurnstile(true);
+    // One real join creates the global bucket, then the day's budget is spent
+    // (seeded directly; 300 live submits would exercise the same window 300x).
+    await t.action(api.members.submitJoin, submitArgs("first@example.com"));
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("rateLimits")
+        .withIndex("by_key", (q) => q.eq("key", "join24h:global"))
+        .unique();
+      if (row === null) {
+        throw new Error("global join bucket missing");
+      }
+      await ctx.db.patch(row._id, { count: 300 });
+    });
+    const refused = await t.action(
+      api.members.submitJoin,
+      submitArgs("someone-new@example.com"),
+    );
+    expect(refused).toEqual({ ok: false, error: "rate_limited" });
+    expect((await allRows(t)).members).toBe(1);
+  });
+
   it("an out-of-list career stage is rejected server-side, nothing stored", async () => {
     const t = convexTest(schema, modules);
     stubTurnstile(true);

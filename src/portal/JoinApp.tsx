@@ -252,8 +252,8 @@ function JoinForm() {
     <div style={card}>
       <h1 style={h1}>Join WAI-ME</h1>
       <p style={muted}>
-        Membership is free and open to everyone in aviation, at every stage,
-        from dreaming about it to leading it.
+        Membership is free, and it is open to women at any stage, from the
+        student with the dream to the captain with the legacy.
       </p>
       <form
         style={{ display: "grid", gap: 14, marginTop: 4 }}
@@ -411,7 +411,12 @@ function JoinForm() {
                 name="gender"
                 value="male"
                 checked={values.gender === "male"}
-                onChange={() => set("gender", "male")}
+                onChange={() => {
+                  // The women-only pipeline option hides for male applicants;
+                  // clear any earlier tick so a hidden consent never submits.
+                  set("gender", "male");
+                  set("pipeline", false);
+                }}
               />{" "}
               Male
             </label>
@@ -518,9 +523,11 @@ function JoinForm() {
           />
           <span>Email me about events, opportunities and news. (optional)</span>
         </label>
-        {/* Safeguarding: members under 18 are never offered the partner-search
-            option; the server enforces the same rule. */}
-        {!isMinor && (
+        {/* The talent pipeline is women-only and never offered to minors
+            (Stage 0 lane rules): the option renders only for adult female
+            applicants, so no one is shown a consent the server would refuse.
+            The server enforces the same rule whatever the client sends. */}
+        {!isMinor && values.gender === "female" && (
           <label style={checkboxRow}>
             <input
               type="checkbox"
