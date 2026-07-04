@@ -208,10 +208,13 @@ export const resolveConflictAsClaimed = mutation({
 });
 
 // archiveConflictRow (criterion 2, the other side of the decided mechanic). The
-// non-matching row of a duplicate-email pair moves from `conflict` to
+// non-matching row of a duplicate-email PAIR moves from `conflict` to
 // `archived_conflict`: permanently parked, never claimable, never deleted (the
 // archived row is the trail). matchClaim / getMyClaimCandidate ignore it, so its
-// resolved pair can be claimed. §8 audit: structured, PII-free (states + flag).
+// resolved pair can be claimed. Archiving is SCOPED to duplicate-email groups
+// (Issam's correct+archive decision): a single conflict whose email is unique
+// (e.g. a lone DOB-mismatch) is never permanently parked here - it stays in
+// review until corrected or released. §8 audit: structured, PII-free.
 export const archiveConflictRow = mutation({
   args: {
     rowId: v.id("importedMembers"),
@@ -222,7 +225,7 @@ export const archiveConflictRow = mutation({
     args,
   ): Promise<
     | { ok: true; state: "archived_conflict" }
-    | { ok: false; error: "not_authorized" | "not_found" }
+    | { ok: false; error: "not_authorized" | "not_found" | "not_duplicate" }
   > => {
     let adminEmail: string;
     try {
@@ -233,6 +236,20 @@ export const archiveConflictRow = mutation({
     const row = await ctx.db.get(args.rowId);
     if (row === null || row.claim_state !== "conflict") {
       return { ok: false, error: "not_found" };
+    }
+    // Only the non-matching row of a duplicate-email group may be archived: there
+    // must be at least one OTHER importedMembers row at the same normalized_email
+    // (in any state - the pair may already be released or archived). A conflict
+    // whose email is unique is not a duplicate and stays in review.
+    const sameEmail = await ctx.db
+      .query("importedMembers")
+      .withIndex("by_normalized_email", (q) =>
+        q.eq("normalized_email", row.normalized_email),
+      )
+      .collect();
+    const hasOther = sameEmail.some((r) => r._id !== row._id);
+    if (!hasOther) {
+      return { ok: false, error: "not_duplicate" };
     }
     const note = (args.note ?? "").trim().slice(0, 200);
     const archiveNote =

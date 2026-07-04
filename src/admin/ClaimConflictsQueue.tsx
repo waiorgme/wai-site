@@ -55,6 +55,15 @@ export function ClaimConflictsQueue() {
                   r.claim_state === "conflict",
               ).length
             }
+            // Archive is scoped to duplicate-email groups (criterion 2): only
+            // offered when another listed row shares this email, in any state.
+            sharesEmailWithOther={
+              rows.some(
+                (r) =>
+                  r.rowId !== row.rowId &&
+                  r.normalized_email === row.normalized_email,
+              )
+            }
             resolve={resolve}
             archive={archive}
           />
@@ -73,6 +82,7 @@ const stateTag: Record<string, string> = {
 function ConflictRowCard({
   row,
   liveDuplicateCount,
+  sharesEmailWithOther,
   resolve,
   archive,
 }: {
@@ -87,6 +97,9 @@ function ConflictRowCard({
   };
   // How many LIVE (still-conflict) rows share this email, including this one.
   liveDuplicateCount: number;
+  // Whether any other listed row shares this email (any state): the gate for
+  // offering archive at all.
+  sharesEmailWithOther: boolean;
   resolve: ReturnType<typeof useMutation<typeof api.admin.claims.resolveConflictAsClaimed>>;
   archive: ReturnType<typeof useMutation<typeof api.admin.claims.archiveConflictRow>>;
 }) {
@@ -171,36 +184,42 @@ function ConflictRowCard({
             </label>
           </ConfirmAction>
 
-          <ConfirmAction
-            label="Not this person: archive"
-            confirmLabel="Yes, archive"
-            summary={
-              <>
-                Park {row.masked_name}'s record permanently as an archived
-                conflict (the trail). It is never deleted and never becomes
-                claimable, and it stops blocking its pair from being claimed.
-              </>
-            }
-            onConfirm={async () => {
-              const res = await archive({
-                rowId: row.rowId as never,
-                note: archiveNote.trim() === "" ? undefined : archiveNote.trim(),
-              });
-              return res.ok
-                ? { ok: true, message: "Archived as a conflict." }
-                : { ok: false, message: "That could not be completed." };
-            }}
-          >
-            <label style={label}>
-              Archive note (optional)
-              <input
-                style={input}
-                value={archiveNote}
-                onChange={(e) => setArchiveNote(e.target.value)}
-                placeholder="e.g. duplicate belongs to a different person"
-              />
-            </label>
-          </ConfirmAction>
+          {/* Archive is offered only for a duplicate-email group. A single
+              conflict (unique email, e.g. a lone DOB mismatch) stays in review
+              until it is corrected or released; the server refuses archive for
+              it too. */}
+          {sharesEmailWithOther && (
+            <ConfirmAction
+              label="Not this person: archive"
+              confirmLabel="Yes, archive"
+              summary={
+                <>
+                  Park {row.masked_name}'s record permanently as an archived
+                  conflict (the trail). It is never deleted and never becomes
+                  claimable, and it stops blocking its pair from being claimed.
+                </>
+              }
+              onConfirm={async () => {
+                const res = await archive({
+                  rowId: row.rowId as never,
+                  note: archiveNote.trim() === "" ? undefined : archiveNote.trim(),
+                });
+                return res.ok
+                  ? { ok: true, message: "Archived as a conflict." }
+                  : { ok: false, message: "That could not be completed." };
+              }}
+            >
+              <label style={label}>
+                Archive note (optional)
+                <input
+                  style={input}
+                  value={archiveNote}
+                  onChange={(e) => setArchiveNote(e.target.value)}
+                  placeholder="e.g. duplicate belongs to a different person"
+                />
+              </label>
+            </ConfirmAction>
+          )}
         </div>
       )}
     </div>
