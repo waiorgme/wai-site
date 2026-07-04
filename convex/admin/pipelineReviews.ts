@@ -73,7 +73,14 @@ export const decidePipelineReviewFromPanel = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<PipelineDecideResult> => {
-    const adminEmail = await requireSuperAdmin(ctx);
+    // Mutations RETURN the neutral envelope for an unauthorized caller (never
+    // throw); only queries throw (Stage 0 §7.1).
+    let adminEmail: string;
+    try {
+      adminEmail = await requireSuperAdmin(ctx);
+    } catch {
+      return { ok: false, error: "not_authorized" };
+    }
     const review = await ctx.db.get(args.reviewId);
     if (review === null) {
       return { ok: false, error: "not_found" };

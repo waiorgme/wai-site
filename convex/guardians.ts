@@ -456,11 +456,17 @@ export const resendGuardianEmailFromPanel = action({
     args,
   ): Promise<{
     ok: boolean;
-    error?: "not_eligible" | "rate_limited" | "send_failed";
+    error?: "not_authorized" | "not_eligible" | "rate_limited" | "send_failed";
   }> => {
-    // Gate first: throws not_authorized (a neutral error) for non-admins;
-    // returns the authenticated admin's member email for the audit actor.
-    const adminEmail = await requireSuperAdminInAction(ctx);
+    // Gate first: this admin ACTION RETURNS the neutral envelope for an
+    // unauthorized caller (never throws), matching the mutation contract (Stage
+    // 0 §7.1). On success it yields the authenticated admin's member email.
+    let adminEmail: string;
+    try {
+      adminEmail = await requireSuperAdminInAction(ctx);
+    } catch {
+      return { ok: false, error: "not_authorized" };
+    }
     // admin_resend: the admin sends for a named member (resolved from the passed
     // id, not from auth), and is bound by the SAME per-target resend throttle
     // the member herself hits, plus the shared global send cap.
