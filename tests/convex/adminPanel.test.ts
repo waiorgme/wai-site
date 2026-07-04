@@ -165,11 +165,13 @@ describe("admin auth gate: deny-by-default, neutral errors", () => {
     const someMemberId = await t.run(async (ctx) =>
       ctx.db.insert("members", memberRow("target@example.com")),
     );
-    await expect(
-      asGhost.action(api.guardians.resendGuardianEmailFromPanel, {
+    // The admin ACTION returns the neutral envelope (does not throw) for an
+    // unauthorized caller, matching the mutation contract.
+    expect(
+      await asGhost.action(api.guardians.resendGuardianEmailFromPanel, {
         memberId: someMemberId,
       }),
-    ).rejects.toThrow(/not_authorized/);
+    ).toEqual({ ok: false, error: "not_authorized" });
   });
 });
 
@@ -595,6 +597,74 @@ describe("claim conflict resolution (correct + archive, decided 2026-07-04)", ()
     });
     expect(res).toEqual({ ok: true, state: "archived_conflict" });
   });
+
+  it("corrected-email resolution ATOMICALLY archives the leftover pair row", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const verifiedId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("dup@example.com", { name: "Amal Haddad" })),
+    );
+    const leftoverId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("dup@example.com", {
+          legacy_row_id: "waime:202",
+          legacy_membership_number: 202,
+          name: "Someone Else",
+        }),
+      ),
+    );
+    // Release the verified row onto a corrected email in ONE mutation.
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: verifiedId,
+      correctedEmail: "amal@example.com",
+    });
+    expect(res).toEqual({ ok: true, state: "unclaimed" });
+
+    // Exactly one released row + one archived_conflict row.
+    const verified = await t.run(async (ctx) => ctx.db.get(verifiedId));
+    const leftover = await t.run(async (ctx) => ctx.db.get(leftoverId));
+    expect(verified?.claim_state).toBe("unclaimed");
+    expect(verified?.normalized_email).toBe("amal@example.com");
+    expect(leftover?.claim_state).toBe("archived_conflict");
+    expect(leftover?.normalized_email).toBe("dup@example.com");
+
+    // The leftover archive was audited under the admin.
+    const archiveAudit = await t.run(async (ctx) =>
+      ctx.db
+        .query("auditLog")
+        .filter((q) => q.eq(q.field("action"), "archiveConflictRow"))
+        .collect(),
+    );
+    expect(archiveAudit).toHaveLength(1);
+    expect(archiveAudit[0].actor).toBe(ADMIN_EMAIL);
+
+    // The archived leftover can NEVER be released, now or ever.
+    const releaseArchived = await asAdmin.mutation(
+      api.admin.claims.resolveConflictAsClaimed,
+      { rowId: leftoverId },
+    );
+    expect(releaseArchived).toEqual({ ok: false, error: "not_found" });
+    const stillArchived = await t.run(async (ctx) => ctx.db.get(leftoverId));
+    expect(stillArchived?.claim_state).toBe("archived_conflict");
+  });
+
+  it("an archived_conflict row is refused release (never releasable)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("archived@example.com", { claim_state: "archived_conflict" }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+    });
+    expect(res).toEqual({ ok: false, error: "not_found" });
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.claim_state).toBe("archived_conflict");
+  });
 });
 
 // A true, attested pipeline consent row (what join/claim/settings write). This
@@ -808,6 +878,29 @@ describe("pipeline reviews queue", () => {
     );
     expect(res).toEqual({ ok: false, error: "not_permitted" });
   });
+
+  it("a non-admin gets the neutral envelope (not a throw) from the decide mutation", async () => {
+    const t = convexTest(schema, modules);
+    const asMember = await signIn(t, NON_ADMIN);
+    const memberId = await t.run(async (ctx) =>
+      ctx.db.insert("members", memberRow("candidate2@example.com", { pipeline_state: "review_pending" })),
+    );
+    const reviewId = await t.run(async (ctx) =>
+      ctx.db.insert("pipelineEligibilityReviews", {
+        member_id: memberId,
+        state: "pending",
+        timestamp: Date.now(),
+      }),
+    );
+    const res = await asMember.mutation(
+      api.admin.pipelineReviews.decidePipelineReviewFromPanel,
+      { reviewId, decision: "approved" },
+    );
+    expect(res).toEqual({ ok: false, error: "not_authorized" });
+    // No state change.
+    const review = await t.run(async (ctx) => ctx.db.get(reviewId));
+    expect(review?.state).toBe("pending");
+  });
 });
 
 describe("pending guardians queue", () => {
@@ -953,15 +1046,15 @@ describe("pending guardians queue", () => {
     expect(adminRows).toHaveLength(0);
   });
 
-  it("a non-admin cannot resend from the panel (neutral throw)", async () => {
+  it("a non-admin cannot resend from the panel (neutral envelope, not a throw)", async () => {
     const t = convexTest(schema, modules);
     const asMember = await signIn(t, NON_ADMIN);
     const memberId = await t.run(async (ctx) =>
       ctx.db.insert("members", memberRow("someone@example.com")),
     );
-    await expect(
-      asMember.action(api.guardians.resendGuardianEmailFromPanel, { memberId }),
-    ).rejects.toThrow(/not_authorized/);
+    expect(
+      await asMember.action(api.guardians.resendGuardianEmailFromPanel, { memberId }),
+    ).toEqual({ ok: false, error: "not_authorized" });
     expect(sentEmails).toHaveLength(0);
   });
 
@@ -1154,6 +1247,47 @@ describe("data requests", () => {
     const requests = await t.run(async (ctx) => ctx.db.query("dataRequests").collect());
     expect(requests).toHaveLength(1);
     expect(requests[0].subject_email).toBe("myself@example.com");
+  });
+
+  it("submitMyDataRequest succeeds for a pending_guardian minor (rights in every state)", async () => {
+    const t = convexTest(schema, modules);
+    const asMinor = await signIn(t, "waitingminor@example.com", {
+      member_lane: "minor",
+      lifecycle_state: "pending_guardian",
+      guardian_consent_state: "pending",
+    });
+    const res = await asMinor.mutation(
+      api.admin.dataRequests.submitMyDataRequest,
+      { kind: "erasure" },
+    );
+    expect(res).toMatchObject({ ok: true, state: "submitted" });
+    const requests = await t.run(async (ctx) => ctx.db.query("dataRequests").collect());
+    expect(requests).toHaveLength(1);
+    expect(requests[0].subject_email).toBe("waitingminor@example.com");
+    expect(requests[0].kind).toBe("erasure");
+  });
+
+  it("submitMyDataRequest succeeds for an active minor and a restricted_unknown member", async () => {
+    const t = convexTest(schema, modules);
+    const asActiveMinor = await signIn(t, "activeminor@example.com", {
+      member_lane: "minor",
+      lifecycle_state: "active",
+    });
+    expect(
+      await asActiveMinor.mutation(api.admin.dataRequests.submitMyDataRequest, {
+        kind: "export",
+      }),
+    ).toMatchObject({ ok: true, state: "submitted" });
+
+    const asUnknown = await signIn(t, "unknown@example.com", {
+      member_lane: "restricted_unknown",
+      lifecycle_state: "pending_review",
+    });
+    expect(
+      await asUnknown.mutation(api.admin.dataRequests.submitMyDataRequest, {
+        kind: "export",
+      }),
+    ).toMatchObject({ ok: true, state: "submitted" });
   });
 });
 
