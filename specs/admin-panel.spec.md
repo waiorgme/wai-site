@@ -132,6 +132,18 @@ follows).
      `listConflicts` keeps listing `archived_conflict` rows read-only for the trail. Audit
      summaries for both actions are structured and PII-free (states + note_present flag; the
      detailed note lives on the row's `conflict_reason`, never in the immutable audit log).
+     **Implementation note (2026-07-04, masked surface + audited reveal, per Codex round 5):**
+     `listConflicts` returns NO email strings to the browser; duplicate grouping is done
+     server-side and exposed only as an opaque per-query `duplicate_group` index (not derivable
+     back to the email) plus `live_duplicate_count` / `shares_email_with_other` flags the UI groups
+     by. Because the wave-run ops routine commits Mervat/Issam to personally emailing conflict /
+     suppressed-minor members, a single per-row `revealContactEmail` (super-admin gated,
+     propose-then-confirm in the UI, one row at a time) returns that one row's email and writes an
+     `admin_fallback` audit row (`action=reveal_contact_email`, row id only in the summary). That
+     deliberate, separate, audited reveal IS the "no bulk PII without separate approval" gate; there
+     is no bulk variant. `resolveConflictAsClaimed` also refuses if a members row already owns the
+     target email (the released row would be dead), and auto-archives the sibling only in the true
+     pair case (exactly one other `conflict` row at the email), refusing when more share it.
    - `dismissSuppressedMinor` is **not offered**: `suppressed_minor` rows clear automatically when
      the underlying record shows her 18 (existing `importBatch` logic, unchanged); the queue shows
      them read-only with the reason, so Mervat/Issam can see who is waiting and, per the recorded

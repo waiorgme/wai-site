@@ -202,16 +202,101 @@ describe("claim conflicts queue", () => {
     expect(rows).toHaveLength(2);
     const names = rows.map((r) => r.masked_name).sort();
     expect(names).toEqual(["Amira F.", "Sara H."]);
-    // The full NAME never leaks (masked); the email IS shown deliberately, as
-    // the conflict key the admin must act on (criterion 2, same reasoning as the
-    // data-request queue's subject_email).
+    // Masked surface (Codex round 5): the response contains NO email strings and
+    // no full name. Grouping is exposed only as an opaque duplicate_group index.
+    const serialized = JSON.stringify(rows);
+    expect(serialized).not.toContain("Al Farsi");
+    expect(serialized).not.toContain("@example.com");
     for (const row of rows) {
-      expect(JSON.stringify(row)).not.toContain("Al Farsi");
+      expect(typeof row.duplicate_group).toBe("number");
+      expect("normalized_email" in row).toBe(false);
     }
-    expect(rows.map((r) => r.normalized_email).sort()).toEqual([
-      "dup@example.com",
-      "kid@example.com",
-    ]);
+    // Two distinct emails -> two distinct opaque groups.
+    expect(new Set(rows.map((r) => r.duplicate_group)).size).toBe(2);
+  });
+
+  it("listConflicts groups same-email rows by an opaque index, still no email leak", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    await t.run(async (ctx) => {
+      for (const rid of ["a", "b"]) {
+        await ctx.db.insert("importedMembers", {
+          legacy_row_id: `waime:${rid}`,
+          legacy_row_hash: rid,
+          normalized_email: "pair@example.com",
+          name: `Person ${rid}`,
+          claim_state: "conflict",
+          conflict_reason: "duplicate_email",
+          match_signals: { email: true, name: false, mobile: false, dob: false },
+        });
+      }
+    });
+    const rows = await asAdmin.query(api.admin.claims.listConflicts, {});
+    expect(rows).toHaveLength(2);
+    // Same email -> same opaque group; both flagged as sharing + live count 2.
+    expect(rows[0].duplicate_group).toBe(rows[1].duplicate_group);
+    for (const row of rows) {
+      expect(row.shares_email_with_other).toBe(true);
+      expect(row.live_duplicate_count).toBe(2);
+    }
+    expect(JSON.stringify(rows)).not.toContain("@example.com");
+  });
+
+  it("revealContactEmail returns the email for an admin and audits it (no email in the summary)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", {
+        legacy_row_id: "waime:reveal",
+        legacy_row_hash: "rv",
+        normalized_email: "reveal@example.com",
+        name: "Reveal Me",
+        claim_state: "conflict" as const,
+        conflict_reason: "duplicate_email",
+        match_signals: { email: true, name: false, mobile: false, dob: false },
+      }),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.revealContactEmail, {
+      rowId,
+    });
+    expect(res).toEqual({ ok: true, email: "reveal@example.com" });
+    const audits = await t.run(async (ctx) =>
+      ctx.db
+        .query("auditLog")
+        .filter((q) => q.eq(q.field("action"), "reveal_contact_email"))
+        .collect(),
+    );
+    expect(audits).toHaveLength(1);
+    expect(audits[0].source).toBe("admin_fallback");
+    expect(audits[0].actor).toBe(ADMIN_EMAIL);
+    expect(audits[0].after_summary).not.toContain("reveal@example.com");
+  });
+
+  it("revealContactEmail refuses a non-admin neutrally and writes no audit row", async () => {
+    const t = convexTest(schema, modules);
+    const asMember = await signIn(t, NON_ADMIN);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", {
+        legacy_row_id: "waime:reveal2",
+        legacy_row_hash: "rv2",
+        normalized_email: "reveal2@example.com",
+        name: "Reveal Me",
+        claim_state: "conflict" as const,
+        conflict_reason: "duplicate_email",
+        match_signals: { email: true, name: false, mobile: false, dob: false },
+      }),
+    );
+    const res = await asMember.mutation(api.admin.claims.revealContactEmail, {
+      rowId,
+    });
+    expect(res).toEqual({ ok: false, error: "not_authorized" });
+    const audits = await t.run(async (ctx) =>
+      ctx.db
+        .query("auditLog")
+        .filter((q) => q.eq(q.field("action"), "reveal_contact_email"))
+        .collect(),
+    );
+    expect(audits).toHaveLength(0);
   });
 });
 
@@ -754,6 +839,77 @@ describe("claim conflict resolution (correct + archive, decided 2026-07-04)", ()
     const pair = await t.run(async (ctx) => ctx.db.get(pairId));
     expect(verified?.claim_state).toBe("unclaimed");
     expect(pair?.claim_state).toBe("archived_conflict");
+  });
+
+  it("corrected-email release is REFUSED if a MEMBER already owns the corrected email", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("solo@example.com")),
+    );
+    // A real member already owns the corrected email: the released row would be
+    // dead (claim path short-circuits to "already a member"), so refuse.
+    await t.run(async (ctx) =>
+      ctx.db.insert("members", memberRow("owned@example.com")),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+      correctedEmail: "owned@example.com",
+    });
+    expect(res).toEqual({ ok: false, error: "email_collision" });
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.claim_state).toBe("conflict");
+    expect(row?.normalized_email).toBe("solo@example.com");
+  });
+
+  it("original-email release is REFUSED if a MEMBER already owns that email", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("taken@example.com")),
+    );
+    await t.run(async (ctx) =>
+      ctx.db.insert("members", memberRow("taken@example.com")),
+    );
+    // No correction: releasing at the original email a member owns is dead too.
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+    });
+    expect(res).toEqual({ ok: false, error: "email_collision" });
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.claim_state).toBe("conflict");
+  });
+
+  it("with THREE same-email conflict rows, corrected-email release of one is refused; nothing changes", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const ids = [];
+    for (let i = 0; i < 3; i++) {
+      ids.push(
+        await t.run(async (ctx) =>
+          ctx.db.insert(
+            "importedMembers",
+            conflictRow("triple@example.com", {
+              legacy_row_id: `waime:60${i}`,
+              legacy_membership_number: 600 + i,
+              name: `Person ${i}`,
+            }),
+          ),
+        ),
+      );
+    }
+    // Only ONE row was identified as verified; auto-parking the other TWO in one
+    // click is over-reach, so the release is refused.
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: ids[0],
+      correctedEmail: "verified@example.com",
+    });
+    expect(res).toEqual({ ok: false, error: "duplicate_unresolved" });
+    for (const id of ids) {
+      const row = await t.run(async (ctx) => ctx.db.get(id));
+      expect(row?.claim_state).toBe("conflict");
+      expect(row?.normalized_email).toBe("triple@example.com");
+    }
   });
 });
 
