@@ -407,6 +407,35 @@ export const sendGuardianEmail = internalAction({
   },
 });
 
+// Admin-actor audit row for a panel resend (admin-panel spec criterion 4 + §8).
+// prepareGuardianSend already writes a system-actor trail; this ADDS the
+// admin_fallback row so the action is attributable to the authenticated admin
+// and shows up in listAdminAuditLog (which filters source=admin_fallback). The
+// summary is guardian-PII-free: outcome + target member id only, never the
+// guardian name or email.
+export const writeAdminResendAudit = internalMutation({
+  args: {
+    memberId: v.id("members"),
+    adminEmail: v.string(),
+    outcome: v.union(
+      v.literal("sent"),
+      v.literal("not_eligible"),
+      v.literal("rate_limited"),
+      v.literal("send_failed"),
+    ),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    await writeAudit(ctx, {
+      actor: args.adminEmail,
+      role: "admin_fallback",
+      action: "resendGuardianEmailFromPanel",
+      target_id: args.memberId,
+      after_summary: `guardian resend by admin outcome=${args.outcome}`,
+      source: "admin_fallback",
+    });
+  },
+});
+
 // Admin panel "resend the guardian email" (admin-panel spec criterion 4).
 // A super-admin-gated ACTION that reuses the EXACT same send path as the
 // member's own "Send it again" (performGuardianSend -> prepareGuardianSend),
@@ -416,8 +445,10 @@ export const sendGuardianEmail = internalAction({
 // /guardian-confirm remains the only route to `confirmed` (Under-18 decision).
 // The admin identity is checked server-side; the target member is a queue row
 // id, resolved server-side, and the send itself re-checks eligibility inside
-// prepareGuardianSend (pending/expired minor only). Failures return the same
-// neutral outcomes the member path returns.
+// prepareGuardianSend (pending/expired minor only). Every outcome (including a
+// throttled refusal) writes an admin_fallback audit row attributing the action
+// to the authenticated admin. Failures return the same neutral outcomes the
+// member path returns.
 export const resendGuardianEmailFromPanel = action({
   args: { memberId: v.id("members") },
   handler: async (
@@ -427,12 +458,19 @@ export const resendGuardianEmailFromPanel = action({
     ok: boolean;
     error?: "not_eligible" | "rate_limited" | "send_failed";
   }> => {
-    // Gate first: throws not_authorized (a neutral error) for non-admins.
-    await requireSuperAdminInAction(ctx);
+    // Gate first: throws not_authorized (a neutral error) for non-admins;
+    // returns the authenticated admin's member email for the audit actor.
+    const adminEmail = await requireSuperAdminInAction(ctx);
     // admin_resend: the admin sends for a named member (resolved from the passed
     // id, not from auth), and is bound by the SAME per-target resend throttle
     // the member herself hits, plus the shared global send cap.
     const outcome = await performGuardianSend(ctx, args.memberId, "admin_resend");
+    // Attribute the action (success OR throttled/failed refusal) to the admin.
+    await ctx.runMutation(internal.guardians.writeAdminResendAudit, {
+      memberId: args.memberId,
+      adminEmail,
+      outcome,
+    });
     return outcome === "sent" ? { ok: true } : { ok: false, error: outcome };
   },
 });
