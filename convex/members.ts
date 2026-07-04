@@ -22,6 +22,7 @@ import {
   normalizeEmail,
 } from "./lib/joinValidation";
 import { GLOBAL_JOIN_DAY, PER_EMAIL_JOIN_DAY } from "./lib/rateLimit";
+import { verifyTurnstile } from "./lib/turnstile";
 import {
   isProfileComplete,
   validateProfileFields,
@@ -1076,20 +1077,5 @@ const insertConsent = async (
     timestamp,
   });
 
-// §1 Bot protection: server-side Cloudflare Turnstile verification.
-const verifyTurnstile = async (token: string): Promise<boolean> => {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (secret === undefined) {
-    return false;
-  }
-  const res = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret, response: token }),
-    },
-  );
-  const data = (await res.json()) as { success: boolean };
-  return data.success === true;
-};
+// §1 Bot protection: server-side Cloudflare Turnstile verification lives in
+// convex/lib/turnstile.ts, shared by the join flow and the data-request route.
