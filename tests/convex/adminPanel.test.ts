@@ -70,6 +70,16 @@ const signIn = async (
   return t.withIdentity({ subject: `${userId}|testsession` });
 };
 
+// An authenticated auth-user with NO linked member row: authorization must deny
+// (criterion 1 authorizes the signed-in MEMBER, not any allowlisted auth-user).
+const signInAuthOnly = async (
+  t: ReturnType<typeof convexTest>,
+  email: string,
+) => {
+  const userId = await t.run(async (ctx) => ctx.db.insert("users", { email }));
+  return t.withIdentity({ subject: `${userId}|testsession` });
+};
+
 describe("admin auth gate: deny-by-default, neutral errors", () => {
   it("a non-admin member is refused on every new query", async () => {
     const t = convexTest(schema, modules);
@@ -115,6 +125,51 @@ describe("admin auth gate: deny-by-default, neutral errors", () => {
     await expect(asAdmin.query(api.admin.claims.listConflicts, {})).rejects.toThrow(
       /not_authorized/,
     );
+  });
+
+  it("an allowlisted auth-user with NO member row is denied on every admin function", async () => {
+    const t = convexTest(schema, modules);
+    // Signed in, email IS on the allowlist, but there is no linked member row.
+    const asGhost = await signInAuthOnly(t, ADMIN_EMAIL);
+    expect(await asGhost.query(api.lib.adminAuth.amISuperAdmin, {})).toBe(false);
+    await expect(asGhost.query(api.admin.claims.listConflicts, {})).rejects.toThrow(
+      /not_authorized/,
+    );
+    await expect(
+      asGhost.query(api.admin.pipelineReviews.listPendingReviews, {}),
+    ).rejects.toThrow(/not_authorized/);
+    await expect(
+      asGhost.query(api.admin.guardians.listPendingGuardians, {}),
+    ).rejects.toThrow(/not_authorized/);
+    await expect(
+      asGhost.query(api.admin.dataRequests.listDataRequests, {}),
+    ).rejects.toThrow(/not_authorized/);
+    await expect(
+      asGhost.query(api.admin.audit.listAdminAuditLog, {}),
+    ).rejects.toThrow(/not_authorized/);
+    // Mutations and the action gate deny too.
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", {
+        legacy_row_id: "waime:g",
+        legacy_row_hash: "gh",
+        normalized_email: "g@example.com",
+        name: "Ghost Row",
+        claim_state: "conflict" as const,
+        conflict_reason: "duplicate_email",
+        match_signals: { email: true, name: false, mobile: false, dob: false },
+      }),
+    );
+    expect(
+      await asGhost.mutation(api.admin.claims.resolveConflictAsClaimed, { rowId }),
+    ).toEqual({ ok: false, error: "not_authorized" });
+    const someMemberId = await t.run(async (ctx) =>
+      ctx.db.insert("members", memberRow("target@example.com")),
+    );
+    await expect(
+      asGhost.action(api.guardians.resendGuardianEmailFromPanel, {
+        memberId: someMemberId,
+      }),
+    ).rejects.toThrow(/not_authorized/);
   });
 });
 
@@ -381,25 +436,26 @@ describe("claim conflict resolution (correct + archive, decided 2026-07-04)", ()
         }),
       ),
     );
-    // Release the verified row onto a corrected email (so the pair is broken).
-    await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
-      rowId: verifiedId,
-      correctedEmail: "verified@example.com",
-    });
-    const other = await t.run(async (ctx) => ctx.db.get(otherId));
-    expect(other?.claim_state).toBe("conflict");
-    expect(other?.normalized_email).toBe("pair@example.com");
-
-    // The other row is archived by its OWN explicit call: it moves to
+    // Archive the non-matching row by its OWN explicit call (while it still
+    // shares the email, so it is a genuine duplicate): it moves to
     // archived_conflict, permanent and never claimable.
     const archiveRes = await asAdmin.mutation(api.admin.claims.archiveConflictRow, {
       rowId: otherId,
       note: "duplicate belongs to a different person",
     });
     expect(archiveRes).toEqual({ ok: true, state: "archived_conflict" });
+
+    // Resolving the verified row NEVER touched the archived one beyond its own
+    // explicit archive: releasing the verified row leaves the archived row as it
+    // was (still archived_conflict, still at the shared email).
+    await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: verifiedId,
+    });
     const archived = await t.run(async (ctx) => ctx.db.get(otherId));
     expect(archived?.claim_state).toBe("archived_conflict");
+    expect(archived?.normalized_email).toBe("pair@example.com");
     expect(archived?.conflict_reason).toContain("archived as conflict");
+
     // PII-free audit: the raw note is on the row, never in the audit summary.
     const archiveAudit = await t.run(async (ctx) =>
       ctx.db
@@ -495,6 +551,49 @@ describe("claim conflict resolution (correct + archive, decided 2026-07-04)", ()
     expect(res).toEqual({ ok: false, error: "not_found" });
     const row = await t.run(async (ctx) => ctx.db.get(rowId));
     expect(row?.claim_state).toBe("suppressed_minor");
+  });
+
+  it("archiving a single (unique-email) DOB-mismatch conflict is refused (not_duplicate)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    // A lone conflict whose email no other imported row shares.
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("solo-dob@example.com", {
+          conflict_reason: "dob_mismatch_at_claim",
+        }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.archiveConflictRow, {
+      rowId,
+    });
+    expect(res).toEqual({ ok: false, error: "not_duplicate" });
+    // It stays in review, never permanently parked.
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.claim_state).toBe("conflict");
+  });
+
+  it("archiving one row of a genuine duplicate-email pair works", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("pairdup@example.com")),
+    );
+    await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("pairdup@example.com", {
+          legacy_row_id: "waime:303",
+          legacy_membership_number: 303,
+          name: "Someone Else",
+        }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.archiveConflictRow, {
+      rowId,
+    });
+    expect(res).toEqual({ ok: true, state: "archived_conflict" });
   });
 });
 
@@ -761,6 +860,97 @@ describe("pending guardians queue", () => {
         .first(),
     );
     expect(consent?.confirmation_state).toBe("pending");
+
+    // The admin action is attributed to the admin in the audit view (blocker 1):
+    // an admin_fallback row keyed to the admin, guardian-PII-free.
+    const page = await asAdmin.query(api.admin.audit.listAdminAuditLog, {});
+    const resendRow = page.rows.find(
+      (r) => r.action === "resendGuardianEmailFromPanel",
+    );
+    expect(resendRow).toBeDefined();
+    expect(resendRow?.actor).toBe(ADMIN_EMAIL);
+    expect(resendRow?.after_summary).toContain("outcome=sent");
+    expect(resendRow?.after_summary).not.toContain("guardian@example.com");
+    expect(resendRow?.after_summary).not.toContain("Omar");
+  });
+
+  it("a throttled admin resend still writes an admin_fallback audit row (outcome=rate_limited)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const memberId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "members",
+        memberRow("minor3@example.com", {
+          name: "Lina Yousef",
+          member_lane: "minor",
+          lifecycle_state: "pending_guardian",
+          guardian_consent_state: "pending",
+        }),
+      ),
+    );
+    await t.run(async (ctx) =>
+      ctx.db.insert("guardianConsents", {
+        member_id: memberId,
+        guardian_name: "Omar Yousef",
+        guardian_email: "guardian3@example.com",
+        confirmation_state: "pending" as const,
+        confirmation_token_hash: "hash0",
+        token_sent_at: Date.now() - 1000,
+        timestamp: Date.now(),
+      }),
+    );
+    // First succeeds, second is throttled (per-hour limit 1).
+    await asAdmin.action(api.guardians.resendGuardianEmailFromPanel, { memberId });
+    const second = await asAdmin.action(api.guardians.resendGuardianEmailFromPanel, {
+      memberId,
+    });
+    expect(second).toEqual({ ok: false, error: "rate_limited" });
+    const page = await asAdmin.query(api.admin.audit.listAdminAuditLog, {});
+    const rows = page.rows.filter(
+      (r) => r.action === "resendGuardianEmailFromPanel",
+    );
+    // Both the sent and the throttled attempt are attributed to the admin.
+    expect(rows.some((r) => r.after_summary?.includes("outcome=sent"))).toBe(true);
+    expect(rows.some((r) => r.after_summary?.includes("outcome=rate_limited"))).toBe(
+      true,
+    );
+  });
+
+  it("a member's OWN resend produces no admin_fallback rows", async () => {
+    const t = convexTest(schema, modules);
+    const asMinor = await signIn(t, "minorself@example.com", {
+      name: "Lina Yousef",
+      member_lane: "minor",
+      lifecycle_state: "pending_guardian",
+      guardian_consent_state: "pending",
+    });
+    const member = await t.run(async (ctx) =>
+      ctx.db
+        .query("members")
+        .withIndex("by_email", (q) => q.eq("email", "minorself@example.com"))
+        .unique(),
+    );
+    await t.run(async (ctx) =>
+      ctx.db.insert("guardianConsents", {
+        member_id: member!._id,
+        guardian_name: "Omar Yousef",
+        guardian_email: "guardian4@example.com",
+        confirmation_state: "pending" as const,
+        confirmation_token_hash: "hash0",
+        token_sent_at: Date.now() - 1000,
+        timestamp: Date.now(),
+      }),
+    );
+    const res = await asMinor.action(api.guardians.resendGuardianEmail, {});
+    expect(res).toEqual({ ok: true });
+    // No admin_fallback rows from the member-initiated path.
+    const adminRows = await t.run(async (ctx) =>
+      ctx.db
+        .query("auditLog")
+        .withIndex("by_source_time", (q) => q.eq("source", "admin_fallback"))
+        .collect(),
+    );
+    expect(adminRows).toHaveLength(0);
   });
 
   it("a non-admin cannot resend from the panel (neutral throw)", async () => {
