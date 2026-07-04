@@ -111,11 +111,16 @@ follows).
    `conflict_reason`, `match_signals`, and days since the row last changed. Two actions:
    - `resolveConflictAsClaimed` (new mutation): for a `conflict` row, the admin picks which
      `importedMembers` row (of the duplicate-email pair, or the single ambiguous row) is the real
-     match and confirms; sets that row's `claim_state` back to `unclaimed` (claimable again) or, if
-     the member has since signed up separately, links it - **exact resolution mechanics for an
-     already-active duplicate-email claim are an open question, see Open Questions**; the *other*
-     row in a duplicate-email pair stays `conflict` until separately resolved (never auto-resolved
-     by resolving its pair).
+     match and confirms. **Resolution mechanic DECIDED (Issam, 2026-07-04): correct + archive.**
+     The admin corrects the verified row (optionally supplying a corrected `normalized_email`,
+     obtained by contacting the person per the wave-run ops routine) and releases it for claim
+     (`claim_state` back to `unclaimed`); the *other* row of a duplicate-email pair stays
+     **permanently `conflict`** with a resolution note appended to `conflict_reason` (never
+     auto-resolved by resolving its pair, never claimable). **Nothing is ever deleted** - the
+     archived row is the trail, per the vault's "records are archived rather than deleted"
+     guardrail. No variant of this action links a conflict row to an existing member directly;
+     the released row is claimed through the normal `matchClaim` path so every safeguard there
+     still applies.
    - `dismissSuppressedMinor` is **not offered**: `suppressed_minor` rows clear automatically when
      the underlying record shows her 18 (existing `importBatch` logic, unchanged); the queue shows
      them read-only with the reason, so Mervat/Issam can see who is waiting and, per the recorded
@@ -286,7 +291,19 @@ approval.
   Question 3).
 - Localised (Arabic) admin panel - English-first like the rest of the portal.
 
-## Open Questions (Stop-the-Line on these three specifics; do not invent at build time)
+## Open Questions (all three RESOLVED by Issam, 2026-07-04, in-session; original text kept for the record)
+
+> **Resolutions (Issam, 2026-07-04):**
+> 1. **Correct + archive.** The admin corrects the verified row (e.g. fixes its email) and releases
+>    it for claim; the other row stays permanently `conflict` with a note. Nothing is deleted.
+>    Criterion 2 above amended to match; also recorded in the vault claim-wave plan (dated).
+> 2. **Defer execution.** This slice ships submit + approve queue only. `fulfilExport` and
+>    `executeErasure` are NOT built until a dated decision note settles the export field list and
+>    the erasure scrub semantics (certificates, ledger rows); fulfilment stays manual via
+>    support@waiorg.me meanwhile. The legal review may inform that note. Recorded in the vault
+>    (dated, next to the PRD §6.5 deferral).
+> 3. **No public form.** The member-area route (criterion 5) plus the support@waiorg.me email path
+>    is the launch mechanism, per the LEGAL-2 amendment. No unauthenticated web form.
 
 1. **Claim-conflict resolution mechanics for the duplicate-email case.** Stage 0 §4.2 and the
    claim-wave spec establish that two `importedMembers` rows sharing one email both get marked
@@ -316,8 +333,6 @@ approval.
    through a web form (not just support@waiorg.me email), that is a small additive scope this spec
    does not currently include; flagging rather than assuming either way.
 
-Builder: proceed on criteria 1, 3, 4, 7, 8, 9, 10, 11, 12 and the parts of 2, 5, 6 that do not depend
-on the three open questions (the queues' listing/visibility, the propose-confirm shell, the schema,
-`submitDataRequest`'s creation-only behavior, `approveDataRequest`'s state transition and audit).
-Halt and raise for a decision before writing `resolveConflictAsClaimed`'s row-mutation logic,
-`fulfilExport`'s field list, or `executeErasure`'s scrub logic.
+Builder: with the 2026-07-04 resolutions above, all of criterion 2 (including
+`resolveConflictAsClaimed` per the correct + archive mechanic) is now buildable. `fulfilExport` and
+`executeErasure` remain out of this slice (resolution 2's deferral); do not create them.
