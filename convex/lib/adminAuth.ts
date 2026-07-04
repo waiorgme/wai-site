@@ -40,19 +40,40 @@ export const isAllowedAdminEmail = (
 // state), per criterion 10 and Stage 0 §7.1's named-error convention.
 export const NOT_AUTHORIZED = "not_authorized" as const;
 
-// Resolve the caller's member email from auth (never a client arg). The auth
-// user row carries the email; we lower-case it, matching authedEmail in
-// members.ts.
-const callerEmail = async (
+// Resolve the caller's MEMBER email from auth (never a client arg). Criterion 1
+// authorizes the signed-in MEMBER, so we resolve through the members table (the
+// existing by_userId / by_email pattern), not the raw auth-user row: an
+// authenticated auth-user with no linked member row is not a member and is never
+// an admin. Returns the member's lower-cased email, or null when there is no
+// linked member (which the callers treat as deny).
+const callerMemberEmail = async (
   ctx: QueryCtx | MutationCtx,
 ): Promise<string | null> => {
   const userId = await getAuthUserId(ctx);
   if (userId === null) {
     return null;
   }
+  // Primary link: the member row carrying this userId (set at auth/link time).
+  const byUserId = await ctx.db
+    .query("members")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+  if (byUserId !== null) {
+    return byUserId.email.toLowerCase();
+  }
+  // Fallback: match by the auth-user's email to the members table, for a member
+  // whose userId link has not been stamped yet. Still requires a real member
+  // row: no member, no admin.
   const user = await ctx.db.get(userId);
-  const email = (user as { email?: string } | null)?.email;
-  return typeof email === "string" ? email.toLowerCase() : null;
+  const authEmail = (user as { email?: string } | null)?.email;
+  if (typeof authEmail !== "string") {
+    return null;
+  }
+  const byEmail = await ctx.db
+    .query("members")
+    .withIndex("by_email", (q) => q.eq("email", authEmail.toLowerCase()))
+    .unique();
+  return byEmail === null ? null : byEmail.email.toLowerCase();
 };
 
 // Called FIRST in every admin function this spec adds. Returns the admin's
@@ -63,7 +84,7 @@ const callerEmail = async (
 export const requireSuperAdmin = async (
   ctx: QueryCtx | MutationCtx,
 ): Promise<string> => {
-  const email = await callerEmail(ctx);
+  const email = await callerMemberEmail(ctx);
   if (!isAllowedAdminEmail(process.env.SUPER_ADMIN_EMAILS, email)) {
     throw new Error(NOT_AUTHORIZED);
   }
@@ -95,7 +116,7 @@ export const requireSuperAdminInAction = async (
 export const amISuperAdmin = query({
   args: {},
   handler: async (ctx): Promise<boolean> => {
-    const email = await callerEmail(ctx);
+    const email = await callerMemberEmail(ctx);
     return isAllowedAdminEmail(process.env.SUPER_ADMIN_EMAILS, email);
   },
 });
