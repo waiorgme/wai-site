@@ -10,6 +10,13 @@ import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
 // with a required verification note. Fulfilment (export / erasure) is NOT built
 // here (Open Question 2): approving records the decision only.
 
+// Plain-language labels for the raw state enum (same pattern as reasonCopy in
+// ClaimConflictsQueue), so the surface keeps its plain-language voice.
+const stateLabel: Record<string, string> = {
+  submitted: "new",
+  identity_pending: "checking identity",
+};
+
 export function DataRequestsQueue() {
   const rows = useQuery(api.admin.dataRequests.listDataRequests);
   const approve = useMutation(api.admin.dataRequests.approveDataRequest);
@@ -44,14 +51,16 @@ function DataRequestRow({
   };
   approve: ReturnType<typeof useMutation<typeof api.admin.dataRequests.approveDataRequest>>;
 }) {
-  const [method, setMethod] = useState("");
-  const noteValid = method.trim().length > 0;
+  // Approve and Reject keep separate fields so text typed under one can never
+  // silently become the other's value.
+  const [approveMethod, setApproveMethod] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
   return (
     <div style={rowCard}>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <p style={rowName}>{row.subject_email}</p>
         <span style={tag}>{row.kind}</span>
-        <span style={tag}>{row.state}</span>
+        <span style={tag}>{stateLabel[row.state] ?? row.state}</span>
       </div>
       <p style={rowMeta}>
         {row.linked_member_name
@@ -70,13 +79,13 @@ function DataRequestRow({
           disabled={false}
           summary={`Approve this ${row.kind} request for ${row.subject_email}. Record below how you confirmed the person's identity.`}
           onConfirm={async () => {
-            if (!noteValid) {
+            if (approveMethod.trim().length === 0) {
               return { ok: false, message: "Add how identity was confirmed first." };
             }
             const res = await approve({
               requestId: row.requestId as never,
               decision: "approved",
-              verification_method: method.trim(),
+              verification_method: approveMethod.trim(),
             });
             return res.ok
               ? { ok: true, message: "Approved and recorded." }
@@ -87,8 +96,8 @@ function DataRequestRow({
             How was identity confirmed? (required)
             <input
               style={input}
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
+              value={approveMethod}
+              onChange={(e) => setApproveMethod(e.target.value)}
               placeholder="e.g. confirmed by reply from the email on file"
             />
           </label>
@@ -98,13 +107,13 @@ function DataRequestRow({
           confirmLabel="Yes, reject"
           summary={`Reject this ${row.kind} request for ${row.subject_email}. Record below why.`}
           onConfirm={async () => {
-            if (!noteValid) {
+            if (rejectReason.trim().length === 0) {
               return { ok: false, message: "Add a short note first." };
             }
             const res = await approve({
               requestId: row.requestId as never,
               decision: "rejected",
-              verification_method: method.trim(),
+              verification_method: rejectReason.trim(),
             });
             return res.ok
               ? { ok: true, message: "Rejected and recorded." }
@@ -115,8 +124,8 @@ function DataRequestRow({
             Reason (required)
             <input
               style={input}
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
               placeholder="e.g. could not confirm identity"
             />
           </label>

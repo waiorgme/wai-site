@@ -37,7 +37,10 @@ export function ConfirmAction({
 
   if (outcome !== null) {
     return (
-      <p style={{ ...muted, margin: 0, color: outcome.ok ? "var(--sky)" : "#ff9b9b" }}>
+      <p
+        role="status"
+        style={{ ...muted, margin: 0, color: outcome.ok ? "var(--sky)" : "#ff9b9b" }}
+      >
         {outcome.message}
       </p>
     );

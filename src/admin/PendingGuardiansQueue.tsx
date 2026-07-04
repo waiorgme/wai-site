@@ -12,6 +12,14 @@ import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
 const formatSent = (ts: number | null): string =>
   ts === null ? "not sent yet" : new Date(ts).toLocaleDateString();
 
+// Plain-language labels for the raw confirmation_state enum (same pattern as
+// reasonCopy in ClaimConflictsQueue), so the surface keeps its plain-language
+// voice.
+const stateLabel: Record<string, string> = {
+  pending: "waiting",
+  expired: "link expired",
+};
+
 export function PendingGuardiansQueue() {
   const rows = useQuery(api.admin.guardians.listPendingGuardians);
   const resend = useAction(api.guardians.resendGuardianEmailFromPanel);
@@ -28,7 +36,9 @@ export function PendingGuardiansQueue() {
           <div key={row.consentId} style={rowCard}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <p style={rowName}>{row.member_first_name} (under 18)</p>
-              <span style={tag}>{row.confirmation_state}</span>
+              <span style={tag}>
+                {stateLabel[row.confirmation_state] ?? row.confirmation_state}
+              </span>
             </div>
             <p style={rowMeta}>
               Guardian: {row.masked_guardian_name}. Last email:{" "}

@@ -232,7 +232,7 @@ function YourData() {
         </button>
       </div>
       {message !== null && (
-        <p style={{ ...muted, fontSize: 13, margin: 0 }}>{message}</p>
+        <p role="status" style={{ ...muted, fontSize: 13, margin: 0 }}>{message}</p>
       )}
       <p style={{ ...muted, fontSize: 12.5, margin: 0, opacity: 0.75 }}>
         You can also email{" "}
