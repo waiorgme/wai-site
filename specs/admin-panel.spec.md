@@ -121,6 +121,17 @@ follows).
      guardrail. No variant of this action links a conflict row to an existing member directly;
      the released row is claimed through the normal `matchClaim` path so every safeguard there
      still applies.
+     **Implementation note (2026-07-04, refines - does not change - the correct+archive
+     decision):** because `matchClaim`/`getMyClaimCandidate` hold any email with more than one
+     live imported row, "stays permanently conflict" is implemented as a distinct
+     `archived_conflict` `claim_state` (schema literal) that those two functions exclude from the
+     duplicate count, so the released pair is actually claimable. `archiveConflictRow` moves the
+     non-matching row `conflict -> archived_conflict` (permanent, never claimable, never deleted);
+     `resolveConflictAsClaimed` refuses to release (`duplicate_unresolved`) while a non-archived
+     duplicate at the target email still exists, unless a unique corrected email is supplied;
+     `listConflicts` keeps listing `archived_conflict` rows read-only for the trail. Audit
+     summaries for both actions are structured and PII-free (states + note_present flag; the
+     detailed note lives on the row's `conflict_reason`, never in the immutable audit log).
    - `dismissSuppressedMinor` is **not offered**: `suppressed_minor` rows clear automatically when
      the underlying record shows her 18 (existing `importBatch` logic, unchanged); the queue shows
      them read-only with the reason, so Mervat/Issam can see who is waiting and, per the recorded
