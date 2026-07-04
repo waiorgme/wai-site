@@ -169,26 +169,39 @@ export const resolveConflictAsClaimed = mutation({
 
     const emailCorrected = targetEmail !== originalEmail;
 
-    // Other live rows still at the ORIGINAL email: the rest of the
-    // duplicate-email group. When releasing WITH a corrected email, the decision
-    // (correct + archive) says the non-matching rows become the permanent
-    // archived trail - so archive them ATOMICALLY here, in the same mutation, so
-    // a leftover can never later be released or become an orphaned lone conflict.
-    // When releasing WITHOUT a correction, the released row stays at the shared
-    // email, so an unresolved live duplicate must be archived first (refuse).
+    // Other rows still at the ORIGINAL email. Only the OTHER half of the
+    // duplicate-CONFLICT (claim_state="conflict") may be auto-archived as part of
+    // resolving this pair (correct + archive decision). Any OTHER live state
+    // sharing the email - suppressed_minor (safeguarding: read-only, age-up only),
+    // unclaimed, claim_in_progress, or claimed - is NOT part of this conflict and
+    // must never be auto-parked: that situation needs human untangling, so we
+    // refuse the release entirely and change nothing. archived_conflict rows are
+    // the inert trail and are ignored.
     const atOriginal = await ctx.db
       .query("importedMembers")
       .withIndex("by_normalized_email", (q) =>
         q.eq("normalized_email", originalEmail),
       )
       .collect();
-    const otherLiveAtOriginal = atOriginal.filter(
-      (r) => r._id !== row._id && isLiveRow(r.claim_state),
+    const others = atOriginal.filter((r) => r._id !== row._id);
+    const otherConflicts = others.filter((r) => r.claim_state === "conflict");
+    const otherNonConflictLive = others.filter(
+      (r) => r.claim_state !== "conflict" && isLiveRow(r.claim_state),
     );
 
-    if (!emailCorrected && otherLiveAtOriginal.length > 0) {
+    // A non-conflict live row sharing the email blocks automation whether or not
+    // a correction was supplied when releasing at (or leaving at) that email.
+    // With a correction the released row moves away, so a shared non-conflict row
+    // there is a tangle only if we would archive it - which we now never do - but
+    // leaving a suppressed_minor/claimed row while archiving its neighbours (or
+    // orphaning it) is exactly the over-reach to avoid: refuse.
+    if (otherNonConflictLive.length > 0) {
+      return { ok: false, error: "duplicate_unresolved" };
+    }
+    if (!emailCorrected && otherConflicts.length > 0) {
       // No correction: releasing would leave >1 live row at this email, which
-      // matchClaim holds. Tell the admin to archive the other row first.
+      // matchClaim holds. Tell the admin to archive the other conflict first (or
+      // supply a unique corrected email so this mutation can archive it).
       return { ok: false, error: "duplicate_unresolved" };
     }
 
@@ -199,9 +212,10 @@ export const resolveConflictAsClaimed = mutation({
       (note.length > 0 ? ` (${note})` : "");
 
     // Atomic pair archive (only reachable when emailCorrected, since the
-    // no-correction path refuses above): every remaining live duplicate at the
-    // original email becomes a permanent archived_conflict trail.
-    for (const other of otherLiveAtOriginal) {
+    // no-correction path refuses above): the other CONFLICT halves at the
+    // original email become a permanent archived_conflict trail. Only conflict
+    // rows are touched here.
+    for (const other of otherConflicts) {
       await ctx.db.patch(other._id, {
         claim_state: "archived_conflict",
         conflict_reason: appendNote(
@@ -232,7 +246,7 @@ export const resolveConflictAsClaimed = mutation({
       target_id: row._id,
       before_summary: `claim_state=conflict`,
       // Structured, PII-free: no raw note, no email in the summary.
-      after_summary: `claim_state=unclaimed email_corrected=${emailCorrected} pair_archived=${otherLiveAtOriginal.length} note_present=${note.length > 0}`,
+      after_summary: `claim_state=unclaimed email_corrected=${emailCorrected} pair_archived=${otherConflicts.length} note_present=${note.length > 0}`,
       source: "admin_fallback",
     });
     return { ok: true, state: "unclaimed" };

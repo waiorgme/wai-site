@@ -665,6 +665,96 @@ describe("claim conflict resolution (correct + archive, decided 2026-07-04)", ()
     const row = await t.run(async (ctx) => ctx.db.get(rowId));
     expect(row?.claim_state).toBe("archived_conflict");
   });
+
+  it("corrected-email release is REFUSED (nothing changed) if a suppressed_minor shares the email", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const verifiedId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("shared@example.com")),
+    );
+    // A suppressed_minor row at the SAME email must never be auto-parked
+    // (safeguarding: read-only, clears only on age-up).
+    const minorId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("shared@example.com", {
+          legacy_row_id: "waime:501",
+          legacy_membership_number: 501,
+          name: "Young One",
+          claim_state: "suppressed_minor",
+          conflict_reason: undefined,
+        }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: verifiedId,
+      correctedEmail: "amal@example.com",
+    });
+    expect(res).toEqual({ ok: false, error: "duplicate_unresolved" });
+    // Nothing changed: both rows are exactly as they were.
+    const verified = await t.run(async (ctx) => ctx.db.get(verifiedId));
+    const minor = await t.run(async (ctx) => ctx.db.get(minorId));
+    expect(verified?.claim_state).toBe("conflict");
+    expect(verified?.normalized_email).toBe("shared@example.com");
+    expect(minor?.claim_state).toBe("suppressed_minor");
+    expect(minor?.normalized_email).toBe("shared@example.com");
+  });
+
+  it("corrected-email release is REFUSED (nothing changed) if a claimed row shares the email", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const verifiedId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("shared2@example.com")),
+    );
+    const claimedId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("shared2@example.com", {
+          legacy_row_id: "waime:502",
+          legacy_membership_number: 502,
+          name: "Already Claimed",
+          claim_state: "claimed",
+          conflict_reason: undefined,
+        }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: verifiedId,
+      correctedEmail: "amal2@example.com",
+    });
+    expect(res).toEqual({ ok: false, error: "duplicate_unresolved" });
+    const verified = await t.run(async (ctx) => ctx.db.get(verifiedId));
+    const claimed = await t.run(async (ctx) => ctx.db.get(claimedId));
+    expect(verified?.claim_state).toBe("conflict");
+    expect(claimed?.claim_state).toBe("claimed");
+  });
+
+  it("corrected-email release still works when the ONLY other row is the conflict pair", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const verifiedId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("paironly@example.com")),
+    );
+    const pairId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("paironly@example.com", {
+          legacy_row_id: "waime:503",
+          legacy_membership_number: 503,
+          name: "The Other Half",
+        }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: verifiedId,
+      correctedEmail: "amal3@example.com",
+    });
+    expect(res).toEqual({ ok: true, state: "unclaimed" });
+    const verified = await t.run(async (ctx) => ctx.db.get(verifiedId));
+    const pair = await t.run(async (ctx) => ctx.db.get(pairId));
+    expect(verified?.claim_state).toBe("unclaimed");
+    expect(pair?.claim_state).toBe("archived_conflict");
+  });
 });
 
 // A true, attested pipeline consent row (what join/claim/settings write). This
