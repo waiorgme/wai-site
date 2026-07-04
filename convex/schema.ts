@@ -269,4 +269,29 @@ export default defineSchema({
     window_start: v.number(),
     count: v.number(),
   }).index("by_key", ["key"]),
+
+  // §4.6 DataRequest: the deferred PRD §6.5 route (admin-panel slice). A subject
+  // asks to see or erase her data; the row is a record only, never a side effect
+  // on any member row (submitting is not approving). state runs
+  // submitted -> identity_pending -> approved -> fulfilled|rejected.
+  // verification_method + approver are set at approval, not creation.
+  dataRequests: defineTable({
+    subject_email: v.string(),
+    linked_member_id: v.optional(v.id("members")),
+    kind: v.union(v.literal("export"), v.literal("erasure")),
+    state: v.union(
+      v.literal("submitted"),
+      v.literal("identity_pending"),
+      v.literal("approved"),
+      v.literal("fulfilled"),
+      v.literal("rejected"),
+    ),
+    verification_method: v.optional(v.string()),
+    approver: v.optional(v.string()),
+    created_at: v.number(),
+    decided_at: v.optional(v.number()),
+    fulfilled_at: v.optional(v.number()),
+  })
+    .index("by_state", ["state"])
+    .index("by_subject_email", ["subject_email"]),
 });
