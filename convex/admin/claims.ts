@@ -133,18 +133,20 @@ export const resolveConflictAsClaimed = mutation({
       return { ok: false, error: "not_authorized" };
     }
     const row = await ctx.db.get(args.rowId);
-    // Same neutral shape whether the row is missing or in the wrong state.
+    // Same neutral shape whether the row is missing or in the wrong state. An
+    // archived_conflict row is NEVER releasable: the parked trail is permanent.
     if (row === null || row.claim_state !== "conflict") {
       return { ok: false, error: "not_found" };
     }
 
-    let targetEmail = row.normalized_email;
+    const originalEmail = row.normalized_email;
+    let targetEmail = originalEmail;
     if (args.correctedEmail !== undefined && args.correctedEmail.trim() !== "") {
       if (!isValidJoinEmail(args.correctedEmail)) {
         return { ok: false, error: "validation" };
       }
       const corrected = normalizeEmail(args.correctedEmail);
-      if (corrected !== row.normalized_email) {
+      if (corrected !== originalEmail) {
         // Any OTHER live row at the corrected email blocks the correction
         // (releasing into an already active/claimable/conflicting email would
         // recreate the ambiguity we are resolving). archived_conflict rows do
@@ -165,28 +167,58 @@ export const resolveConflictAsClaimed = mutation({
       targetEmail = corrected;
     }
 
-    // The target email must be free of OTHER live rows, or matchClaim will hold
-    // the released row. If the pair is still live at this email, refuse and tell
-    // the admin to archive the other row (or supply a unique corrected email).
-    const atTarget = await ctx.db
+    const emailCorrected = targetEmail !== originalEmail;
+
+    // Other live rows still at the ORIGINAL email: the rest of the
+    // duplicate-email group. When releasing WITH a corrected email, the decision
+    // (correct + archive) says the non-matching rows become the permanent
+    // archived trail - so archive them ATOMICALLY here, in the same mutation, so
+    // a leftover can never later be released or become an orphaned lone conflict.
+    // When releasing WITHOUT a correction, the released row stays at the shared
+    // email, so an unresolved live duplicate must be archived first (refuse).
+    const atOriginal = await ctx.db
       .query("importedMembers")
       .withIndex("by_normalized_email", (q) =>
-        q.eq("normalized_email", targetEmail),
+        q.eq("normalized_email", originalEmail),
       )
       .collect();
-    const stillAmbiguous = atTarget.some(
+    const otherLiveAtOriginal = atOriginal.filter(
       (r) => r._id !== row._id && isLiveRow(r.claim_state),
     );
-    if (stillAmbiguous) {
+
+    if (!emailCorrected && otherLiveAtOriginal.length > 0) {
+      // No correction: releasing would leave >1 live row at this email, which
+      // matchClaim holds. Tell the admin to archive the other row first.
       return { ok: false, error: "duplicate_unresolved" };
     }
 
-    const emailCorrected = targetEmail !== row.normalized_email;
     const note = (args.note ?? "").trim().slice(0, 200);
     const resolutionNote =
       `resolved by admin: released as verified` +
       (emailCorrected ? " with corrected email" : "") +
       (note.length > 0 ? ` (${note})` : "");
+
+    // Atomic pair archive (only reachable when emailCorrected, since the
+    // no-correction path refuses above): every remaining live duplicate at the
+    // original email becomes a permanent archived_conflict trail.
+    for (const other of otherLiveAtOriginal) {
+      await ctx.db.patch(other._id, {
+        claim_state: "archived_conflict",
+        conflict_reason: appendNote(
+          other.conflict_reason,
+          "archived as conflict (kept as trail, not claimable); pair released with corrected email",
+        ),
+      });
+      await writeAudit(ctx, {
+        actor: adminEmail,
+        role: "admin_fallback",
+        action: "archiveConflictRow",
+        target_id: other._id,
+        before_summary: `claim_state=conflict`,
+        after_summary: `claim_state=archived_conflict note_present=true`,
+        source: "admin_fallback",
+      });
+    }
 
     await ctx.db.patch(row._id, {
       normalized_email: targetEmail,
@@ -200,7 +232,7 @@ export const resolveConflictAsClaimed = mutation({
       target_id: row._id,
       before_summary: `claim_state=conflict`,
       // Structured, PII-free: no raw note, no email in the summary.
-      after_summary: `claim_state=unclaimed email_corrected=${emailCorrected} note_present=${note.length > 0}`,
+      after_summary: `claim_state=unclaimed email_corrected=${emailCorrected} pair_archived=${otherLiveAtOriginal.length} note_present=${note.length > 0}`,
       source: "admin_fallback",
     });
     return { ok: true, state: "unclaimed" };
