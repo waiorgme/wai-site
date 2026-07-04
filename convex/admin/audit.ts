@@ -28,28 +28,26 @@ export const listAdminAuditLog = query({
   ): Promise<{ rows: AdminAuditRow[]; nextCursor: string | null }> => {
     await requireSuperAdmin(ctx);
     const limit = Math.min(args.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
-    // No by_source index exists (auditLog is indexed by target/actor). This
-    // slice keeps the shipped audit schema unchanged (criterion 8: "not a new
-    // logging mechanism"), so we page the log newest-first and filter to the
-    // admin_fallback source in memory. Paginate on the built-in _creationTime
-    // ordering via a numeric cursor (timestamp of the last row seen).
+    // Paginate source=admin_fallback DIRECTLY via the by_source_time index, so a
+    // page is always admin rows (never a page of member/system rows that hides
+    // older admin actions, then falsely reads as "nothing recorded"). Newest
+    // first.
     const page = await ctx.db
       .query("auditLog")
+      .withIndex("by_source_time", (q) => q.eq("source", "admin_fallback"))
       .order("desc")
       .paginate({
         numItems: limit,
         cursor: args.cursor ?? null,
       });
-    const rows: AdminAuditRow[] = page.page
-      .filter((row) => row.source === "admin_fallback")
-      .map((row) => ({
-        id: row._id,
-        actor: row.actor,
-        action: row.action,
-        target_id: row.target_id,
-        after_summary: row.after_summary ?? null,
-        timestamp: row.timestamp,
-      }));
+    const rows: AdminAuditRow[] = page.page.map((row) => ({
+      id: row._id,
+      actor: row.actor,
+      action: row.action,
+      target_id: row.target_id,
+      after_summary: row.after_summary ?? null,
+      timestamp: row.timestamp,
+    }));
     return {
       rows,
       nextCursor: page.isDone ? null : page.continueCursor,
