@@ -132,6 +132,11 @@ export default defineSchema({
       v.literal("claimed"),
       v.literal("conflict"),
       v.literal("suppressed_minor"),
+      // The non-matching row of a resolved duplicate-email pair: permanently
+      // parked (correct + archive decision, 2026-07-04), never claimable, never
+      // deleted (the archived row is the trail). matchClaim / getMyClaimCandidate
+      // exclude it from duplicate counting so its resolved pair can be claimed.
+      v.literal("archived_conflict"),
     ),
     match_signals: v.object({
       email: v.boolean(),
@@ -222,7 +227,10 @@ export default defineSchema({
     ),
   })
     .index("by_target_time", ["target_id", "timestamp"])
-    .index("by_actor_time", ["actor", "timestamp"]),
+    .index("by_actor_time", ["actor", "timestamp"])
+    // Lets the admin audit view paginate source=admin_fallback DIRECTLY, so a
+    // page can never be all member/system rows that hide older admin actions.
+    .index("by_source_time", ["source", "timestamp"]),
 
   // §4.5 Certificate. Membership type auto-issues on join (the first win); all
   // other types are approve-first (later slice). The public verification page -

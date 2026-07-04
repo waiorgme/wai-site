@@ -48,7 +48,7 @@ export function ClaimConflictsQueue() {
           <ConflictRowCard
             key={row.rowId}
             row={row}
-            pairCount={
+            liveDuplicateCount={
               rows.filter(
                 (r) =>
                   r.normalized_email === row.normalized_email &&
@@ -64,9 +64,15 @@ export function ClaimConflictsQueue() {
   );
 }
 
+const stateTag: Record<string, string> = {
+  conflict: "conflict",
+  suppressed_minor: "held (under 18)",
+  archived_conflict: "archived",
+};
+
 function ConflictRowCard({
   row,
-  pairCount,
+  liveDuplicateCount,
   resolve,
   archive,
 }: {
@@ -74,27 +80,31 @@ function ConflictRowCard({
     rowId: string;
     masked_name: string;
     normalized_email: string;
-    claim_state: "conflict" | "suppressed_minor";
+    claim_state: "conflict" | "suppressed_minor" | "archived_conflict";
     conflict_reason: string | null;
     match_signals: { email: boolean; name: boolean; mobile: boolean; dob: boolean };
     days_since_change: number;
   };
-  pairCount: number;
+  // How many LIVE (still-conflict) rows share this email, including this one.
+  liveDuplicateCount: number;
   resolve: ReturnType<typeof useMutation<typeof api.admin.claims.resolveConflictAsClaimed>>;
   archive: ReturnType<typeof useMutation<typeof api.admin.claims.archiveConflictRow>>;
 }) {
+  // Release and archive keep separate note fields so one action's text can never
+  // become the other's value.
   const [correctedEmail, setCorrectedEmail] = useState("");
-  const [note, setNote] = useState("");
-  const isDuplicatePair = pairCount > 1;
+  const [releaseNote, setReleaseNote] = useState("");
+  const [archiveNote, setArchiveNote] = useState("");
+  const hasLivePair = liveDuplicateCount > 1;
 
   return (
     <div style={rowCard}>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <p style={rowName}>{row.masked_name}</p>
-        <span style={tag}>
-          {row.claim_state === "conflict" ? "conflict" : "held (under 18)"}
-        </span>
-        {isDuplicatePair && <span style={tag}>duplicate email pair</span>}
+        <span style={tag}>{stateTag[row.claim_state] ?? row.claim_state}</span>
+        {hasLivePair && row.claim_state === "conflict" && (
+          <span style={tag}>duplicate email pair</span>
+        )}
       </div>
       <p style={rowMeta}>{readableReason(row.conflict_reason, row.claim_state)}</p>
       <p style={rowMeta}>
@@ -115,8 +125,8 @@ function ConflictRowCard({
                 Confirm {row.masked_name}'s record as the verified person and
                 release it for claim. It re-enters the normal claim path; every
                 claim safeguard still applies.{" "}
-                {isDuplicatePair
-                  ? "The other record in this pair stays a conflict until you archive it, and correcting the email here is what lets this one be claimed again."
+                {hasLivePair
+                  ? "Because another live record shares this email, first archive the other one or give this one a corrected, unique email; otherwise the release is refused."
                   : ""}
               </>
             }
@@ -125,7 +135,7 @@ function ConflictRowCard({
                 rowId: row.rowId as never,
                 correctedEmail:
                   correctedEmail.trim() === "" ? undefined : correctedEmail.trim(),
-                note: note.trim() === "" ? undefined : note.trim(),
+                note: releaseNote.trim() === "" ? undefined : releaseNote.trim(),
               });
               if (res.ok) {
                 return { ok: true, message: "Released. It can be claimed again." };
@@ -133,9 +143,11 @@ function ConflictRowCard({
               const message =
                 res.error === "email_collision"
                   ? "That corrected email already belongs to another record. Use a different one."
-                  : res.error === "validation"
-                    ? "That corrected email is not valid."
-                    : "That could not be completed.";
+                  : res.error === "duplicate_unresolved"
+                    ? "Another live record still shares this email. Archive that one first, or give this one a unique corrected email."
+                    : res.error === "validation"
+                      ? "That corrected email is not valid."
+                      : "That could not be completed.";
               return { ok: false, message };
             }}
           >
@@ -152,8 +164,8 @@ function ConflictRowCard({
               Resolution note (optional)
               <input
                 style={input}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
+                value={releaseNote}
+                onChange={(e) => setReleaseNote(e.target.value)}
                 placeholder="e.g. confirmed by reply from the email on file"
               />
             </label>
@@ -164,14 +176,15 @@ function ConflictRowCard({
             confirmLabel="Yes, archive"
             summary={
               <>
-                Keep {row.masked_name}'s record as a conflict permanently (the
-                trail). It is never deleted and never becomes claimable.
+                Park {row.masked_name}'s record permanently as an archived
+                conflict (the trail). It is never deleted and never becomes
+                claimable, and it stops blocking its pair from being claimed.
               </>
             }
             onConfirm={async () => {
               const res = await archive({
                 rowId: row.rowId as never,
-                note: note.trim() === "" ? undefined : note.trim(),
+                note: archiveNote.trim() === "" ? undefined : archiveNote.trim(),
               });
               return res.ok
                 ? { ok: true, message: "Archived as a conflict." }
@@ -182,8 +195,8 @@ function ConflictRowCard({
               Archive note (optional)
               <input
                 style={input}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
+                value={archiveNote}
+                onChange={(e) => setArchiveNote(e.target.value)}
                 placeholder="e.g. duplicate belongs to a different person"
               />
             </label>
