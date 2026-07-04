@@ -145,11 +145,254 @@ describe("claim conflicts queue", () => {
     expect(rows).toHaveLength(2);
     const names = rows.map((r) => r.masked_name).sort();
     expect(names).toEqual(["Amira F.", "Sara H."]);
-    // No full name / email leaks through the row shape.
+    // The full NAME never leaks (masked); the email IS shown deliberately, as
+    // the conflict key the admin must act on (criterion 2, same reasoning as the
+    // data-request queue's subject_email).
     for (const row of rows) {
-      expect(JSON.stringify(row)).not.toContain("@example.com");
       expect(JSON.stringify(row)).not.toContain("Al Farsi");
     }
+    expect(rows.map((r) => r.normalized_email).sort()).toEqual([
+      "dup@example.com",
+      "kid@example.com",
+    ]);
+  });
+});
+
+describe("claim conflict resolution (correct + archive, decided 2026-07-04)", () => {
+  const conflictRow = (
+    email: string,
+    extra: Record<string, unknown> = {},
+  ) => ({
+    legacy_row_id: `waime:${(extra.legacy_membership_number as number) ?? 101}`,
+    legacy_row_hash: "h",
+    normalized_email: email,
+    name: "Amal Haddad",
+    dob_if_known: "1985-03-10",
+    legacy_membership_number: 101,
+    claim_state: "conflict" as const,
+    conflict_reason: "duplicate_email",
+    match_signals: { email: true, name: false, mobile: false, dob: false },
+    ...extra,
+  });
+
+  it("happy path: conflict -> unclaimed, note appended, PII-free audit written", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("solo@example.com")),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+      note: "confirmed by reply from the email on file",
+    });
+    expect(res).toEqual({ ok: true, state: "unclaimed" });
+
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.claim_state).toBe("unclaimed");
+    expect(row?.conflict_reason).toContain("duplicate_email");
+    expect(row?.conflict_reason).toContain("resolved by admin");
+    expect(row?.conflict_reason).toContain("confirmed by reply");
+
+    const audits = await t.run(async (ctx) =>
+      ctx.db
+        .query("auditLog")
+        .filter((q) => q.eq(q.field("action"), "resolveConflictAsClaimed"))
+        .collect(),
+    );
+    expect(audits).toHaveLength(1);
+    expect(audits[0].source).toBe("admin_fallback");
+    expect(audits[0].actor).toBe(ADMIN_EMAIL);
+    // PII-free: no name/email/dob in the summary text.
+    expect(audits[0].after_summary).not.toContain("solo@example.com");
+    expect(audits[0].after_summary).not.toContain("Amal");
+  });
+
+  it("corrected-email path releases to the new email", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("shared@example.com")),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+      correctedEmail: "Corrected@Example.com",
+    });
+    expect(res).toEqual({ ok: true, state: "unclaimed" });
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.normalized_email).toBe("corrected@example.com");
+    expect(row?.claim_state).toBe("unclaimed");
+  });
+
+  it("corrected email is rejected if it collides with a non-conflict row", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("shared@example.com")),
+    );
+    // A claimable (unclaimed) row already sits at the corrected email.
+    await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("taken@example.com", {
+          legacy_row_id: "waime:999",
+          legacy_membership_number: 999,
+          claim_state: "unclaimed",
+          conflict_reason: undefined,
+        }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+      correctedEmail: "taken@example.com",
+    });
+    expect(res).toEqual({ ok: false, error: "email_collision" });
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    // Unchanged: still a conflict at its original email.
+    expect(row?.claim_state).toBe("conflict");
+    expect(row?.normalized_email).toBe("shared@example.com");
+  });
+
+  it("corrected email colliding with another CONFLICT row is allowed (that is the trail)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("a@example.com")),
+    );
+    await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("trail@example.com", {
+          legacy_row_id: "waime:888",
+          legacy_membership_number: 888,
+        }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+      correctedEmail: "trail@example.com",
+    });
+    expect(res).toEqual({ ok: true, state: "unclaimed" });
+  });
+
+  it("resolving one row of a duplicate-email pair NEVER touches the other; the other stays conflict", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const verifiedId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("pair@example.com")),
+    );
+    const otherId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("pair@example.com", {
+          legacy_row_id: "waime:202",
+          legacy_membership_number: 202,
+          name: "Someone Else",
+        }),
+      ),
+    );
+    // Release the verified row onto a corrected email (so the pair is broken).
+    await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: verifiedId,
+      correctedEmail: "verified@example.com",
+    });
+    const other = await t.run(async (ctx) => ctx.db.get(otherId));
+    expect(other?.claim_state).toBe("conflict");
+    expect(other?.normalized_email).toBe("pair@example.com");
+
+    // The other row is archived by its OWN explicit call; still never claimable.
+    const archiveRes = await asAdmin.mutation(api.admin.claims.archiveConflictRow, {
+      rowId: otherId,
+      note: "duplicate belongs to a different person",
+    });
+    expect(archiveRes).toEqual({ ok: true, state: "conflict" });
+    const archived = await t.run(async (ctx) => ctx.db.get(otherId));
+    expect(archived?.claim_state).toBe("conflict");
+    expect(archived?.conflict_reason).toContain("archived as conflict");
+  });
+
+  it("a released row is claimable through matchClaim again while its archived pair is not", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    // A duplicate-email pair, both conflict.
+    const verifiedId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("dup@example.com", { name: "Amal Haddad" })),
+    );
+    await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("dup@example.com", {
+          legacy_row_id: "waime:202",
+          legacy_membership_number: 202,
+          name: "Someone Else",
+        }),
+      ),
+    );
+    // Correct the verified row onto the person's real email and release it.
+    await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId: verifiedId,
+      correctedEmail: "amal@example.com",
+    });
+    // Now Amal signs in with her corrected email and claims through the NORMAL
+    // path (no shortcut past matchClaim's safeguards).
+    const asAmal = await t.run(async (ctx) => ctx.db.insert("users", { email: "amal@example.com" }));
+    const amalSession = t.withIdentity({ subject: `${asAmal}|testsession` });
+    const claim = await amalSession.mutation(api.members.matchClaim, {
+      nameConfirmed: "Amal Haddad",
+      dobAnswer: "1985-03-10",
+      genderAnswer: "female",
+      attestation: true,
+      consents: { terms: true, marketing: false, pipeline: false },
+    });
+    expect(claim).toMatchObject({ ok: true });
+    const member = await t.run(async (ctx) =>
+      ctx.db
+        .query("members")
+        .withIndex("by_email", (q) => q.eq("email", "amal@example.com"))
+        .unique(),
+    );
+    expect(member).not.toBeNull();
+
+    // The archived pair (still at dup@example.com, still conflict) is NOT
+    // claimable: a claimant on that email gets the neutral held state.
+    const asOther = await t.run(async (ctx) => ctx.db.insert("users", { email: "dup@example.com" }));
+    const otherSession = t.withIdentity({ subject: `${asOther}|testsession` });
+    const candidate = await otherSession.query(api.members.getMyClaimCandidate, {});
+    // A single conflict row at that email is not claimable (claimableRow only
+    // returns unclaimed / aged-up suppressed_minor rows).
+    expect(candidate === null || candidate.state === "held").toBe(true);
+  });
+
+  it("a non-admin cannot resolve or archive a conflict (neutral not_authorized)", async () => {
+    const t = convexTest(schema, modules);
+    const asMember = await signIn(t, NON_ADMIN);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert("importedMembers", conflictRow("x@example.com")),
+    );
+    expect(
+      await asMember.mutation(api.admin.claims.resolveConflictAsClaimed, { rowId }),
+    ).toEqual({ ok: false, error: "not_authorized" });
+    expect(
+      await asMember.mutation(api.admin.claims.archiveConflictRow, { rowId }),
+    ).toEqual({ ok: false, error: "not_authorized" });
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.claim_state).toBe("conflict");
+  });
+
+  it("resolving a non-conflict row (e.g. suppressed_minor) is refused with the neutral shape", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const rowId = await t.run(async (ctx) =>
+      ctx.db.insert(
+        "importedMembers",
+        conflictRow("minor@example.com", { claim_state: "suppressed_minor", conflict_reason: undefined }),
+      ),
+    );
+    const res = await asAdmin.mutation(api.admin.claims.resolveConflictAsClaimed, {
+      rowId,
+    });
+    expect(res).toEqual({ ok: false, error: "not_found" });
+    const row = await t.run(async (ctx) => ctx.db.get(rowId));
+    expect(row?.claim_state).toBe("suppressed_minor");
   });
 });
 

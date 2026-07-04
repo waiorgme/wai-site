@@ -1,12 +1,16 @@
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { muted } from "../portal/ui";
+import { input, label, muted } from "../portal/ui";
+import { ConfirmAction } from "./ConfirmAction";
 import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
 
-// Claim conflicts queue (spec criterion 2), read-only in this slice. Shows
-// masked identity, reason, match signals and age. resolveConflictAsClaimed is
-// NOT built (Open Question 1); suppressed_minor rows are read-only by design
-// (no action forces a minor's row claimable early).
+// Claim conflicts queue (spec criterion 2, decided mechanic: correct + archive).
+// conflict rows can be RELEASED (confirmed as the verified person, optionally
+// with a corrected email, back to unclaimed for the normal matchClaim path) or
+// ARCHIVED (the non-matching pair row, kept permanently as a conflict trail).
+// suppressed_minor rows stay read-only: they clear on their own; no action forces
+// a minor's row claimable early.
 
 const reasonCopy: Record<string, string> = {
   duplicate_email: "Two records share this email; a human must decide which is real.",
@@ -14,8 +18,23 @@ const reasonCopy: Record<string, string> = {
   dob_mismatch_at_claim: "The date of birth given at claim did not match the record on file.",
 };
 
+const readableReason = (raw: string | null, state: string): string => {
+  if (raw === null) {
+    return state === "suppressed_minor"
+      ? "Held until the record shows she is 18. It clears on its own; no action needed here. Email her within 2 working days if contact is warranted."
+      : "Needs a human review.";
+  }
+  // The reason may carry appended resolution notes ("base; note"); keep the
+  // base's friendly copy but surface the appended trail verbatim.
+  const [base, ...rest] = raw.split("; ");
+  const head = reasonCopy[base] ?? base;
+  return rest.length === 0 ? head : `${head} ${rest.join("; ")}`;
+};
+
 export function ClaimConflictsQueue() {
   const rows = useQuery(api.admin.claims.listConflicts);
+  const resolve = useMutation(api.admin.claims.resolveConflictAsClaimed);
+  const archive = useMutation(api.admin.claims.archiveConflictRow);
 
   return (
     <section style={queueSection}>
@@ -26,36 +45,151 @@ export function ClaimConflictsQueue() {
         <p style={muted}>No rows waiting.</p>
       ) : (
         rows.map((row) => (
-          <div key={row.rowId} style={rowCard}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <p style={rowName}>{row.masked_name}</p>
-              <span style={tag}>
-                {row.claim_state === "conflict" ? "conflict" : "held (under 18)"}
-              </span>
-            </div>
-            <p style={rowMeta}>
-              {row.conflict_reason
-                ? (reasonCopy[row.conflict_reason] ?? row.conflict_reason)
-                : row.claim_state === "suppressed_minor"
-                  ? "Held until the record shows she is 18. It clears on its own; no action needed here. Email her within 2 working days if contact is warranted."
-                  : "Needs a human review."}
-            </p>
-            <p style={rowMeta}>
-              Match signals: email {row.match_signals.email ? "yes" : "no"}, name{" "}
-              {row.match_signals.name ? "yes" : "no"}, mobile{" "}
-              {row.match_signals.mobile ? "yes" : "no"}, dob{" "}
-              {row.match_signals.dob ? "yes" : "no"}. {row.days_since_change} day(s)
-              in this state.
-            </p>
-            {row.claim_state === "conflict" && (
-              <p style={{ ...rowMeta, opacity: 0.72 }}>
-                Resolving a conflict is not yet available in the panel. It is
-                paused until the resolution rule is signed off.
-              </p>
-            )}
-          </div>
+          <ConflictRowCard
+            key={row.rowId}
+            row={row}
+            pairCount={
+              rows.filter(
+                (r) =>
+                  r.normalized_email === row.normalized_email &&
+                  r.claim_state === "conflict",
+              ).length
+            }
+            resolve={resolve}
+            archive={archive}
+          />
         ))
       )}
     </section>
+  );
+}
+
+function ConflictRowCard({
+  row,
+  pairCount,
+  resolve,
+  archive,
+}: {
+  row: {
+    rowId: string;
+    masked_name: string;
+    normalized_email: string;
+    claim_state: "conflict" | "suppressed_minor";
+    conflict_reason: string | null;
+    match_signals: { email: boolean; name: boolean; mobile: boolean; dob: boolean };
+    days_since_change: number;
+  };
+  pairCount: number;
+  resolve: ReturnType<typeof useMutation<typeof api.admin.claims.resolveConflictAsClaimed>>;
+  archive: ReturnType<typeof useMutation<typeof api.admin.claims.archiveConflictRow>>;
+}) {
+  const [correctedEmail, setCorrectedEmail] = useState("");
+  const [note, setNote] = useState("");
+  const isDuplicatePair = pairCount > 1;
+
+  return (
+    <div style={rowCard}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <p style={rowName}>{row.masked_name}</p>
+        <span style={tag}>
+          {row.claim_state === "conflict" ? "conflict" : "held (under 18)"}
+        </span>
+        {isDuplicatePair && <span style={tag}>duplicate email pair</span>}
+      </div>
+      <p style={rowMeta}>{readableReason(row.conflict_reason, row.claim_state)}</p>
+      <p style={rowMeta}>
+        Match signals: email {row.match_signals.email ? "yes" : "no"}, name{" "}
+        {row.match_signals.name ? "yes" : "no"}, mobile{" "}
+        {row.match_signals.mobile ? "yes" : "no"}, dob{" "}
+        {row.match_signals.dob ? "yes" : "no"}. {row.days_since_change} day(s) in
+        this state.
+      </p>
+
+      {row.claim_state === "conflict" && (
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+          <ConfirmAction
+            label="This is the verified person: release"
+            confirmLabel="Yes, release"
+            summary={
+              <>
+                Confirm {row.masked_name}'s record as the verified person and
+                release it for claim. It re-enters the normal claim path; every
+                claim safeguard still applies.{" "}
+                {isDuplicatePair
+                  ? "The other record in this pair stays a conflict until you archive it, and correcting the email here is what lets this one be claimed again."
+                  : ""}
+              </>
+            }
+            onConfirm={async () => {
+              const res = await resolve({
+                rowId: row.rowId as never,
+                correctedEmail:
+                  correctedEmail.trim() === "" ? undefined : correctedEmail.trim(),
+                note: note.trim() === "" ? undefined : note.trim(),
+              });
+              if (res.ok) {
+                return { ok: true, message: "Released. It can be claimed again." };
+              }
+              const message =
+                res.error === "email_collision"
+                  ? "That corrected email already belongs to another record. Use a different one."
+                  : res.error === "validation"
+                    ? "That corrected email is not valid."
+                    : "That could not be completed.";
+              return { ok: false, message };
+            }}
+          >
+            <label style={label}>
+              Corrected email (optional)
+              <input
+                style={input}
+                value={correctedEmail}
+                onChange={(e) => setCorrectedEmail(e.target.value)}
+                placeholder="leave blank to keep the current email"
+              />
+            </label>
+            <label style={label}>
+              Resolution note (optional)
+              <input
+                style={input}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. confirmed by reply from the email on file"
+              />
+            </label>
+          </ConfirmAction>
+
+          <ConfirmAction
+            label="Not this person: archive"
+            confirmLabel="Yes, archive"
+            summary={
+              <>
+                Keep {row.masked_name}'s record as a conflict permanently (the
+                trail). It is never deleted and never becomes claimable.
+              </>
+            }
+            onConfirm={async () => {
+              const res = await archive({
+                rowId: row.rowId as never,
+                note: note.trim() === "" ? undefined : note.trim(),
+              });
+              return res.ok
+                ? { ok: true, message: "Archived as a conflict." }
+                : { ok: false, message: "That could not be completed." };
+            }}
+          >
+            <label style={label}>
+              Archive note (optional)
+              <input
+                style={input}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. duplicate belongs to a different person"
+              />
+            </label>
+          </ConfirmAction>
+        </div>
+      )}
+    </div>
   );
 }
