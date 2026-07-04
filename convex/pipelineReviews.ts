@@ -1,11 +1,14 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
-import { pipelineStateOnDecision } from "./lib/toggles";
-import { writeAudit } from "./lib/audit";
+import { applyPipelineDecision } from "./lib/pipelineDecide";
 
-// §7 decidePipelineReview, ADMIN FALLBACK PATH (Stage 0: until the admin
-// surface exists, Issam runs this via `npx convex run`, e.g.
+// §7 decidePipelineReview, BREAK-GLASS PATH (Decision 1: even after the admin
+// panel exists, Issam can still run this via `npx convex run`, e.g.
 //   npx convex run pipelineReviews:decide '{"reviewId":"...","decision":"approved","reviewer":"Issam"}'
+// The decision LOGIC lives once in convex/lib/pipelineDecide.ts; both this path
+// and the panel's decidePipelineReviewFromPanel call it, so the rules are never
+// forked. The panel takes `reviewer` from the authenticated admin; this
+// break-glass path takes it from the argument.
 // The light eligibility review is the high-consequence verification gate from
 // the Age & Gender Verification stance.
 export const decide = internalMutation({
@@ -18,36 +21,8 @@ export const decide = internalMutation({
   handler: async (
     ctx,
     args,
-  ): Promise<{ ok: boolean; error?: string; already?: true; state?: string }> => {
-    const review = await ctx.db.get(args.reviewId);
-    if (review === null) {
-      return { ok: false, error: "not_found" };
-    }
-    if (review.state !== "pending") {
-      return { ok: true, already: true, state: review.state };
-    }
-    const member = await ctx.db.get(review.member_id);
-    if (member === null) {
-      return { ok: false, error: "not_found" };
-    }
-    await ctx.db.patch(review._id, {
-      state: args.decision,
-      reviewer: args.reviewer,
-      reason: args.reason,
-    });
-    await ctx.db.patch(member._id, {
-      pipeline_state: pipelineStateOnDecision(args.decision),
-    });
-    await writeAudit(ctx, {
-      actor: args.reviewer,
-      role: "admin_fallback",
-      action: "decidePipelineReview",
-      target_id: member._id,
-      after_summary: `review=${args.decision}${args.reason ? ` reason=${args.reason}` : ""}`,
-      source: "admin_fallback",
-    });
-    return { ok: true, state: args.decision };
-  },
+  ): Promise<{ ok: boolean; error?: string; already?: true; state?: string }> =>
+    applyPipelineDecision(ctx, { ...args, source: "admin_fallback" }),
 });
 
 // Pending reviews for the recorded ops routine (see specs/optin-toggles.spec.md

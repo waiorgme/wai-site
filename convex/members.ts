@@ -22,6 +22,7 @@ import {
   normalizeEmail,
 } from "./lib/joinValidation";
 import { GLOBAL_JOIN_DAY, PER_EMAIL_JOIN_DAY } from "./lib/rateLimit";
+import { verifyTurnstile } from "./lib/turnstile";
 import {
   isProfileComplete,
   validateProfileFields,
@@ -618,10 +619,14 @@ export const getMyClaimCandidate = query({
     if (member !== null) {
       return null;
     }
-    const rows = await ctx.db
+    const allRows = await ctx.db
       .query("importedMembers")
       .withIndex("by_normalized_email", (q) => q.eq("normalized_email", email))
       .collect();
+    // archived_conflict rows are the parked trail of a resolved duplicate pair
+    // (correct + archive, 2026-07-04): they never count toward the duplicate
+    // check and are never claimable, so a released pair can be claimed cleanly.
+    const rows = allRows.filter((r) => r.claim_state !== "archived_conflict");
     if (rows.length === 0) {
       return null;
     }
@@ -692,10 +697,14 @@ export const matchClaim = mutation({
       return { ok: false, error: "validation" };
     }
 
-    const rows = await ctx.db
+    const allRows = await ctx.db
       .query("importedMembers")
       .withIndex("by_normalized_email", (q) => q.eq("normalized_email", email))
       .collect();
+    // archived_conflict rows are excluded from the duplicate check (the parked
+    // trail of a resolved pair, 2026-07-04): they can never be claimed and must
+    // not re-conflict their released pair.
+    const rows = allRows.filter((r) => r.claim_state !== "archived_conflict");
     // Two people, one email = conflict for a human, never a claim. Mark every
     // affected row so the admin queue sees it; reveal nothing to the caller.
     if (rows.length > 1) {
@@ -1076,20 +1085,5 @@ const insertConsent = async (
     timestamp,
   });
 
-// §1 Bot protection: server-side Cloudflare Turnstile verification.
-const verifyTurnstile = async (token: string): Promise<boolean> => {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (secret === undefined) {
-    return false;
-  }
-  const res = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret, response: token }),
-    },
-  );
-  const data = (await res.json()) as { success: boolean };
-  return data.success === true;
-};
+// §1 Bot protection: server-side Cloudflare Turnstile verification lives in
+// convex/lib/turnstile.ts, shared by the join flow and the data-request route.

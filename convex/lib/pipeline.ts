@@ -1,7 +1,27 @@
-import type { Doc } from "../_generated/dataModel";
-import type { MutationCtx } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { writeAudit } from "./audit";
 import { canUsePipeline } from "./toggles";
+
+// The single source of truth for "does this member have a true, attested
+// pipeline consent on record". Every attested path (join, claim, settings)
+// writes the consent through insertConsent, so the LATEST pipeline
+// consentRecord with value=true IS the attestation signal (there is no separate
+// flag; the consent row IS the proof). Returns the row so callers can surface
+// its date + source as evidence, or null when the latest is false/absent.
+export const latestPipelineConsent = async (
+  ctx: QueryCtx | MutationCtx,
+  memberId: Id<"members">,
+): Promise<Doc<"consentRecords"> | null> => {
+  const latest = await ctx.db
+    .query("consentRecords")
+    .withIndex("by_member_type_time", (q) =>
+      q.eq("member_id", memberId).eq("type", "pipeline"),
+    )
+    .order("desc")
+    .first();
+  return latest !== null && latest.value === true ? latest : null;
+};
 
 // The pipeline INVARIANT (optin-toggles spec): a true pipeline consent row is
 // never actionable without the truthful-declaration attestation AND an
@@ -21,14 +41,8 @@ export const ensurePipelineReviewOnActivation = async (
   if (current === "on" || current === "review_pending") {
     return;
   }
-  const latest = await ctx.db
-    .query("consentRecords")
-    .withIndex("by_member_type_time", (q) =>
-      q.eq("member_id", member._id).eq("type", "pipeline"),
-    )
-    .order("desc")
-    .first();
-  if (latest === null || latest.value !== true) {
+  const latest = await latestPipelineConsent(ctx, member._id);
+  if (latest === null) {
     return;
   }
   await ctx.db.insert("pipelineEligibilityReviews", {

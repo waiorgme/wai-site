@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { ClaimFlow } from "./ClaimFlow";
 import { ProfileEditor } from "./ProfileEditor";
 import { Settings } from "./Settings";
+import { YourData } from "./YourData";
 import {
   MembershipCertificate,
   ScaledCertificate,
@@ -125,6 +126,11 @@ export function Dashboard() {
           </p>
         </header>
         {me.lifecycle_state === "pending_guardian" && <GuardianResend />}
+        {/* Data rights apply in every state, including while waiting on a
+            guardian or a review (vault Privacy & Data Protection). */}
+        <section style={{ ...card, width: "100%" }}>
+          <YourData compact />
+        </section>
         <button type="button" style={linkBtn} onClick={() => void signOut()}>
           Sign out
         </button>
@@ -201,6 +207,12 @@ export function Dashboard() {
             events, opportunities, and the wider network. Until then, this is
             your runway. We're glad you're here.
           </p>
+        </section>
+
+        {/* Data rights apply to under-18 members too (they are not behind the
+            adult-only choices panel a minor never sees). */}
+        <section style={{ ...card, width: "100%" }}>
+          <YourData compact />
         </section>
 
         <button type="button" style={linkBtn} onClick={() => void signOut()}>

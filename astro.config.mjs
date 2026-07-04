@@ -54,7 +54,10 @@ export default defineConfig({
     react(),
     sitemap({
       // Private surfaces stay out of the sitemap (robots.txt disallows them too).
-      filter: (page) => !page.includes('/portal') && !page.includes('/verify'),
+      filter: (page) =>
+        !page.includes('/portal') &&
+        !page.includes('/verify') &&
+        !page.includes('/admin'),
     }),
     convexCspHeaders(),
   ],

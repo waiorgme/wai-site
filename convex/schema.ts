@@ -132,6 +132,11 @@ export default defineSchema({
       v.literal("claimed"),
       v.literal("conflict"),
       v.literal("suppressed_minor"),
+      // The non-matching row of a resolved duplicate-email pair: permanently
+      // parked (correct + archive decision, 2026-07-04), never claimable, never
+      // deleted (the archived row is the trail). matchClaim / getMyClaimCandidate
+      // exclude it from duplicate counting so its resolved pair can be claimed.
+      v.literal("archived_conflict"),
     ),
     match_signals: v.object({
       email: v.boolean(),
@@ -222,7 +227,10 @@ export default defineSchema({
     ),
   })
     .index("by_target_time", ["target_id", "timestamp"])
-    .index("by_actor_time", ["actor", "timestamp"]),
+    .index("by_actor_time", ["actor", "timestamp"])
+    // Lets the admin audit view paginate source=admin_fallback DIRECTLY, so a
+    // page can never be all member/system rows that hide older admin actions.
+    .index("by_source_time", ["source", "timestamp"]),
 
   // §4.5 Certificate. Membership type auto-issues on join (the first win); all
   // other types are approve-first (later slice). The public verification page -
@@ -269,4 +277,29 @@ export default defineSchema({
     window_start: v.number(),
     count: v.number(),
   }).index("by_key", ["key"]),
+
+  // §4.6 DataRequest: the deferred PRD §6.5 route (admin-panel slice). A subject
+  // asks to see or erase her data; the row is a record only, never a side effect
+  // on any member row (submitting is not approving). state runs
+  // submitted -> identity_pending -> approved -> fulfilled|rejected.
+  // verification_method + approver are set at approval, not creation.
+  dataRequests: defineTable({
+    subject_email: v.string(),
+    linked_member_id: v.optional(v.id("members")),
+    kind: v.union(v.literal("export"), v.literal("erasure")),
+    state: v.union(
+      v.literal("submitted"),
+      v.literal("identity_pending"),
+      v.literal("approved"),
+      v.literal("fulfilled"),
+      v.literal("rejected"),
+    ),
+    verification_method: v.optional(v.string()),
+    approver: v.optional(v.string()),
+    created_at: v.number(),
+    decided_at: v.optional(v.number()),
+    fulfilled_at: v.optional(v.number()),
+  })
+    .index("by_state", ["state"])
+    .index("by_subject_email", ["subject_email"]),
 });

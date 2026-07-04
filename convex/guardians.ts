@@ -11,6 +11,7 @@ import {
   query,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { requireSuperAdminInAction } from "./lib/adminAuth";
 import { writeAudit } from "./lib/audit";
 import { issueMembershipCertificate } from "./lib/certificates";
 import {
@@ -64,6 +65,13 @@ export const prepareGuardianSend = internalMutation({
   args: {
     memberId: v.optional(v.id("members")),
     viaMemberResend: v.optional(v.boolean()),
+    // Admin panel resend (admin-panel spec criterion 4): reuses the member
+    // resend path's rotation, rate-limit and audit behaviour exactly. The
+    // per-target resend throttle applies to admin resends too, keyed on the
+    // TARGET member, so an admin cannot bypass the per-minor limit the member
+    // herself is bound by. The member is resolved from the passed memberId
+    // (the caller already gated on requireSuperAdmin), not from auth.
+    viaAdminResend: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
@@ -98,6 +106,11 @@ export const prepareGuardianSend = internalMutation({
     if (memberId === null) {
       return { ok: false, reason: "not_eligible" };
     }
+    // A RESEND (member's own OR admin's) is throttled per target member and
+    // releases its quota on a failed send; the initial auto-send from the auth
+    // hook is neither. The throttle key is the target member either way.
+    const isResend =
+      args.viaMemberResend === true || args.viaAdminResend === true;
     const member = await ctx.db.get(memberId);
     if (
       member === null ||
@@ -157,14 +170,16 @@ export const prepareGuardianSend = internalMutation({
       rule: { limit: number; windowMs: number };
       refusal: { action: string; role: string; summary: string };
     }> = [];
-    if (args.viaMemberResend === true) {
+    // Refusal role reflects who triggered the resend, for the audit trail.
+    const resendRole = args.viaAdminResend === true ? "admin_fallback" : "member";
+    if (isResend) {
       buckets.push(
         {
           key: `guardian1h:${member._id}`,
           rule: RESEND_HOUR,
           refusal: {
             action: "resendGuardianEmail.refused",
-            role: "member",
+            role: resendRole,
             summary: "resend throttled",
           },
         },
@@ -173,7 +188,7 @@ export const prepareGuardianSend = internalMutation({
           rule: RESEND_DAY,
           refusal: {
             action: "resendGuardianEmail.refused",
-            role: "member",
+            role: resendRole,
             summary: "resend throttled",
           },
         },
@@ -185,7 +200,7 @@ export const prepareGuardianSend = internalMutation({
       if (!failPeek.ok) {
         await writeAudit(ctx, {
           actor: member.email,
-          role: "member",
+          role: resendRole,
           action: "resendGuardianEmail.refused",
           target_id: member._id,
           after_summary: "too many failed send attempts today",
@@ -252,7 +267,7 @@ export const prepareGuardianSend = internalMutation({
       prevHash: consent.confirmation_token_hash,
       prevSentAt: consent.token_sent_at,
       prevState: consent.confirmation_state as "pending" | "expired",
-      releaseMemberQuota: args.viaMemberResend === true,
+      releaseMemberQuota: isResend,
       to: consent.guardian_email,
       subject: GUARDIAN_EMAIL_SUBJECT,
       text: renderGuardianEmail({
@@ -345,11 +360,15 @@ export const expireGuardianToken = internalMutation({
 const performGuardianSend = async (
   ctx: ActionCtx,
   memberId: Id<"members"> | undefined,
-  viaMemberResend: boolean,
+  kind: "first" | "member_resend" | "admin_resend",
 ): Promise<"sent" | "not_eligible" | "rate_limited" | "send_failed"> => {
   const prepared = await ctx.runMutation(
     internal.guardians.prepareGuardianSend,
-    { memberId, viaMemberResend },
+    {
+      memberId,
+      viaMemberResend: kind === "member_resend",
+      viaAdminResend: kind === "admin_resend",
+    },
   );
   if (!prepared.ok) {
     return prepared.reason;
@@ -384,7 +403,81 @@ const performGuardianSend = async (
 export const sendGuardianEmail = internalAction({
   args: { memberId: v.id("members") },
   handler: async (ctx, args): Promise<void> => {
-    await performGuardianSend(ctx, args.memberId, false);
+    await performGuardianSend(ctx, args.memberId, "first");
+  },
+});
+
+// Admin-actor audit row for a panel resend (admin-panel spec criterion 4 + §8).
+// prepareGuardianSend already writes a system-actor trail; this ADDS the
+// admin_fallback row so the action is attributable to the authenticated admin
+// and shows up in listAdminAuditLog (which filters source=admin_fallback). The
+// summary is guardian-PII-free: outcome + target member id only, never the
+// guardian name or email.
+export const writeAdminResendAudit = internalMutation({
+  args: {
+    memberId: v.id("members"),
+    adminEmail: v.string(),
+    outcome: v.union(
+      v.literal("sent"),
+      v.literal("not_eligible"),
+      v.literal("rate_limited"),
+      v.literal("send_failed"),
+    ),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    await writeAudit(ctx, {
+      actor: args.adminEmail,
+      role: "admin_fallback",
+      action: "resendGuardianEmailFromPanel",
+      target_id: args.memberId,
+      after_summary: `guardian resend by admin outcome=${args.outcome}`,
+      source: "admin_fallback",
+    });
+  },
+});
+
+// Admin panel "resend the guardian email" (admin-panel spec criterion 4).
+// A super-admin-gated ACTION that reuses the EXACT same send path as the
+// member's own "Send it again" (performGuardianSend -> prepareGuardianSend),
+// so rotation, rate-limit and audit behaviour are identical and a second send
+// path is never forked. This is read-and-nudge only: there is NO code path here
+// that sets confirmation_state = confirmed; a guardian's own button press on
+// /guardian-confirm remains the only route to `confirmed` (Under-18 decision).
+// The admin identity is checked server-side; the target member is a queue row
+// id, resolved server-side, and the send itself re-checks eligibility inside
+// prepareGuardianSend (pending/expired minor only). Every outcome (including a
+// throttled refusal) writes an admin_fallback audit row attributing the action
+// to the authenticated admin. Failures return the same neutral outcomes the
+// member path returns.
+export const resendGuardianEmailFromPanel = action({
+  args: { memberId: v.id("members") },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    ok: boolean;
+    error?: "not_authorized" | "not_eligible" | "rate_limited" | "send_failed";
+  }> => {
+    // Gate first: this admin ACTION RETURNS the neutral envelope for an
+    // unauthorized caller (never throws), matching the mutation contract (Stage
+    // 0 §7.1). On success it yields the authenticated admin's member email.
+    let adminEmail: string;
+    try {
+      adminEmail = await requireSuperAdminInAction(ctx);
+    } catch {
+      return { ok: false, error: "not_authorized" };
+    }
+    // admin_resend: the admin sends for a named member (resolved from the passed
+    // id, not from auth), and is bound by the SAME per-target resend throttle
+    // the member herself hits, plus the shared global send cap.
+    const outcome = await performGuardianSend(ctx, args.memberId, "admin_resend");
+    // Attribute the action (success OR throttled/failed refusal) to the admin.
+    await ctx.runMutation(internal.guardians.writeAdminResendAudit, {
+      memberId: args.memberId,
+      adminEmail,
+      outcome,
+    });
+    return outcome === "sent" ? { ok: true } : { ok: false, error: outcome };
   },
 });
 
@@ -399,7 +492,7 @@ export const resendGuardianEmail = action({
     ok: boolean;
     error?: "not_eligible" | "rate_limited" | "send_failed";
   }> => {
-    const outcome = await performGuardianSend(ctx, undefined, true);
+    const outcome = await performGuardianSend(ctx, undefined, "member_resend");
     return outcome === "sent" ? { ok: true } : { ok: false, error: outcome };
   },
 });
