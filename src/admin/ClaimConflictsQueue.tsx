@@ -35,6 +35,15 @@ export function ClaimConflictsQueue() {
   const rows = useQuery(api.admin.claims.listConflicts);
   const resolve = useMutation(api.admin.claims.resolveConflictAsClaimed);
   const archive = useMutation(api.admin.claims.archiveConflictRow);
+  const reveal = useMutation(api.admin.claims.revealContactEmail);
+
+  // Group by the opaque server-provided duplicate_group (never the raw email),
+  // so rows sharing an address render together without the browser ever seeing
+  // any email string.
+  const groups: number[] =
+    rows === undefined
+      ? []
+      : [...new Set(rows.map((r) => r.duplicate_group))];
 
   return (
     <section style={queueSection}>
@@ -44,30 +53,41 @@ export function ClaimConflictsQueue() {
       ) : rows.length === 0 ? (
         <p style={muted}>No rows waiting.</p>
       ) : (
-        rows.map((row) => (
-          <ConflictRowCard
-            key={row.rowId}
-            row={row}
-            liveDuplicateCount={
-              rows.filter(
-                (r) =>
-                  r.normalized_email === row.normalized_email &&
-                  r.claim_state === "conflict",
-              ).length
-            }
-            // Archive is scoped to duplicate-email groups (criterion 2): only
-            // offered when another listed row shares this email, in any state.
-            sharesEmailWithOther={
-              rows.some(
-                (r) =>
-                  r.rowId !== row.rowId &&
-                  r.normalized_email === row.normalized_email,
-              )
-            }
-            resolve={resolve}
-            archive={archive}
-          />
-        ))
+        groups.map((group) => {
+          const groupRows = rows.filter((r) => r.duplicate_group === group);
+          const isGroup = groupRows.length > 1;
+          return (
+            <div
+              key={group}
+              style={
+                isGroup
+                  ? {
+                      display: "grid",
+                      gap: 10,
+                      padding: 10,
+                      borderRadius: 12,
+                      border: "1px dashed rgba(207, 224, 245, 0.22)",
+                    }
+                  : { display: "contents" }
+              }
+            >
+              {isGroup && (
+                <p style={{ ...rowMeta, margin: 0 }}>
+                  These records share one email address.
+                </p>
+              )}
+              {groupRows.map((row) => (
+                <ConflictRowCard
+                  key={row.rowId}
+                  row={row}
+                  resolve={resolve}
+                  archive={archive}
+                  reveal={reveal}
+                />
+              ))}
+            </div>
+          );
+        })
       )}
     </section>
   );
@@ -81,34 +101,32 @@ const stateTag: Record<string, string> = {
 
 function ConflictRowCard({
   row,
-  liveDuplicateCount,
-  sharesEmailWithOther,
   resolve,
   archive,
+  reveal,
 }: {
   row: {
     rowId: string;
     masked_name: string;
-    normalized_email: string;
     claim_state: "conflict" | "suppressed_minor" | "archived_conflict";
     conflict_reason: string | null;
     match_signals: { email: boolean; name: boolean; mobile: boolean; dob: boolean };
     days_since_change: number;
+    duplicate_group: number;
+    live_duplicate_count: number;
+    shares_email_with_other: boolean;
   };
-  // How many LIVE (still-conflict) rows share this email, including this one.
-  liveDuplicateCount: number;
-  // Whether any other listed row shares this email (any state): the gate for
-  // offering archive at all.
-  sharesEmailWithOther: boolean;
   resolve: ReturnType<typeof useMutation<typeof api.admin.claims.resolveConflictAsClaimed>>;
   archive: ReturnType<typeof useMutation<typeof api.admin.claims.archiveConflictRow>>;
+  reveal: ReturnType<typeof useMutation<typeof api.admin.claims.revealContactEmail>>;
 }) {
   // Release and archive keep separate note fields so one action's text can never
   // become the other's value.
   const [correctedEmail, setCorrectedEmail] = useState("");
   const [releaseNote, setReleaseNote] = useState("");
   const [archiveNote, setArchiveNote] = useState("");
-  const hasLivePair = liveDuplicateCount > 1;
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const hasLivePair = row.live_duplicate_count > 1;
 
   return (
     <div style={rowCard}>
@@ -127,6 +145,34 @@ function ConflictRowCard({
         {row.match_signals.dob ? "yes" : "no"}. {row.days_since_change} day(s) in
         this state.
       </p>
+
+      {/* Contact email: hidden by default (masked surface). Revealing one row's
+          email is a deliberate, audited, one-at-a-time action for the wave-run
+          ops routine's personal-email commitment. */}
+      {revealed !== null ? (
+        <p role="status" style={{ ...rowMeta, margin: 0 }}>
+          Contact email: <strong style={{ color: "var(--white)" }}>{revealed}</strong>
+        </p>
+      ) : (
+        <ConfirmAction
+          label="Reveal contact email"
+          confirmLabel="Yes, reveal"
+          summary={
+            <>
+              Show {row.masked_name}'s email so you can contact her personally.
+              This is logged.
+            </>
+          }
+          onConfirm={async () => {
+            const res = await reveal({ rowId: row.rowId as never });
+            if (res.ok) {
+              setRevealed(res.email);
+              return { ok: true, message: `Contact email: ${res.email}` };
+            }
+            return { ok: false, message: "That could not be completed." };
+          }}
+        />
+      )}
 
       {row.claim_state === "conflict" && (
         <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
@@ -188,7 +234,7 @@ function ConflictRowCard({
               conflict (unique email, e.g. a lone DOB mismatch) stays in review
               until it is corrected or released; the server refuses archive for
               it too. */}
-          {sharesEmailWithOther && (
+          {row.shares_email_with_other && (
             <ConfirmAction
               label="Not this person: archive"
               confirmLabel="Yes, archive"
