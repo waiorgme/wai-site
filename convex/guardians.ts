@@ -11,6 +11,7 @@ import {
   query,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { requireSuperAdminInAction } from "./lib/adminAuth";
 import { writeAudit } from "./lib/audit";
 import { issueMembershipCertificate } from "./lib/certificates";
 import {
@@ -385,6 +386,36 @@ export const sendGuardianEmail = internalAction({
   args: { memberId: v.id("members") },
   handler: async (ctx, args): Promise<void> => {
     await performGuardianSend(ctx, args.memberId, false);
+  },
+});
+
+// Admin panel "resend the guardian email" (admin-panel spec criterion 4).
+// A super-admin-gated ACTION that reuses the EXACT same send path as the
+// member's own "Send it again" (performGuardianSend -> prepareGuardianSend),
+// so rotation, rate-limit and audit behaviour are identical and a second send
+// path is never forked. This is read-and-nudge only: there is NO code path here
+// that sets confirmation_state = confirmed; a guardian's own button press on
+// /guardian-confirm remains the only route to `confirmed` (Under-18 decision).
+// The admin identity is checked server-side; the target member is a queue row
+// id, resolved server-side, and the send itself re-checks eligibility inside
+// prepareGuardianSend (pending/expired minor only). Failures return the same
+// neutral outcomes the member path returns.
+export const resendGuardianEmailFromPanel = action({
+  args: { memberId: v.id("members") },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    ok: boolean;
+    error?: "not_eligible" | "rate_limited" | "send_failed";
+  }> => {
+    // Gate first: throws not_authorized (a neutral error) for non-admins.
+    await requireSuperAdminInAction(ctx);
+    // viaMemberResend = false: this is the admin sending for a named member, not
+    // a member resolving herself from auth. prepareGuardianSend still enforces
+    // the pending/expired-minor eligibility and the shared global send cap.
+    const outcome = await performGuardianSend(ctx, args.memberId, false);
+    return outcome === "sent" ? { ok: true } : { ok: false, error: outcome };
   },
 });
 
