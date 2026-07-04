@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { checkboxRow, errorText, linkBtn, muted } from "./ui";
+import { YourData } from "./YourData";
 
 // "Your choices": the two opt-in toggles (field spec Group H). Labels and
 // tips follow the field spec's plain-language microcopy. Both default OFF;
@@ -24,9 +25,12 @@ export function Settings({ onClose }: { onClose: () => void }) {
   }
 
   if (settings.locked) {
+    // The directory/pipeline toggles open at 18; data rights do not wait for
+    // that (they apply to every member), so Your data still renders here.
     return (
-      <div style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "grid", gap: 16 }}>
         <p style={muted}>These options open when you turn 18.</p>
+        <YourData />
         <button type="button" style={linkBtn} onClick={onClose}>
           Back
         </button>
@@ -173,74 +177,5 @@ export function Settings({ onClose }: { onClose: () => void }) {
         Back
       </button>
     </div>
-  );
-}
-
-// "Your data" (admin-panel spec criterion 5): the signed-in member can ask for
-// an export or erasure of HER OWN account. subject_email is taken from her
-// session server-side, never a free-text field here. Submitting only records
-// the request; a team member reviews it before anything happens. This is the
-// privacy policy's "as the member area grows, these options will also appear
-// there directly" moment, for the member area specifically.
-function YourData() {
-  const submit = useMutation(api.admin.dataRequests.submitMyDataRequest);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const request = async (kind: "export" | "erasure") => {
-    setBusy(true);
-    setMessage(null);
-    try {
-      const res = await submit({ kind });
-      setMessage(
-        res.ok
-          ? "Thanks. We have logged your request and a team member will be in touch."
-          : res.error === "rate_limited"
-            ? "You have made a few of these recently. Please try again later."
-            : "Something went wrong. Please try again.",
-      );
-    } catch {
-      setMessage("Something went wrong. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section style={{ display: "grid", gap: 10, borderTop: "1px solid rgba(207, 224, 245, 0.12)", paddingTop: 16 }}>
-      <p style={{ ...muted, margin: 0 }}>
-        <strong style={{ color: "var(--white)" }}>Your data.</strong> You can ask
-        us to send you a copy of the data we hold about you, or to delete it. A
-        team member reviews every request before we act on it.
-      </p>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          style={linkBtn}
-          disabled={busy}
-          onClick={() => void request("export")}
-        >
-          Ask for a copy of my data
-        </button>
-        <button
-          type="button"
-          style={linkBtn}
-          disabled={busy}
-          onClick={() => void request("erasure")}
-        >
-          Ask us to delete my data
-        </button>
-      </div>
-      {message !== null && (
-        <p role="status" style={{ ...muted, fontSize: 13, margin: 0 }}>{message}</p>
-      )}
-      <p style={{ ...muted, fontSize: 12.5, margin: 0, opacity: 0.75 }}>
-        You can also email{" "}
-        <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
-          support@waiorg.me
-        </a>
-        .
-      </p>
-    </section>
   );
 }

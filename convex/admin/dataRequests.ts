@@ -138,6 +138,12 @@ export const submitMyDataRequest = mutation({
     | { ok: true; requestId: Id<"dataRequests">; state: "submitted" }
     | { ok: false; error: "not_signed_in" | "rate_limited" }
   > => {
+    // Data rights are exercisable in EVERY member state (vault Privacy & Data
+    // Protection + privacy policy line 73). This path is DELIBERATELY not gated
+    // by the pending_guardian / minor / pending_review surface locks that gate
+    // profile/toggle mutations: it requires only a signed-in user and takes the
+    // subject email from the session. A minor or a member awaiting a guardian or
+    // review can still ask for her export/erasure.
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
       return { ok: false, error: "not_signed_in" };
