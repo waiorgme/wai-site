@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { requireSuperAdmin } from "../lib/adminAuth";
 import { applyPipelineDecision, type PipelineDecideResult } from "../lib/pipelineDecide";
+import { latestPipelineConsent } from "../lib/pipeline";
 import { maskName } from "../lib/adminMask";
 
 // Admin pipeline-eligibility-reviews queue (spec criterion 3). Lists pending
@@ -19,6 +20,12 @@ export type PendingReviewRow = {
   masked_name: string;
   lane: "standard" | "minor" | "ally" | "restricted_unknown";
   days_open: number;
+  // The attested-consent evidence the admin must see before approving
+  // (criterion 3): the date + source of the latest true pipeline consent, or
+  // null if none is on record (in which case approval is refused server-side).
+  consent_on_file: boolean;
+  consent_date: number | null;
+  consent_source: "join" | "claim" | "settings" | null;
 };
 
 export const listPendingReviews = query({
@@ -36,11 +43,15 @@ export const listPendingReviews = query({
       if (member === null) {
         continue;
       }
+      const consent = await latestPipelineConsent(ctx, member._id);
       rows.push({
         reviewId: review._id,
         masked_name: maskName(member.name),
         lane: member.member_lane,
         days_open: Math.floor((now - review._creationTime) / DAY_MS),
+        consent_on_file: consent !== null,
+        consent_date: consent?.timestamp ?? null,
+        consent_source: consent?.source ?? null,
       });
     }
     return rows;

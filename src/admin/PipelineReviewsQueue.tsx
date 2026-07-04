@@ -35,7 +35,15 @@ function ReviewRow({
   row,
   decide,
 }: {
-  row: { reviewId: string; masked_name: string; lane: string; days_open: number };
+  row: {
+    reviewId: string;
+    masked_name: string;
+    lane: string;
+    days_open: number;
+    consent_on_file: boolean;
+    consent_date: number | null;
+    consent_source: "join" | "claim" | "settings" | null;
+  };
   decide: ReturnType<typeof useMutation<typeof api.admin.pipelineReviews.decidePipelineReviewFromPanel>>;
 }) {
   const [reason, setReason] = useState("");
@@ -46,13 +54,16 @@ function ReviewRow({
         <span style={tag}>lane: {row.lane}</span>
       </div>
       <p style={rowMeta}>
-        Open {row.days_open} day(s). She attested her details are accurate when
-        she opted in.
+        Open {row.days_open} day(s).{" "}
+        {row.consent_on_file
+          ? `She attested her details are accurate when she opted in (${row.consent_source}${row.consent_date !== null ? `, ${new Date(row.consent_date).toLocaleDateString()}` : ""}).`
+          : "No attested consent is on record; approval is not available until she opts in."}
       </p>
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
         <ConfirmAction
           label="Approve"
           confirmLabel="Yes, approve"
+          disabled={!row.consent_on_file}
           summary={`Approve this review. Approved partners will be able to find ${row.masked_name}'s profile. She is always introduced; her contact details are never shared directly.`}
           onConfirm={async () => {
             const res = await decide({
