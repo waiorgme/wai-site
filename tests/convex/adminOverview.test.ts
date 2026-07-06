@@ -50,7 +50,12 @@ const memberRow = (
 const importedRow = (
   rid: string,
   email: string,
-  claimState: "unclaimed" | "claimed" | "conflict",
+  claimState:
+    | "unclaimed"
+    | "claimed"
+    | "conflict"
+    | "suppressed_minor"
+    | "archived_conflict",
 ) => ({
   legacy_row_id: `waime:${rid}`,
   legacy_row_hash: rid,
@@ -96,8 +101,10 @@ describe("admin overview: counts", () => {
     const asAdmin = await signIn(t, ADMIN_EMAIL);
 
     await t.run(async (ctx) => {
-      // Members: one more active, one waiting on a guardian, one archived
-      // (archived counts in NEITHER active nor waiting).
+      // Members: one more active, one waiting on a guardian, one archived and
+      // one dormant. Archived counts in NEITHER active nor waiting; dormant is
+      // not "waiting on a step" either (the label names guardian / review /
+      // email confirmation only).
       const activeId = await ctx.db.insert(
         "members",
         memberRow("active@example.com"),
@@ -115,9 +122,17 @@ describe("admin overview: counts", () => {
         "members",
         memberRow("gone@example.com", { lifecycle_state: "archived" as const }),
       );
+      await ctx.db.insert(
+        "members",
+        memberRow("resting@example.com", {
+          lifecycle_state: "dormant" as const,
+        }),
+      );
 
-      // Legacy list: one claimed, one unclaimed, one conflict (the conflict row
-      // is also the claim-conflicts queue's single open row).
+      // Legacy list: one claimed, one unclaimed, one conflict, one held minor,
+      // one archived trail row. The badge counts OPEN work only: conflict +
+      // suppressed_minor; archived_conflict stays in the queue view as the
+      // read-only trail but never inflates "waiting".
       await ctx.db.insert(
         "importedMembers",
         importedRow("c1", "claimed@example.com", "claimed"),
@@ -130,8 +145,16 @@ describe("admin overview: counts", () => {
         ...importedRow("k1", "conflict@example.com", "conflict"),
         conflict_reason: "duplicate_email",
       });
+      await ctx.db.insert(
+        "importedMembers",
+        importedRow("s1", "minor@example.com", "suppressed_minor"),
+      );
+      await ctx.db.insert(
+        "importedMembers",
+        importedRow("a1", "archived@example.com", "archived_conflict"),
+      );
 
-      // One open row per remaining queue.
+      // One open row per remaining queue...
       await ctx.db.insert("pipelineEligibilityReviews", {
         member_id: activeId,
         state: "pending",
@@ -151,15 +174,36 @@ describe("admin overview: counts", () => {
         state: "submitted",
         created_at: Date.now(),
       });
+
+      // ...plus one row each whose member has been DELETED: the queues skip
+      // them (member-existence rule) and the counts must match the queues.
+      const ghostId = await ctx.db.insert(
+        "members",
+        memberRow("ghost@example.com"),
+      );
+      await ctx.db.insert("pipelineEligibilityReviews", {
+        member_id: ghostId,
+        state: "pending",
+        timestamp: Date.now(),
+      });
+      await ctx.db.insert("guardianConsents", {
+        member_id: ghostId,
+        guardian_name: "Ghost Guardian",
+        guardian_email: "ghost-guardian@example.com",
+        confirmation_state: "pending",
+        confirmation_token_hash: "ghost-hash",
+        timestamp: Date.now(),
+      });
+      await ctx.db.delete(ghostId);
     });
 
     const counts = await asAdmin.query(api.admin.overview.getAdminOverview, {});
     expect(counts).toEqual({
       members_active: 2,
       members_waiting: 1,
-      legacy_registered: 3,
+      legacy_registered: 5,
       legacy_claimed: 1,
-      queue_conflicts: 1,
+      queue_conflicts: 2,
       queue_pipeline: 1,
       queue_guardians: 1,
       queue_data_requests: 1,

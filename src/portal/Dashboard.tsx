@@ -370,7 +370,10 @@ function Hero({
   onSignOut: () => void;
 }) {
   // Year of issue, read from the certificate's own date label ("12 June 2026").
-  const since = membershipCert?.issued_date_label.match(/\b\d{4}\b/)?.[0] ?? null;
+  // Labelled "Certificate issued", never "member since": a claimed legacy
+  // member's certificate is issued at claim time, not when she first joined.
+  const issuedYear =
+    membershipCert?.issued_date_label.match(/\b\d{4}\b/)?.[0] ?? null;
   return (
     <div className="pn-hero">
       <div className="pn-hero-inner" style={maxw}>
@@ -397,14 +400,14 @@ function Hero({
           </div>
           {membershipCert !== null && (
             <div className="cell">
-              <span className="label">Membership no</span>
+              <span className="label">Membership number</span>
               <span className="value">WAIME-{membershipCert.membership_number}</span>
             </div>
           )}
-          {since !== null && (
+          {issuedYear !== null && (
             <div className="cell">
-              <span className="label">Member since</span>
-              <span className="value">{since}</span>
+              <span className="label">Certificate issued</span>
+              <span className="value">{issuedYear}</span>
             </div>
           )}
         </div>

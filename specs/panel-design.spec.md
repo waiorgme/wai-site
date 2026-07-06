@@ -65,7 +65,9 @@ v3 "The Climb" system (the code repo's `src/styles/tokens.css` is the design-sys
    `@media (hover:hover)`.
 
 ### C. Admin console (the console-shell port)
-8. The console gets a real shell: sidebar navigation (desktop) / collapsible nav (mobile) with
+8. The console gets a real shell: sidebar navigation (desktop) / wrapping pill-row nav
+   (mobile; amended 2026-07-06 from "collapsible" - all items stay visible, which suits a
+   12-item nav better than a hidden disclosure) with
    Overview, the four queues by their exact existing names, "Recent panel actions", and honest
    Soon seams (Members, Partners, Events, Content). The safe-actions sentence stays visible
    verbatim: "The safe-actions fallback. Every change here asks you to confirm, and is
@@ -124,6 +126,18 @@ v3 "The Climb" system (the code repo's `src/styles/tokens.css` is the design-sys
 18. No em dashes in any new string. No new PII in the browser. No UI implying unbuilt
     capability. Design review (Gate 3) + Codex review (Gate 4, `scripts/codex-review.sh
     panel-design`) both pass before the PR is opened for Issam.
+
+## Dated deviations recorded during the gates (2026-07-06)
+
+- The signed-in console heading reads "Admin console" (was "Admin"); the sign-in heading
+  "Admin sign-in" and the verbatim safe-actions sentence are unchanged. The hero eyebrow is
+  "Safe actions", the vault's own name for the fixed action set (02 Admin Approach).
+- Queue badges show OPEN work: conflicts count = conflict + suppressed_minor;
+  archived_conflict trail rows stay visible in the queue view but are never counted as
+  "waiting". members_waiting counts pre-activation states only (email_unverified,
+  consent_pending, pending_guardian, claim_pending, pending_review).
+- The dashboard hero's year cell is labelled "Certificate issued" (never "Member since"): a
+  claimed legacy member's certificate is issued at claim time, not when she first joined.
 
 ## Sources
 [[02 Design Source Brief - Claude Design Reset (Reference)]] · [[01 Branding]] ·

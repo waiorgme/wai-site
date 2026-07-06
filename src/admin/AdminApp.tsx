@@ -52,12 +52,10 @@ export function AdminApp() {
 function Centered({ children }: { children: ReactNode }) {
   return (
     <div className="pn-center">
-      <div className="pn-stack">
-        <div className="pn-brand">
-          <img src="/assets/wai-me-logo.png" alt="Women in Aviation Middle East" />
-        </div>
-        {children}
+      <div className="pn-brand">
+        <img src="/assets/wai-me-logo.png" alt="Women in Aviation Middle East" />
       </div>
+      {children}
     </div>
   );
 }
@@ -117,19 +115,19 @@ const QUEUE_LABELS: Record<QueueView, string> = {
 const SOON_SEAMS: Record<SoonView, { name: string; copy: string }> = {
   members: {
     name: "Members",
-    copy: "Member records live in the database and are managed through the review queues for now. A browsable member list is a later slice.",
+    copy: "Member records live safely in the database and are managed through the review queues for now. A browsable member list is coming in a later update.",
   },
   partners: {
     name: "Partners",
-    copy: "Corporate partnering today: a company reads the public partner page and emails support@waiorg.me, and Mervat takes it from there. Partner records in the console are a later slice.",
+    copy: "Corporate partnering today: a company reads the public partner page, emails support@waiorg.me, and you take it from there. Partner records here are coming in a later update.",
   },
   events: {
     name: "Events",
-    copy: "Event management arrives with the events slice.",
+    copy: "Event management is coming in a later update.",
   },
   content: {
     name: "Content",
-    copy: "Site content is file-based and published through the build workflow. A content editor here is a later slice.",
+    copy: "The website's pages and news are updated by the team for now. A content editor here is coming in a later update.",
   },
 };
 
@@ -166,7 +164,10 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
               Sign out
             </button>
           </div>
-          <p className="pn-eyebrow">Admin console</p>
+          {/* "Safe actions" is the vault's own name for this fixed action set
+              (02 Admin Approach - Agent-Operated); the sentence below stays the
+              verbatim shell-framing promise. */}
+          <p className="pn-eyebrow">Safe actions</p>
           <h1 className="pn-h1">Admin console</h1>
           <p>
             The safe-actions fallback. Every change here asks you to confirm, and
@@ -307,7 +308,7 @@ function AdminOverview({
           <div className="pn-stat">
             <p className="k">Legacy records</p>
             <p className="v">{counts.legacy_registered}</p>
-            <p className="s">imported list, registered - not yet active</p>
+            <p className="s">the whole imported list; claimed shown separately</p>
           </div>
           <div className="pn-stat">
             <p className="k">Claimed so far</p>

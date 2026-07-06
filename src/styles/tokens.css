@@ -61,10 +61,11 @@
      Additive only: semantic states and a navy-tinted elevation scale for
      dense app chrome. Gold stays recognition-only and is deliberately
      absent here; warnings are never gold. */
-  --ok:          #15803d;                 /* success text on light, AA on #fff */
+  --ok:          #136b39;                 /* success text on light, AA even on the tint */
   --ok-tint:     rgba(21, 128, 61, .1);
   --ok-border:   rgba(21, 128, 61, .3);
-  --err:         #c44569;                 /* error text on light, AA on #fff */
+  --err:         #c44569;                 /* error accents (borders, washes) on light */
+  --err-deep:    #a13355;                 /* error TEXT on light, AA even on the tint */
   --err-tint:    rgba(196, 69, 105, .09);
   --err-border:  rgba(196, 69, 105, .32);
   --info-tint:   rgba(1, 139, 225, .08);  /* sky-core wash for active/info */

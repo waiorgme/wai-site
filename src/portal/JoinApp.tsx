@@ -168,7 +168,7 @@ function JoinForm() {
         <h1 className={h1}>One last look</h1>
         <p className={muted}>
           Your certificate will read:{" "}
-          <strong style={{ fontSize: 18 }}>{certName}</strong>,
+          <strong className="pn-cert-name">{certName}</strong>,
           is that correct?
         </p>
         <div className="pn-actions">
@@ -445,7 +445,7 @@ function JoinForm() {
             ).map((option) => (
               <label
                 key={option}
-                style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 400 }}
+                className="pn-opt"
               >
                 <input
                   type="checkbox"
@@ -542,7 +542,7 @@ function JoinForm() {
         </button>
         {error !== null && <p className={errorText}>{error}</p>}
       </form>
-      <p className={muted} style={{ fontSize: 13 }}>
+      <p className="pn-meta">
         Already a member?{" "}
         <a href="/portal">
           Sign in

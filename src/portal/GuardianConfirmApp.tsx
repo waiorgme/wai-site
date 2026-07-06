@@ -19,7 +19,7 @@ export function GuardianConfirmApp() {
 // Brand row above the centered card (light logo asset on paper).
 function Brand() {
   return (
-    <div className="pn-brand" style={{ marginBlockEnd: 18 }}>
+    <div className="pn-brand">
       <img src="/assets/wai-me-logo.png" alt="Women in Aviation Middle East" />
     </div>
   );

@@ -154,6 +154,7 @@
 }
 .pn-hero .pn-eyebrow { color: var(--sky-glow); }
 .pn-eyebrow.on-paper { color: var(--sky-core); } /* explicit light-surface form */
+.pn-eyebrow--err { color: var(--err-deep); } /* revoked/superseded status voice */
 
 .pn-muted {
   margin: 0;
@@ -172,7 +173,7 @@
   line-height: 1.45;
 }
 
-.pn-error { margin: 0; color: var(--err); font-family: var(--body); font-size: 14px; }
+.pn-error { margin: 0; color: var(--err-deep); font-family: var(--body); font-size: 14px; }
 .pn-ok    { margin: 0; color: var(--ok);  font-family: var(--body); font-size: 14px; }
 
 /* mono voice for IDs, numbers, timestamps */
@@ -181,6 +182,15 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
 }
+
+/* the certificate-name emphasis on the join confirm step */
+.pn-cert-name { font-size: 18px; }
+
+/* a radio/checkbox option row (label text stays normal weight) */
+.pn-opt { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+
+/* profile photo circle: color voice here, geometry stays inline */
+.pn-avatar { background: var(--paper); border: 1px solid var(--hair-l); }
 
 /* ---------- cards, rows, dividers ---------- */
 
@@ -340,18 +350,18 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--sky-core);
+  color: var(--sky-deep); /* sky-core is 3.6:1 on white; sky-deep clears AA */
   font-family: var(--body);
   font-size: 14px;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-@media (hover: hover) { .pn-link:hover { color: var(--sky-deep); } }
+@media (hover: hover) { .pn-link:hover { color: var(--navy); } }
 
 /* plain email/text links inside panel copy */
 .panel-scope a:not(.pn-btn):not(.pn-link):not(.pn-nav-item) {
-  color: var(--sky-core);
+  color: var(--sky-deep);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -437,7 +447,7 @@
 }
 .pn-tag--info { border-color: var(--info-border); background: var(--info-tint); color: var(--sky-deep); }
 .pn-tag--ok   { border-color: var(--ok-border);   background: var(--ok-tint);   color: var(--ok); }
-.pn-tag--err  { border-color: var(--err-border);  background: var(--err-tint);  color: var(--err); }
+.pn-tag--err  { border-color: var(--err-border);  background: var(--err-tint);  color: var(--err-deep); }
 
 /* ---------- propose-then-confirm inset (ConfirmAction) ---------- */
 
@@ -587,7 +597,9 @@
   background: rgba(15, 35, 63, .08);
   color: var(--paper-ink);
 }
-.pn-nav-item .n.live { background: var(--sky-core); color: var(--white); }
+/* dark text on the sky pill, the lang-toggle precedent: white-on-sky fails AA
+   at badge sizes */
+.pn-nav-item .n.live { background: var(--sky-core); color: #04101f; font-weight: 700; }
 .pn-nav-item.is-soon { color: var(--paper-mut); font-weight: 500; }
 .pn-nav-item.is-soon .n {
   background: transparent;
@@ -603,7 +615,9 @@
   .pn-side nav { gap: 10px; }
   .pn-side .nav-grp { display: flex; flex-wrap: wrap; gap: 6px; }
   .pn-side .grp { padding-inline-start: 2px; }
-  .pn-nav-item { inline-size: auto; }
+  /* sidebar items only: full-width nav-item rows elsewhere (Today's queue)
+     keep their list layout on small screens */
+  .pn-side .pn-nav-item { inline-size: auto; }
 }
 
 /* ---------- audit log ---------- */

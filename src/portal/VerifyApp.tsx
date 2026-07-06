@@ -18,7 +18,7 @@ export function VerifyApp() {
 // Brand row above the non-certificate states (light logo asset on paper).
 function Brand() {
   return (
-    <div className="pn-brand" style={{ marginBlockEnd: 18 }}>
+    <div className="pn-brand">
       <img src="/assets/wai-me-logo.png" alt="Women in Aviation Middle East" />
     </div>
   );
@@ -111,7 +111,7 @@ function Verify() {
       <>
         <Brand />
         <div className="pn-card" style={{ inlineSize: "min(1040px, 100%)", textAlign: "center" }}>
-          <p className="pn-eyebrow" style={{ justifySelf: "center", color: "var(--err)" }}>
+          <p className="pn-eyebrow pn-eyebrow--err" style={{ justifySelf: "center" }}>
             {cert.status === "revoked" ? "Revoked" : "Superseded"}
           </p>
           <h1 className={h1}>{headline}</h1>

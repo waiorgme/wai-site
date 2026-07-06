@@ -16,15 +16,21 @@ export type AdminOverviewCounts = {
   // Members with lifecycle_state "active": signed up or claimed, email
   // confirmed. Distinct from legacy_registered by the integrity rule above.
   members_active: number;
-  // Members in any non-active, non-archived lifecycle state: waiting on a
-  // guardian, a review, or an email confirmation.
+  // Members in a PRE-ACTIVATION state only (email_unverified, consent_pending,
+  // pending_guardian, claim_pending, pending_review) - exactly what the
+  // Overview label says: waiting on a guardian, a review, or an email
+  // confirmation. Dormant/suspended/erasure states are deliberately NOT in
+  // this number; they are not "waiting on a step".
   members_waiting: number;
   // Every importedMembers row: the legacy list as imported ("registered").
   legacy_registered: number;
   // importedMembers rows a member has actually claimed.
   legacy_claimed: number;
-  // Open counts matching EXACTLY what each queue lists (same definitions as
-  // the four list queries, so the badges never disagree with the queues).
+  // OPEN work per queue, shown as "N waiting" badges. Open means a human may
+  // act or attention is pending: for conflicts that is conflict +
+  // suppressed_minor (the queue also lists the read-only archived_conflict
+  // trail, which is deliberately NOT counted - archived rows would inflate
+  // "waiting" forever). The other three match their list queries exactly.
   queue_conflicts: number;
   queue_pipeline: number;
   queue_guardians: number;
@@ -40,8 +46,15 @@ export const getAdminOverview = query({
     const members_active = members.filter(
       (m) => m.lifecycle_state === "active",
     ).length;
-    const members_waiting = members.filter(
-      (m) => m.lifecycle_state !== "active" && m.lifecycle_state !== "archived",
+    const waitingStates = new Set([
+      "email_unverified",
+      "consent_pending",
+      "pending_guardian",
+      "claim_pending",
+      "pending_review",
+    ]);
+    const members_waiting = members.filter((m) =>
+      waitingStates.has(m.lifecycle_state),
     ).length;
 
     // Registered vs claimed: registered is the whole imported list, claimed is
@@ -52,13 +65,14 @@ export const getAdminOverview = query({
       (r) => r.claim_state === "claimed",
     ).length;
 
-    // Same three states listConflicts returns (conflict + suppressed_minor +
-    // the read-only archived_conflict trail).
+    // Open conflicts only: conflict (needs a human decision) + suppressed_minor
+    // (held under-18 rows the wave plan says to contact within 2 working days).
+    // The queue view also lists archived_conflict as its read-only trail, but
+    // trail rows are done work - counting them would keep the "waiting" badge
+    // lit forever (verification finding, 2026-07-06).
     const queue_conflicts = imported.filter(
       (r) =>
-        r.claim_state === "conflict" ||
-        r.claim_state === "suppressed_minor" ||
-        r.claim_state === "archived_conflict",
+        r.claim_state === "conflict" || r.claim_state === "suppressed_minor",
     ).length;
 
     // listPendingReviews skips a review whose member row is gone; match it.

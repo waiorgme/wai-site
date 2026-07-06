@@ -519,14 +519,14 @@ function Photo({
 }) {
   return (
     <div className="pn-actions">
-      {/* Functional inline style: the 72px circle geometry (hairline light). */}
+      {/* Functional inline style: the 72px circle geometry; color voice in
+          .pn-avatar. */}
       <div
+        className="pn-avatar"
         style={{
           width: 72,
           height: 72,
           borderRadius: "50%",
-          background: "var(--paper)",
-          border: "1px solid var(--hair-l)",
           overflow: "hidden",
           flexShrink: 0,
           display: "grid",
