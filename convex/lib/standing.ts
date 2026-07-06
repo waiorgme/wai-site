@@ -59,12 +59,18 @@ export const maybePromoteToActive = async (
     after_summary: `standing member -> active_member (${qualifyingAction})`,
     source: "system",
   });
+  // The directory is locked off for minor and restricted_unknown lanes, so
+  // their promotion copy never promises it ("switched off, not supervised").
+  const lockedLane =
+    member.member_lane === "minor" || member.member_lane === "restricted_unknown";
   await notify(
     ctx,
     memberId,
     "standing_change",
     "You're now an Active Member",
-    "You completed your profile and took part. Active Members can appear in the member directory (if you choose) and get early access when an event opens with a priority window.",
+    lockedLane
+      ? "You completed your profile and took part. Active Members get early access when an event opens with a priority window."
+      : "You completed your profile and took part. Active Members can appear in the member directory (if you choose) and get early access when an event opens with a priority window.",
     "/portal",
   );
   return true;

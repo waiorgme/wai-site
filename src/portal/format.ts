@@ -92,9 +92,9 @@ export const standingLine = (standing: Standing): string =>
     active_member:
       "For members who take part: a complete profile plus one action, like attending an event or applying for an opportunity.",
     ambassador:
-      "For members who lift the community. By invitation, later this year.",
+      "For members who lift the community. By invitation, when the recognition programme opens.",
     leadership_circle:
-      "The community's leading voices. By invitation, later this year.",
+      "The community's leading voices. By invitation, when the recognition programme opens.",
   })[standing];
 
 // Deadlines follow the spec's "11:59 PM GST" label convention: Gulf time,

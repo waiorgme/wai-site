@@ -215,8 +215,8 @@ export const STANDING_WORDS: Record<Standing, string> = {
 export const STANDING_EXPLAIN: Record<Standing, string> = {
   member: "She has joined; completing her profile and taking part moves her up.",
   active_member: "Profile complete and at least one action taken - she can be listed in the directory and gets priority booking windows.",
-  ambassador: "An invitation level; invitations open later this year.",
-  leadership_circle: "An invitation level; invitations open later this year.",
+  ambassador: "An invitation level; not open yet.",
+  leadership_circle: "An invitation level; not open yet.",
 };
 
 /* ---------- events ---------- */

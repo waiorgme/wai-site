@@ -807,7 +807,9 @@
   }
 }
 .pn-app-nav-item[aria-current="true"] {
-  background: var(--sky-core);
+  /* sky-deep, not sky-core: white 14px text on sky-core is 3.6:1 (AA-large
+     only); on sky-deep it clears 4.5:1 (round-1 AA discipline). */
+  background: var(--sky-deep);
   color: var(--white);
   font-weight: 700;
 }
@@ -821,7 +823,7 @@
   background: rgba(255, 255, 255, .1);
   color: var(--mist);
 }
-.pn-app-nav-item[aria-current="true"] .n { background: rgba(255, 255, 255, .24); color: var(--white); }
+.pn-app-nav-item[aria-current="true"] .n { background: var(--white); color: var(--navy); font-weight: 700; }
 /* attention count: dark text on the sky pill (the lang-toggle AA precedent) */
 .pn-app-nav-item .n.live { background: var(--sky-core); color: #04101f; font-weight: 700; }
 .pn-app-nav-item[aria-current="true"] .n.live { background: var(--white); color: var(--navy); }

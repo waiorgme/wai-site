@@ -415,7 +415,7 @@ export const cancelEvent = mutation({
         reg.member_id,
         "event_update",
         `Cancelled: ${event.title}`,
-        `We're sorry, ${event.title} on ${eventDateLabel(event.starts_at)} is cancelled. ${reason}. We hope to see you at the next one.`,
+        `We're sorry, ${event.title} on ${eventDateLabel(event.starts_at)} is cancelled. ${reason.replace(/\.\s*$/, "")}. We hope to see you at the next one.`,
         "/portal#events",
       );
     }

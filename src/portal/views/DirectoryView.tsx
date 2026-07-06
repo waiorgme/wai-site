@@ -75,7 +75,7 @@ export function DirectoryView() {
         {header}
         <EmptyState
           eyebrow="Directory"
-          message="The member directory opens when you turn 18. Everything else in the portal is already yours."
+          message="Adult events, opportunities and the member directory open once we confirm your date of birth. Write to support@waiorg.me and we will sort it out together - everything else in the portal is already yours."
         />
       </>
     );

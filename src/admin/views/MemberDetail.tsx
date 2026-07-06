@@ -6,7 +6,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import type { MemberDossier } from "../../../convex/admin/members";
 import { EmptyState, Modal, PageHeader, PanelCard, ProgressBar, Tabs } from "../../panel/kit";
 import { CertificateRowActions } from "./CertificateActions";
-import type { Go, Lifecycle } from "./shared";
+import type { Go, Lifecycle, Standing } from "./shared";
 import {
   fmtGstDate,
   fmtGstDateTime,
@@ -694,10 +694,31 @@ function EngagementTab({ dossier }: { dossier: MemberDossier }) {
                   <span className="pn-when">{fmtGstDate(h.timestamp)}</span>
                   <p className="pn-meta">
                     <strong>
-                      {h.from_standing} → {h.to_standing}
+                      {STANDING_WORDS[h.from_standing as Standing] ?? h.from_standing}{" "}
+                      to {STANDING_WORDS[h.to_standing as Standing] ?? h.to_standing}
                     </strong>
                   </p>
                   <p className="pn-meta">{h.reason}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </PanelCard>
+
+        <PanelCard title="Recent record changes">
+          {dossier.recent_audit.length === 0 ? (
+            <p className="pn-meta">Nothing recorded for this member yet.</p>
+          ) : (
+            <div className="pn-log">
+              {dossier.recent_audit.map((row, i) => (
+                <div key={i} className="pn-log-row">
+                  <span className="pn-when">{fmtGstDateTime(row.timestamp)}</span>
+                  <p className="pn-meta">
+                    <strong>{row.action}</strong> by {row.actor}
+                  </p>
+                  {row.after_summary ? (
+                    <p className="pn-meta">{row.after_summary}</p>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -758,7 +779,7 @@ function CertificatesTab({ dossier }: { dossier: MemberDossier }) {
                     : "Superseded"}
               </span>
               {cert.is_founding ? (
-                <span className="pn-gold-badge">Founding member</span>
+                <span className="pn-tag">Founding Member</span>
               ) : null}
             </div>
             <p className="pn-meta">Issued {cert.issued_date_label}</p>

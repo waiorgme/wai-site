@@ -13,7 +13,17 @@ type EventRows = NonNullable<
 >;
 type EventRow = NonNullable<EventRows>[number];
 
-export function EventsView({ lane, go }: { lane: PortalLane; go: PortalGo }) {
+export function EventsView({
+  lane,
+  restricted,
+  go,
+}: {
+  lane: PortalLane;
+  // restricted_unknown accounts riding the full lane: adult sessions are
+  // server-hidden until the date of birth is confirmed.
+  restricted: boolean;
+  go: PortalGo;
+}) {
   const rows = useQuery(api.events.listEvents);
   const upcoming = (rows ?? []).filter((r) => !r.is_past);
   const past = (rows ?? []).filter((r) => r.is_past);
@@ -26,7 +36,9 @@ export function EventsView({ lane, go }: { lane: PortalLane; go: PortalGo }) {
         sub={
           lane === "youth"
             ? "Sessions for members under 18. RSVP with one tap - if a session is full, you join the waitlist automatically."
-            : "Workshops and sessions run by the community. RSVP with one tap - if a session is full, you join the waitlist automatically."
+            : restricted
+              ? "Adult sessions open once we confirm your date of birth; sessions for members under 18 appear here. Write to support@waiorg.me and we will sort it out together."
+              : "Workshops and sessions run by the community. RSVP with one tap - if a session is full, you join the waitlist automatically."
         }
       />
 
@@ -48,7 +60,9 @@ export function EventsView({ lane, go }: { lane: PortalLane; go: PortalGo }) {
               message={
                 lane === "youth"
                   ? "Nothing scheduled for members under 18 right now. New sessions appear here as soon as they are published."
-                  : "Nothing scheduled right now - new sessions appear here as soon as they are published."
+                  : restricted
+                    ? "Nothing you can book yet - adult sessions open once we confirm your date of birth."
+                    : "Nothing scheduled right now - new sessions appear here as soon as they are published."
               }
             />
           </div>

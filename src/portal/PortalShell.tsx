@@ -146,7 +146,9 @@ export function PortalShell({
         const hash = VIEW_TO_HASH[v];
         const url = hash === "" ? window.location.pathname : hash;
         if (window.location.hash !== hash) {
-          history.replaceState(null, "", url);
+          // A real history entry per view, so the browser Back button steps
+          // back through the shell instead of leaving the portal.
+          history.pushState(null, "", url);
         }
       }
     },
@@ -219,7 +221,7 @@ export function PortalShell({
     switch (view.v) {
       case "home":
         return lane === "youth" ? (
-          <YouthHomeView me={me} certs={certs} membershipCert={membershipCert} />
+          <YouthHomeView me={me} certs={certs} membershipCert={membershipCert} standing={membership?.standing ?? "member"} />
         ) : (
           <HomeView
             me={me}
@@ -237,7 +239,7 @@ export function PortalShell({
             go={go}
           />
         ) : (
-          <EventsView lane={lane} go={go} />
+          <EventsView lane={lane} restricted={isMinorLane} go={go} />
         );
       case "myevents":
         return <MyEventsView go={go} />;
@@ -253,7 +255,7 @@ export function PortalShell({
       case "directory":
         return <DirectoryView />;
       case "membership":
-        return <MyMembershipView lane={lane} membership={membership} go={go} />;
+        return <MyMembershipView lane={lane} restricted={isMinorLane} membership={membership} go={go} />;
       case "profile":
         return (
           <ProfileView

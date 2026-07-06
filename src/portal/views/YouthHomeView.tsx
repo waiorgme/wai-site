@@ -6,6 +6,7 @@ import {
   type MemberView,
   type MembershipCertView,
 } from "./CertificateSection";
+import { standingWord, type Standing } from "../format";
 
 // The youth Home (Under-18 Launch Copy §2, copy VERBATIM from round 1's
 // youth dashboard): her certificate plus the Aviation for Girls home base.
@@ -16,10 +17,14 @@ export function YouthHomeView({
   me,
   certs,
   membershipCert,
+  standing,
 }: {
   me: NonNullable<MemberView>;
   certs: CertsView;
   membershipCert: MembershipCertView;
+  // Real standing (a minor can lawfully reach Active Member; the vault caps
+  // her there), so Home never disagrees with the sidebar or My membership.
+  standing: Standing;
 }) {
   return (
     <>
@@ -37,7 +42,7 @@ export function YouthHomeView({
           </div>
           <div className="cell">
             <span className="label">Standing</span>
-            <span className="value">Member</span>
+            <span className="value">{standingWord(standing)}</span>
           </div>
           {membershipCert !== null && (
             <div className="cell">

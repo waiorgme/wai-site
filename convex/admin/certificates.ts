@@ -206,7 +206,7 @@ export const reissueCertificate = mutation({
       ctx,
       cert.member_id,
       "certificate_issued",
-      "Your corrected certificate is ready.",
+      "Your corrected certificate is ready",
       "We fixed the name on your membership certificate and issued a fresh copy. The new certificate is valid now; the old link will show it was superseded.",
       "/portal",
     );

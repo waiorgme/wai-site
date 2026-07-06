@@ -296,6 +296,13 @@ export function EventEditor({
           return;
         }
         const res = await postpone({ eventId: effectiveId, newStartsAt: ns, newEndsAt: ne });
+        if (res.ok) {
+          // Resync the form times with the move: the form is seeded once per
+          // id, and a later "Save changes" submits the FULL field set - stale
+          // inputs would silently revert the new schedule (verification
+          // blocker, 2026-07-07).
+          setForm((f) => ({ ...f, starts: newStarts, ends: newEnds }));
+        }
         setOutcome(
           res.ok
             ? {

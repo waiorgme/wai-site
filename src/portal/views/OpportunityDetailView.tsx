@@ -126,7 +126,8 @@ export function OpportunityDetailView({
             </p>
           )}
         </PanelCard>
-      ) : opportunity.my_application_state !== null ? (
+      ) : opportunity.my_application_state !== null &&
+      opportunity.my_application_state !== "withdrawn" ? (
         <MyApplicationCard
           id={id}
           state={opportunity.my_application_state}

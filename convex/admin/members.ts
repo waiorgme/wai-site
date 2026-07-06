@@ -272,6 +272,14 @@ export type MemberDossier = {
     text: string;
     created_at: number;
   }>;
+  // Spec F14: recent audit rows for this member. Summaries are PII-free by
+  // the §8 server contract, so nothing extra is masked here.
+  recent_audit: Array<{
+    action: string;
+    actor: string;
+    timestamp: number;
+    after_summary: string | null;
+  }>;
   guardian: {
     consent_state: "not_required" | "pending" | "confirmed";
     masked_guardian_name: string | null;
@@ -368,6 +376,12 @@ export const getMemberAdmin = query({
       .order("desc")
       .collect();
 
+    const auditRows = await ctx.db
+      .query("auditLog")
+      .withIndex("by_target_time", (q) => q.eq("target_id", member._id))
+      .order("desc")
+      .take(15);
+
     // Guardian state for minors (and any row with a guardian record): state
     // plus a masked guardian name; the guardian's email never appears here.
     let guardian: MemberDossier["guardian"] = null;
@@ -452,6 +466,12 @@ export const getMemberAdmin = query({
         created_at: n.created_at,
       })),
       guardian,
+      recent_audit: auditRows.map((row) => ({
+        action: row.action,
+        actor: row.actor,
+        timestamp: row.timestamp,
+        after_summary: row.after_summary ?? null,
+      })),
     };
   },
 });

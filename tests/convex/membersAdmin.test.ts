@@ -534,7 +534,7 @@ describe("certificates admin", () => {
       notifications.some(
         (n) =>
           n.type === "certificate_issued" &&
-          n.title === "Your corrected certificate is ready.",
+          n.title === "Your corrected certificate is ready",
       ),
     ).toBe(true);
 

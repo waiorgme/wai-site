@@ -24,10 +24,14 @@ const RUNGS: ReadonlyArray<Standing> = [
 
 export function MyMembershipView({
   lane,
+  restricted,
   membership,
   go,
 }: {
   lane: PortalLane;
+  // Unknown-age accounts: the directory never opens for them, so the
+  // next-step copy must not promise it.
+  restricted: boolean;
   membership: MembershipView;
   go: PortalGo;
 }) {
@@ -79,7 +83,7 @@ export function MyMembershipView({
         <StatTile
           label="Member since"
           value={memberSinceLabel(membership.member_since)}
-          sub="Your original join date - it survived the move to this portal."
+          sub="Your original join date, kept through the move to this portal."
         />
         <StatTile
           label="Membership number"
@@ -212,7 +216,9 @@ export function MyMembershipView({
         <PanelCard title="Your next step">
           <p className="pn-meta">
             {membership.standing === "active_member"
-              ? "You're an Active Member - the member directory and early event seats are open to you. Ambassador comes by invitation, later this year, for members who lift the community."
+              ? restricted
+                ? "You're an Active Member - early event seats are open to you. Ambassador comes by invitation, when the recognition programme opens."
+                : "You're an Active Member - the member directory and early event seats are open to you. Ambassador comes by invitation, when the recognition programme opens, for members who lift the community."
               : "You're among the community's recognised voices. There's nothing to chase here - thank you for lifting others."}
           </p>
         </PanelCard>

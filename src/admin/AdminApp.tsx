@@ -7,7 +7,7 @@ import { sendLinkErrorMessage } from "../portal/errors";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { card, errorText, h1, input, linkBtn, muted, primaryBtn } from "../portal/ui";
-import { AppShell, SideNav } from "../panel/kit";
+import { AppShell, PageHeader, SideNav } from "../panel/kit";
 import type { NavGroup } from "../panel/kit";
 import { ClaimConflictsQueue } from "./ClaimConflictsQueue";
 import { PipelineReviewsQueue } from "./PipelineReviewsQueue";
@@ -123,6 +123,25 @@ const QUEUE_LABELS: Record<QueueView, string> = {
 };
 
 type AdminViewState = { v: AdminViewName; id?: string };
+
+// The four round-1 queues and the audit log keep their own internals but open
+// with the same page anatomy as every other console view.
+function QueuePage({
+  title,
+  sub,
+  children,
+}: {
+  title: string;
+  sub: string;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <PageHeader eyebrow="Review queues" title={title} sub={sub} />
+      {children}
+    </>
+  );
+}
 
 function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
   const [view, setView] = useState<AdminViewState>({ v: "overview" });
@@ -260,15 +279,50 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
       case "reports":
         return <ReportsView />;
       case "conflicts":
-        return <ClaimConflictsQueue />;
+        return (
+          <QueuePage
+            title="Claim conflicts"
+            sub="Records that share an email or did not safely match at claim. Release or archive; every action asks you to confirm."
+          >
+            <ClaimConflictsQueue />
+          </QueuePage>
+        );
       case "pipeline":
-        return <PipelineReviewsQueue />;
+        return (
+          <QueuePage
+            title="Pipeline eligibility reviews"
+            sub="Members who opted in to be found by trusted partners. Approve or reject; nothing reaches a partner before your yes."
+          >
+            <PipelineReviewsQueue />
+          </QueuePage>
+        );
       case "guardians":
-        return <PendingGuardiansQueue />;
+        return (
+          <QueuePage
+            title="Pending guardians"
+            sub="Members under 18 waiting on a parent or guardian. You can resend the email; only the guardian's own button press confirms."
+          >
+            <PendingGuardiansQueue />
+          </QueuePage>
+        );
       case "dataRequests":
-        return <DataRequestsQueue />;
+        return (
+          <QueuePage
+            title="Data requests"
+            sub="Requests to see or delete personal data. Approving records the decision; fulfilment stays a separate, deliberate step."
+          >
+            <DataRequestsQueue />
+          </QueuePage>
+        );
       case "audit":
-        return <AdminAuditLog />;
+        return (
+          <QueuePage
+            title="Recent panel actions"
+            sub="Every change made through this console, newest first. Read-only."
+          >
+            <AdminAuditLog />
+          </QueuePage>
+        );
     }
   })();
 

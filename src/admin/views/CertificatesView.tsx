@@ -75,7 +75,7 @@ export function CertificatesView({ go }: { go: Go }) {
             <span className="pn-cell-2l">
               <span className="t">{row.recipient_name}</span>
               {row.is_founding ? (
-                <span className="pn-gold-badge">Founding member</span>
+                <span className="pn-tag">Founding Member</span>
               ) : null}
             </span>
           </span>

@@ -521,7 +521,7 @@ export const recordResult = mutation({
         application.member_id,
         "application_result",
         "Congratulations, you were selected",
-        `Congratulations! You have been selected for ${opportunity.title}. We will be in touch with the next steps.`,
+        `Congratulations! You have been selected for ${opportunity.title}. The note from the team is on your application, under My applications.`,
         "/portal#opportunities",
       );
     } else {

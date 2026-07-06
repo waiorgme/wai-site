@@ -300,8 +300,8 @@ function OpportunitiesTeaser({
     return (
       <PanelCard title="Opportunities">
         <p className="pn-meta">
-          Opportunities open when you turn 18. Everything else in the portal is
-          already yours.
+          Opportunities open once we confirm your date of birth. Write to
+          support@waiorg.me and we will sort it out together.
         </p>
       </PanelCard>
     );

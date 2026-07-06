@@ -31,7 +31,9 @@ export function AppShell({
         {nav}
         {identity ? <div className="pn-side-id">{identity}</div> : null}
       </aside>
-      <main className="pn-app-main">{children}</main>
+      {/* A div, not <main>: the astro shells already provide main#main, and
+          nested main landmarks confuse assistive tech. */}
+      <div className="pn-app-main">{children}</div>
     </div>
   );
 }
@@ -415,6 +417,7 @@ export function Modal({
   onConfirm,
   confirmLabel,
   cancelLabel,
+  hideCancel,
   confirmDisabled,
   footNote,
   children,
@@ -426,6 +429,8 @@ export function Modal({
   onConfirm: () => void;
   confirmLabel: string;
   cancelLabel?: string;
+  // Read-only dialogs (a pass, a preview) need ONE closer, not two.
+  hideCancel?: boolean;
   confirmDisabled?: boolean;
   // Audit sentence in the footer, e.g. "This action is recorded.".
   footNote?: ReactNode;
@@ -434,12 +439,53 @@ export function Modal({
   const boxRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
   useEffect(() => {
+    // aria-modal promises the background does not exist: trap Tab inside the
+    // dialog, lock body scroll, and hand focus back to the opener on close.
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     boxRef.current?.focus();
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || boxRef.current === null) {
+        return;
+      }
+      const focusable = boxRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === boxRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (
+        active instanceof HTMLElement &&
+        !boxRef.current.contains(active)
+      ) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      opener?.focus();
+    };
   }, [onClose]);
   return (
     <div
@@ -465,9 +511,11 @@ export function Modal({
         {children ? <div className="pn-modal-body">{children}</div> : null}
         <div className="pn-modal-foot">
           {footNote ? <p className="note">{footNote}</p> : null}
-          <button type="button" className="pn-btn pn-btn--ghost pn-btn--sm" onClick={onClose}>
-            {cancelLabel ?? "Cancel"}
-          </button>
+          {!hideCancel && (
+            <button type="button" className="pn-btn pn-btn--ghost pn-btn--sm" onClick={onClose}>
+              {cancelLabel ?? "Cancel"}
+            </button>
+          )}
           <button
             type="button"
             className="pn-btn pn-btn--sm"

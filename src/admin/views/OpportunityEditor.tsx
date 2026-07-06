@@ -868,7 +868,7 @@ function ApplicationActions({ row }: { row: AdminApplicationRow }) {
             </span>
           </label>
           <label className="pn-label">
-            Note (optional, kept on her application)
+            Note (optional - she sees this with her result)
             <textarea
               className="pn-input pn-textarea"
               value={note}

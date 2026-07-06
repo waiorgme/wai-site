@@ -24,10 +24,12 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-// "12 June 2026", same hand formatting as lib/certificates (the Convex
-// runtime's Intl is limited). Shared with the admin notifications.
+// "12 June 2026" in GULF time (UTC+4, no DST), matching every portal surface
+// (src/portal/format.ts uses Asia/Dubai). Hand formatting because the Convex
+// runtime's Intl is limited. Shared with the admin notifications.
+const GST_OFFSET_MS = 4 * 60 * 60 * 1000;
 export const eventDateLabel = (ts: number): string => {
-  const d = new Date(ts);
+  const d = new Date(ts + GST_OFFSET_MS);
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 
@@ -498,7 +500,13 @@ export const myEvents = query({
         continue;
       }
       const event = await ctx.db.get(reg.event_id);
-      if (event === null || event.state === "draft") {
+      // Lane re-check (defense in depth): should a member's lane ever change
+      // after booking, rows her lane may not see disappear with it.
+      if (
+        event === null ||
+        event.state === "draft" ||
+        !laneSeesEvent(member.member_lane, event.audience_lane)
+      ) {
         continue;
       }
       rows.push({
@@ -544,7 +552,11 @@ export const getMyEventPass = query({
       return null;
     }
     const event = await ctx.db.get(args.eventId);
-    if (event === null || event.state === "draft") {
+    if (
+      event === null ||
+      event.state === "draft" ||
+      !laneSeesEvent(member.member_lane, event.audience_lane)
+    ) {
       return null;
     }
     const reg = await myRegistration(ctx, member._id, event._id);

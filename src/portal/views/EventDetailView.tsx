@@ -388,7 +388,7 @@ function SeatCard({
             </p>
           )}
           <p className="pn-meta">
-            By joining you agree to our code of conduct. Sessions may be
+            Our sessions run on respect - the community code of conduct applies. Sessions may be
             recorded for members; cameras are always optional.
           </p>
           <div className="pn-actions">
@@ -450,7 +450,7 @@ function PassModal({
       onClose={onClose}
       onConfirm={onClose}
       confirmLabel="Done"
-      cancelLabel="Close"
+      hideCancel
     >
       {pass === undefined ? (
         <p className="pn-meta">Loading your pass…</p>
