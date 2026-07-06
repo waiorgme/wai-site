@@ -84,6 +84,7 @@
   min-height: 100dvh;
   display: grid;
   place-items: start center;
+  align-content: start; /* pack rows at the top; auto rows must not stretch across 100dvh */
   padding: clamp(28px, 6vw, 72px) var(--gutter) clamp(48px, 8vw, 96px);
 }
 

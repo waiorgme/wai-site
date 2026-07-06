@@ -22,7 +22,9 @@ import { JoinApp } from '../portal/JoinApp';
     <meta name="twitter:image" content="https://www.waiorg.me/assets/share-card.png" />
   </Fragment>
   <Nav />
-  <main id="main" class="join">
+  {/* NOT class="join": home.css owns .join for the home page's join band and
+      its p/h2 rules would restyle the island's copy. */}
+  <main id="main" class="join-shell">
     <span id="top"></span>
     <section class="panel-scope join-sec">
       <noscript>
@@ -43,7 +45,7 @@ import { JoinApp } from '../portal/JoinApp';
   /* A slim ink strip stays above the paper section so the fixed glass nav
      reads against dark, then the join section breaks into daylight - the
      same dark-hero-to-paper transition as membership (.mbr-who). */
-  .join{
+  .join-shell{
     background:var(--ink);
     padding-block-start:clamp(96px,12vw,150px);
   }
