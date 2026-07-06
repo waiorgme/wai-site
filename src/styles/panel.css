@@ -153,7 +153,7 @@
   opacity: .55;
 }
 .pn-hero .pn-eyebrow { color: var(--sky-glow); }
-.pn-eyebrow.on-paper { color: var(--sky-core); } /* explicit light-surface form */
+.pn-eyebrow.on-paper { color: var(--sky-deep); } /* light-surface form, AA on paper */
 .pn-eyebrow--err { color: var(--err-deep); } /* revoked/superseded status voice */
 
 .pn-muted {
@@ -486,7 +486,7 @@
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--sky-core);
+  color: var(--sky-deep);
 }
 .pn-stat .v {
   font-family: var(--display);
@@ -705,6 +705,10 @@
 /* ---------- app shell: [dark sidebar | paper main] ---------- */
 
 .pn-app {
+  /* One capped column below 960px: without minmax(0,1fr) the implicit
+     column grows to max-content and the clipped overflow is unreachable
+     (Gate 3 blocker, 2026-07-07). The >=960px rule overrides. */
+  grid-template-columns: minmax(0, 1fr);
   display: grid;
   grid-template-rows: auto 1fr;
   min-block-size: 100dvh;
