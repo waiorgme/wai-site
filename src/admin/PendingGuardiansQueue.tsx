@@ -20,27 +20,33 @@ const stateLabel: Record<string, string> = {
   expired: "link expired",
 };
 
+// Tag tone: an expired link needs attention (err); waiting stays neutral.
+const stateTagClass: Record<string, string> = {
+  pending: tag,
+  expired: `${tag} pn-tag--err`,
+};
+
 export function PendingGuardiansQueue() {
   const rows = useQuery(api.admin.guardians.listPendingGuardians);
   const resend = useAction(api.guardians.resendGuardianEmailFromPanel);
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Pending guardians</h2>
+    <section className={queueSection}>
+      <h2 className={queueTitle}>Pending guardians</h2>
       {rows === undefined ? (
-        <p style={muted}>Loading…</p>
+        <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={muted}>No guardian confirmations waiting.</p>
+        <p className={muted}>No guardian confirmations waiting.</p>
       ) : (
         rows.map((row) => (
-          <div key={row.consentId} style={rowCard}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <p style={rowName}>{row.member_first_name} (under 18)</p>
-              <span style={tag}>
+          <div key={row.consentId} className={rowCard}>
+            <div className="pn-row-head">
+              <p className={rowName}>{row.member_first_name} (under 18)</p>
+              <span className={stateTagClass[row.confirmation_state] ?? tag}>
                 {stateLabel[row.confirmation_state] ?? row.confirmation_state}
               </span>
             </div>
-            <p style={rowMeta}>
+            <p className={rowMeta}>
               Guardian: {row.masked_guardian_name}. Last email:{" "}
               {formatSent(row.token_sent_at)}. Waiting {row.days_waiting} day(s).
             </p>

@@ -16,12 +16,12 @@ export function PipelineReviewsQueue() {
   const decide = useMutation(api.admin.pipelineReviews.decidePipelineReviewFromPanel);
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Pipeline eligibility reviews</h2>
+    <section className={queueSection}>
+      <h2 className={queueTitle}>Pipeline eligibility reviews</h2>
       {rows === undefined ? (
-        <p style={muted}>Loading…</p>
+        <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={muted}>No reviews waiting.</p>
+        <p className={muted}>No reviews waiting.</p>
       ) : (
         rows.map((row) => (
           <ReviewRow key={row.reviewId} row={row} decide={decide} />
@@ -46,20 +46,24 @@ function ReviewRow({
   };
   decide: ReturnType<typeof useMutation<typeof api.admin.pipelineReviews.decidePipelineReviewFromPanel>>;
 }) {
-  const [reason, setReason] = useState("");
+  // Approve and Reject keep separate note fields so one action's text can never
+  // become the other's value (panel-design quirk fix, spec criterion 12 - the
+  // same separate-fields invariant the other queues document).
+  const [approveNote, setApproveNote] = useState("");
+  const [rejectNote, setRejectNote] = useState("");
   return (
-    <div style={rowCard}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <p style={rowName}>{row.masked_name}</p>
-        <span style={tag}>lane: {row.lane}</span>
+    <div className={rowCard}>
+      <div className="pn-row-head">
+        <p className={rowName}>{row.masked_name}</p>
+        <span className={tag}>lane: {row.lane}</span>
       </div>
-      <p style={rowMeta}>
+      <p className={rowMeta}>
         Open {row.days_open} day(s).{" "}
         {row.consent_on_file
           ? `She attested her details are accurate when she opted in (${row.consent_source}${row.consent_date !== null ? `, ${new Date(row.consent_date).toLocaleDateString()}` : ""}).`
           : "No attested consent is on record; approval is not available until she opts in."}
       </p>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+      <div className="pn-actions">
         <ConfirmAction
           label="Approve"
           confirmLabel="Yes, approve"
@@ -69,19 +73,19 @@ function ReviewRow({
             const res = await decide({
               reviewId: row.reviewId as never,
               decision: "approved",
-              reason: reason.trim() === "" ? undefined : reason.trim(),
+              reason: approveNote.trim() === "" ? undefined : approveNote.trim(),
             });
             return res.ok
               ? { ok: true, message: "Approved. Her pipeline is now on." }
               : { ok: false, message: "That could not be completed." };
           }}
         >
-          <label style={label}>
+          <label className={label}>
             Note (optional)
             <input
-              style={input}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              className={input}
+              value={approveNote}
+              onChange={(e) => setApproveNote(e.target.value)}
               placeholder="Optional internal note"
             />
           </label>
@@ -94,19 +98,19 @@ function ReviewRow({
             const res = await decide({
               reviewId: row.reviewId as never,
               decision: "rejected",
-              reason: reason.trim() === "" ? undefined : reason.trim(),
+              reason: rejectNote.trim() === "" ? undefined : rejectNote.trim(),
             });
             return res.ok
               ? { ok: true, message: "Rejected." }
               : { ok: false, message: "That could not be completed." };
           }}
         >
-          <label style={label}>
+          <label className={label}>
             Note (optional)
             <input
-              style={input}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              className={input}
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
               placeholder="Optional internal note"
             />
           </label>

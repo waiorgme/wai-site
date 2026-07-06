@@ -12,6 +12,7 @@ import type * as admin_audit from "../admin/audit.js";
 import type * as admin_claims from "../admin/claims.js";
 import type * as admin_dataRequests from "../admin/dataRequests.js";
 import type * as admin_guardians from "../admin/guardians.js";
+import type * as admin_overview from "../admin/overview.js";
 import type * as admin_pipelineReviews from "../admin/pipelineReviews.js";
 import type * as auth from "../auth.js";
 import type * as certificates from "../certificates.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   "admin/claims": typeof admin_claims;
   "admin/dataRequests": typeof admin_dataRequests;
   "admin/guardians": typeof admin_guardians;
+  "admin/overview": typeof admin_overview;
   "admin/pipelineReviews": typeof admin_pipelineReviews;
   auth: typeof auth;
   certificates: typeof certificates;

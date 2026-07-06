@@ -1,5 +1,6 @@
 ---
 import Base from "../../layouts/Base.astro";
+import "../../styles/panel.css";
 import { VerifyApp } from "../../portal/VerifyApp";
 ---
 
@@ -9,45 +10,33 @@ import { VerifyApp } from "../../portal/VerifyApp";
   noindex
   path="/verify/"
 >
-  <main id="main" class="verify">
-    <noscript>
-      <p class="nojs">
-        Certificate verification needs JavaScript, and it looks like your
-        browser has it switched off. Turn it on and reload this page, or email
-        <a href="mailto:support@waiorg.me">support@waiorg.me</a> with the
-        certificate ID and we will confirm it for you.
-      </p>
-    </noscript>
-    <VerifyApp client:only="react" />
+  <main id="main" class="panel-scope">
+    <div class="pn-center">
+      <noscript>
+        <p class="nojs">
+          Certificate verification needs JavaScript, and it looks like your
+          browser has it switched off. Turn it on and reload this page, or email
+          <a href="mailto:support@waiorg.me">support@waiorg.me</a> with the
+          certificate ID and we will confirm it for you.
+        </p>
+      </noscript>
+      <VerifyApp client:only="react" />
+    </div>
   </main>
 </Base>
 
 <style>
-  .nojs {
-    color: var(--mist-mut);
-    max-width: 52ch;
-    text-align: center;
-    padding-top: 30vh;
-  }
-  .nojs a { color: var(--sky); }
-  .verify {
-    min-height: 100dvh;
-    display: grid;
-    place-items: start center;
-    padding: var(--gutter);
-    background: radial-gradient(
-      1200px 600px at 50% -10%,
-      var(--navy),
-      var(--ink) 60%
-    );
-  }
+  /* Print only the certificate: everything on the page hides except the
+     .cert-print block VerifyApp renders around the certificate. */
   @media print {
     @page {
       size: A4 landscape;
       margin: 0;
     }
-    .verify {
+    .panel-scope {
       background: #fff;
+    }
+    .pn-center {
       padding: 0;
     }
     :global(body *) {

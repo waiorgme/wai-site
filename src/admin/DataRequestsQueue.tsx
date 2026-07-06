@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { input, label, muted } from "../portal/ui";
+import { hint, input, label, muted } from "../portal/ui";
 import { ConfirmAction } from "./ConfirmAction";
 import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
 
@@ -22,12 +22,12 @@ export function DataRequestsQueue() {
   const approve = useMutation(api.admin.dataRequests.approveDataRequest);
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Data requests</h2>
+    <section className={queueSection}>
+      <h2 className={queueTitle}>Data requests</h2>
       {rows === undefined ? (
-        <p style={muted}>Loading…</p>
+        <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={muted}>No data requests waiting.</p>
+        <p className={muted}>No data requests waiting.</p>
       ) : (
         rows.map((row) => (
           <DataRequestRow key={row.requestId} row={row} approve={approve} />
@@ -56,23 +56,23 @@ function DataRequestRow({
   const [approveMethod, setApproveMethod] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   return (
-    <div style={rowCard}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <p style={rowName}>{row.subject_email}</p>
-        <span style={tag}>{row.kind}</span>
-        <span style={tag}>{stateLabel[row.state] ?? row.state}</span>
+    <div className={rowCard}>
+      <div className="pn-row-head">
+        <p className={rowName}>{row.subject_email}</p>
+        <span className={`${tag} pn-tag--info`}>{row.kind}</span>
+        <span className={tag}>{stateLabel[row.state] ?? row.state}</span>
       </div>
-      <p style={rowMeta}>
+      <p className={rowMeta}>
         {row.linked_member_name
           ? `Linked to member: ${row.linked_member_name}.`
           : "No linked member on file."}{" "}
         Open {row.days_open} day(s).
       </p>
-      <p style={{ ...rowMeta, opacity: 0.72 }}>
+      <p className={hint}>
         Approving records the decision only. Producing the export or carrying out
         the erasure is a separate step that is not yet available in the panel.
       </p>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+      <div className="pn-actions">
         <ConfirmAction
           label="Approve"
           confirmLabel="Yes, approve"
@@ -92,10 +92,10 @@ function DataRequestRow({
               : { ok: false, message: "That could not be completed." };
           }}
         >
-          <label style={label}>
+          <label className={label}>
             How was identity confirmed? (required)
             <input
-              style={input}
+              className={input}
               value={approveMethod}
               onChange={(e) => setApproveMethod(e.target.value)}
               placeholder="e.g. confirmed by reply from the email on file"
@@ -120,10 +120,10 @@ function DataRequestRow({
               : { ok: false, message: "That could not be completed." };
           }}
         >
-          <label style={label}>
+          <label className={label}>
             Reason (required)
             <input
-              style={input}
+              className={input}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="e.g. could not confirm identity"

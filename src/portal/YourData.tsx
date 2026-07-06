@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { linkBtn, muted } from "./ui";
+import { hint, linkBtn, muted } from "./ui";
 
 // "Your data" (admin-panel spec criterion 5; vault Privacy & Data Protection +
 // privacy policy line 73). The signed-in member can ask for an export or erasure
@@ -41,22 +41,24 @@ export function YourData({ compact = false }: { compact?: boolean }) {
 
   return (
     <section
+      // Functional inline style: compact keeps the section flush inside its
+      // own card; non-compact draws a light hairline above (logical border).
       style={{
         display: "grid",
         gap: 10,
-        borderTop: compact ? "none" : "1px solid rgba(207, 224, 245, 0.12)",
-        paddingTop: compact ? 0 : 16,
+        borderBlockStart: compact ? "none" : "1px solid var(--hair-l)",
+        paddingBlockStart: compact ? 0 : 16,
       }}
     >
-      <p style={{ ...muted, margin: 0 }}>
-        <strong style={{ color: "var(--white)" }}>Your data.</strong> You can ask
+      <p className={muted}>
+        <strong>Your data.</strong> You can ask
         us to send you a copy of the data we hold about you, or to delete it. A
         team member reviews every request before we act on it.
       </p>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+      <div className="pn-actions">
         <button
           type="button"
-          style={linkBtn}
+          className={linkBtn}
           disabled={busy}
           onClick={() => void request("export")}
         >
@@ -64,7 +66,7 @@ export function YourData({ compact = false }: { compact?: boolean }) {
         </button>
         <button
           type="button"
-          style={linkBtn}
+          className={linkBtn}
           disabled={busy}
           onClick={() => void request("erasure")}
         >
@@ -72,13 +74,13 @@ export function YourData({ compact = false }: { compact?: boolean }) {
         </button>
       </div>
       {message !== null && (
-        <p role="status" style={{ ...muted, fontSize: 13, margin: 0 }}>
+        <p role="status" className={muted}>
           {message}
         </p>
       )}
-      <p style={{ ...muted, fontSize: 12.5, margin: 0, opacity: 0.75 }}>
+      <p className={hint}>
         You can also email{" "}
-        <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+        <a href="mailto:support@waiorg.me">
           support@waiorg.me
         </a>
         .

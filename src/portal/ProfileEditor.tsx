@@ -106,11 +106,11 @@ export function ProfileEditor({
   }, [profile, seeded]);
 
   if (profile === undefined) {
-    return <p style={muted}>Loading your profile…</p>;
+    return <p className={muted}>Loading your profile…</p>;
   }
   if (profile === null) {
     return (
-      <p style={muted}>
+      <p className={muted}>
         There's no member profile linked to this email yet.
       </p>
     );
@@ -187,7 +187,7 @@ export function ProfileEditor({
   const secondRoles = FUNCTION_AREAS[form.second_function_area] ?? [];
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div className="pn-stack">
       <Section title="About you" />
       <Photo
         preview={photoPreview}
@@ -200,7 +200,7 @@ export function ProfileEditor({
         tip="One line about you, like 'Aspiring pilot' or 'Aircraft maintenance engineer.' It's the first thing people see."
       >
         <input
-          style={input}
+          className={input}
           value={form.headline}
           onChange={(e) => set("headline", e.target.value)}
           placeholder="Aspiring pilot"
@@ -208,7 +208,7 @@ export function ProfileEditor({
       </Field>
       <Field labelText="About">
         <textarea
-          style={textarea}
+          className={textarea}
           value={form.bio}
           onChange={(e) => set("bio", e.target.value)}
           placeholder="A short paragraph about you and your journey in aviation."
@@ -217,14 +217,14 @@ export function ProfileEditor({
       <Two>
         <Field labelText="Nationality">
           <input
-            style={input}
+            className={input}
             value={form.nationality}
             onChange={(e) => set("nationality", e.target.value)}
           />
         </Field>
         <Field labelText="Country of residence">
           <input
-            style={input}
+            className={input}
             value={form.country_of_residence}
             onChange={(e) => set("country_of_residence", e.target.value)}
           />
@@ -313,14 +313,14 @@ export function ProfileEditor({
       <Two>
         <Field labelText="Current job title">
           <input
-            style={input}
+            className={input}
             value={form.current_job_title}
             onChange={(e) => set("current_job_title", e.target.value)}
           />
         </Field>
         <Field labelText="Current employer">
           <input
-            style={input}
+            className={input}
             value={form.current_employer}
             onChange={(e) => set("current_employer", e.target.value)}
           />
@@ -350,7 +350,7 @@ export function ProfileEditor({
       </Field>
       <Field labelText="Other certification (free text)">
         <input
-          style={input}
+          className={input}
           value={form.certifications_other}
           onChange={(e) => set("certifications_other", e.target.value)}
         />
@@ -369,14 +369,14 @@ export function ProfileEditor({
       <Two>
         <Field labelText="Field of study">
           <input
-            style={input}
+            className={input}
             value={form.field_of_study}
             onChange={(e) => set("field_of_study", e.target.value)}
           />
         </Field>
         <Field labelText="Institution">
           <input
-            style={input}
+            className={input}
             value={form.institution}
             onChange={(e) => set("institution", e.target.value)}
           />
@@ -403,24 +403,22 @@ export function ProfileEditor({
         />
       </Field>
 
-      {error !== null && <p style={errorText}>{error}</p>}
-      <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 4 }}>
-        <button type="button" style={primaryBtn} disabled={busy} onClick={onSave}>
+      {error !== null && <p className={errorText}>{error}</p>}
+      <div className="pn-actions">
+        <button type="button" className={primaryBtn} disabled={busy} onClick={onSave}>
           {busy ? "Saving…" : "Save profile"}
         </button>
-        <button type="button" style={linkBtn} onClick={onClose}>
+        <button type="button" className={linkBtn} onClick={onClose}>
           Back
         </button>
-        {saved && (
-          <span style={{ ...muted, color: "var(--sky)", fontSize: 13 }}>Saved ✓</span>
-        )}
+        {saved && <span className="pn-ok">Saved ✓</span>}
       </div>
     </div>
   );
 }
 
 function Section({ title }: { title: string }) {
-  return <h2 style={sectionTitle}>{title}</h2>;
+  return <h2 className={sectionTitle}>{title}</h2>;
 }
 
 function Field({
@@ -433,9 +431,9 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label style={label}>
+    <label className={label}>
       {labelText}
-      {tip && <span style={hint}>{tip}</span>}
+      {tip && <span className={hint}>{tip}</span>}
       {children}
     </label>
   );
@@ -468,7 +466,7 @@ function Select({
 }) {
   return (
     <select
-      style={input}
+      className={input}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -492,12 +490,12 @@ function Chips({
   onToggle: (v: string) => void;
 }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    <div className="pn-row-head">
       {options.map((o) => (
         <button
           key={o}
           type="button"
-          style={selected.includes(o) ? chipActive : chip}
+          className={selected.includes(o) ? chipActive : chip}
           aria-pressed={selected.includes(o)}
           onClick={() => onToggle(o)}
         >
@@ -520,14 +518,15 @@ function Photo({
   fileRef: React.RefObject<HTMLInputElement | null>;
 }) {
   return (
-    <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+    <div className="pn-actions">
+      {/* Functional inline style: the 72px circle geometry (hairline light). */}
       <div
         style={{
           width: 72,
           height: 72,
           borderRadius: "50%",
-          background: "var(--ink)",
-          border: "1px solid rgba(207, 224, 245, 0.22)",
+          background: "var(--paper)",
+          border: "1px solid var(--hair-l)",
           overflow: "hidden",
           flexShrink: 0,
           display: "grid",
@@ -541,13 +540,13 @@ function Photo({
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <span style={{ ...muted, fontSize: 11, opacity: 0.6 }}>No photo</span>
+          <span className={hint}>No photo</span>
         )}
       </div>
       <div style={{ display: "grid", gap: 4 }}>
         <button
           type="button"
-          style={linkBtn}
+          className={linkBtn}
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
         >
@@ -565,7 +564,7 @@ function Photo({
             }
           }}
         />
-        <span style={hint}>A face for your profile. Shown in the members' directory if you join it.</span>
+        <span className={hint}>A face for your profile. Shown in the members' directory if you join it.</span>
       </div>
     </div>
   );

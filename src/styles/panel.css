@@ -152,6 +152,7 @@
   opacity: .55;
 }
 .pn-hero .pn-eyebrow { color: var(--sky-glow); }
+.pn-eyebrow.on-paper { color: var(--sky-core); } /* explicit light-surface form */
 
 .pn-muted {
   margin: 0;
@@ -166,6 +167,7 @@
   color: var(--paper-mut);
   font-family: var(--body);
   font-size: 12.5px;
+  font-weight: 400; /* hints nested in semibold .pn-label stay normal weight */
   line-height: 1.45;
 }
 
@@ -660,3 +662,14 @@
     animation-duration: .001ms !important;
   }
 }
+
+/* ---------- portal core additions (panel-design: portal builder) ---------- */
+
+/* centered surfaces stack a brand row, card(s) and footer links with a calm gap */
+.pn-center { row-gap: 18px; }
+
+/* links in the navy hero band read in the highlight sky (same as the eyebrow) */
+.pn-hero .pn-link { color: var(--sky-glow); }
+
+/* emphasis inside meta copy holds ink, matching .pn-muted strong */
+.pn-meta strong { color: var(--paper-ink); font-weight: 600; }

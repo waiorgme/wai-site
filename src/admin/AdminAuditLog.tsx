@@ -13,27 +13,27 @@ export function AdminAuditLog() {
   const page = useQuery(api.admin.audit.listAdminAuditLog, { cursor });
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Recent panel actions</h2>
+    <section className={queueSection}>
+      <h2 className={queueTitle}>Recent panel actions</h2>
       {page === undefined ? (
-        <p style={muted}>Loading…</p>
+        <p className={muted}>Loading…</p>
       ) : page.rows.length === 0 ? (
-        <p style={muted}>Nothing recorded yet.</p>
+        <p className={muted}>Nothing recorded yet.</p>
       ) : (
         <>
           {page.rows.map((row) => (
-            <div key={row.id} style={rowCard}>
-              <p style={rowMeta}>
-                <strong style={{ color: "var(--white)" }}>{row.action}</strong> by{" "}
-                {row.actor} on {new Date(row.timestamp).toLocaleString()}
+            <div key={row.id} className={rowCard}>
+              <p className={rowMeta}>
+                <strong>{row.action}</strong> by {row.actor} on{" "}
+                {new Date(row.timestamp).toLocaleString()}
               </p>
-              {row.after_summary && <p style={rowMeta}>{row.after_summary}</p>}
+              {row.after_summary && <p className={rowMeta}>{row.after_summary}</p>}
             </div>
           ))}
           {page.nextCursor !== null && (
             <button
               type="button"
-              style={linkBtn}
+              className={linkBtn}
               onClick={() => setCursor(page.nextCursor ?? undefined)}
             >
               Show older

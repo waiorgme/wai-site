@@ -1,12 +1,18 @@
 import { useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
-import { linkBtn, muted, primaryBtn } from "../portal/ui";
+import type { ReactNode } from "react";
+import { linkBtn, primaryBtn } from "../portal/ui";
 
 // The one propose-then-confirm pattern for every admin write (spec criterion 7,
 // the vault's propose-then-confirm rule made concrete once). Shows a
 // plain-language summary of what will change, requires an explicit second click
 // ("Yes, do this" / "Cancel"), and shows the resulting state inline (no silent
 // success). Reused by all four queues.
+//
+// panel-design quirk fix (spec criterion 12, recorded): a SUCCESS outcome stays
+// terminal, but a FAILED outcome now offers "Try again", returning to the
+// proposing step with the caller's inputs preserved - so a validation miss
+// (e.g. a required note left empty) no longer dead-ends the action until a
+// reload. The two-step confirm is never collapsed.
 
 type Result = { ok: boolean; message: string };
 
@@ -36,13 +42,26 @@ export function ConfirmAction({
   const [outcome, setOutcome] = useState<Result | null>(null);
 
   if (outcome !== null) {
+    if (outcome.ok) {
+      return (
+        <p role="status" className="pn-ok">
+          {outcome.message}
+        </p>
+      );
+    }
     return (
-      <p
-        role="status"
-        style={{ ...muted, margin: 0, color: outcome.ok ? "var(--sky)" : "#ff9b9b" }}
-      >
-        {outcome.message}
-      </p>
+      <div className="pn-stack">
+        <p role="status" className="pn-error">
+          {outcome.message}
+        </p>
+        <button
+          type="button"
+          className={linkBtn}
+          onClick={() => setOutcome(null)}
+        >
+          Try again
+        </button>
+      </div>
     );
   }
 
@@ -50,7 +69,7 @@ export function ConfirmAction({
     return (
       <button
         type="button"
-        style={linkBtn}
+        className={linkBtn}
         disabled={disabled}
         onClick={() => setProposing(true)}
       >
@@ -60,13 +79,13 @@ export function ConfirmAction({
   }
 
   return (
-    <div style={proposeBox}>
-      <p style={{ ...muted, margin: 0, fontSize: 14 }}>{summary}</p>
+    <div className="pn-propose">
+      <p className="pn-meta">{summary}</p>
       {children}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <div className="pn-confirm-row">
         <button
           type="button"
-          style={{ ...primaryBtn, opacity: busy ? 0.7 : 1 }}
+          className={primaryBtn}
           disabled={busy}
           onClick={async () => {
             setBusy(true);
@@ -87,7 +106,7 @@ export function ConfirmAction({
         </button>
         <button
           type="button"
-          style={linkBtn}
+          className={linkBtn}
           disabled={busy}
           onClick={() => setProposing(false)}
         >
@@ -97,12 +116,3 @@ export function ConfirmAction({
     </div>
   );
 }
-
-const proposeBox: CSSProperties = {
-  display: "grid",
-  gap: 12,
-  padding: "12px 14px",
-  borderRadius: "var(--r-card)",
-  border: "1px solid rgba(207, 224, 245, 0.22)",
-  background: "var(--ink)",
-};

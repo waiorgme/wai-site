@@ -111,11 +111,11 @@ function JoinForm() {
 
   if (stage === "sent") {
     return (
-      <div style={card}>
-        <h1 style={h1}>Almost there. Check your email</h1>
-        <p style={muted}>
+      <div className={card}>
+        <h1 className={h1}>Almost there. Check your email</h1>
+        <p className={muted}>
           Welcome to WAI-ME. We sent a confirmation link to{" "}
-          <strong style={{ color: "var(--white)" }}>{values.email}</strong>.{" "}
+          <strong>{values.email}</strong>.{" "}
           {isMinor
             ? "Click it to confirm your email. It expires in 15 minutes. Because you are under 18, your membership starts once your parent or guardian confirms it."
             : "Click it to confirm your email and activate your membership. It expires in 15 minutes."}
@@ -126,14 +126,14 @@ function JoinForm() {
 
   if (stage === "welcome_back") {
     return (
-      <div style={card}>
-        <h1 style={h1}>Welcome back</h1>
-        <p style={muted}>
+      <div className={card}>
+        <h1 className={h1}>Welcome back</h1>
+        <p className={muted}>
           You already have a WAI-ME account with{" "}
-          <strong style={{ color: "var(--white)" }}>{values.email}</strong>.
+          <strong>{values.email}</strong>.
           No need to join again, just sign in.
         </p>
-        <a href="/portal" style={{ ...primaryBtn, textDecoration: "none", display: "inline-block" }}>
+        <a href="/portal" className={primaryBtn}>
           Sign in
         </a>
       </div>
@@ -142,19 +142,19 @@ function JoinForm() {
 
   if (stage === "under_13") {
     return (
-      <div style={card}>
-        <h1 style={h1}>Not just yet</h1>
-        <p style={muted}>
+      <div className={card}>
+        <h1 className={h1}>Not just yet</h1>
+        <p className={muted}>
           Thank you for wanting to join. WAI-ME membership starts at age{" "}
           {MIN_JOIN_AGE}, so we can't sign you up as a member today. We would
           love to welcome you when you turn {MIN_JOIN_AGE}. Until then, a
           parent or guardian is welcome to write to us at{" "}
-          <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+          <a href="mailto:support@waiorg.me">
             support@waiorg.me
           </a>{" "}
           about ways to stay connected.
         </p>
-        <button type="button" style={linkBtn} onClick={() => setStage("form")}>
+        <button type="button" className={linkBtn} onClick={() => setStage("form")}>
           Back
         </button>
       </div>
@@ -164,18 +164,18 @@ function JoinForm() {
   if (stage === "confirm") {
     const certName = fullName(values.firstName, values.lastName);
     return (
-      <div style={card}>
-        <h1 style={h1}>One last look</h1>
-        <p style={muted}>
+      <div className={card}>
+        <h1 className={h1}>One last look</h1>
+        <p className={muted}>
           Your certificate will read:{" "}
-          <strong style={{ color: "var(--white)", fontSize: 18 }}>{certName}</strong>,
+          <strong style={{ fontSize: 18 }}>{certName}</strong>,
           is that correct?
         </p>
-        <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="pn-actions">
           <button
             type="button"
             disabled={busy}
-            style={primaryBtn}
+            className={primaryBtn}
             onClick={async () => {
               setBusy(true);
               setError(null);
@@ -239,24 +239,24 @@ function JoinForm() {
           >
             {busy ? "Creating your account…" : "Yes, join WAI-ME"}
           </button>
-          <button type="button" style={linkBtn} onClick={() => setStage("form")}>
+          <button type="button" className={linkBtn} onClick={() => setStage("form")}>
             Edit my name
           </button>
         </div>
-        {error !== null && <p style={errorText}>{error}</p>}
+        {error !== null && <p className={errorText}>{error}</p>}
       </div>
     );
   }
 
   return (
-    <div style={card}>
-      <h1 style={h1}>Join WAI-ME</h1>
-      <p style={muted}>
+    <div className={card}>
+      <h1 className={h1}>Join WAI-ME</h1>
+      <p className={muted}>
         Membership is free, and it is open to women at any stage, from the
         student with the dream to the captain with the legacy.
       </p>
       <form
-        style={{ display: "grid", gap: 14, marginTop: 4 }}
+        className="pn-stack"
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
@@ -276,7 +276,7 @@ function JoinForm() {
         }}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-          <label style={label}>
+          <label className={label}>
             First name
             <input
               name="firstName"
@@ -286,10 +286,10 @@ function JoinForm() {
               autoComplete="given-name"
               value={values.firstName}
               onChange={(e) => set("firstName", e.target.value)}
-              style={input}
+              className={input}
             />
           </label>
-          <label style={label}>
+          <label className={label}>
             Last name
             <input
               name="lastName"
@@ -299,12 +299,12 @@ function JoinForm() {
               autoComplete="family-name"
               value={values.lastName}
               onChange={(e) => set("lastName", e.target.value)}
-              style={input}
+              className={input}
             />
           </label>
         </div>
 
-        <label style={label}>
+        <label className={label}>
           Email
           <input
             name="email"
@@ -315,18 +315,18 @@ function JoinForm() {
             placeholder="you@example.com"
             value={values.email}
             onChange={(e) => set("email", e.target.value)}
-            style={input}
+            className={input}
           />
         </label>
 
-        <label style={label}>
+        <label className={label}>
           Country
           <select
             name="country"
             required
             value={values.country}
             onChange={(e) => set("country", e.target.value)}
-            style={input}
+            className={input}
           >
             <option value="" disabled>
               Select your country…
@@ -339,7 +339,7 @@ function JoinForm() {
           </select>
         </label>
 
-        <label style={label}>
+        <label className={label}>
           Date of birth
           <input
             name="dob"
@@ -347,25 +347,17 @@ function JoinForm() {
             required
             value={values.dob}
             onChange={(e) => set("dob", e.target.value)}
-            style={input}
+            className={input}
           />
         </label>
 
         {isMinor && (
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              padding: "12px 14px",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 10,
-            }}
-          >
-            <p style={{ ...muted, margin: 0 }}>
+          <div className="pn-group">
+            <p className={muted}>
               Because you are under 18, we also need a parent or guardian's
               details. We will ask them to confirm your membership.
             </p>
-            <label style={label}>
+            <label className={label}>
               Parent or guardian's name
               <input
                 name="guardianName"
@@ -374,10 +366,10 @@ function JoinForm() {
                 maxLength={80}
                 value={values.guardianName}
                 onChange={(e) => set("guardianName", e.target.value)}
-                style={input}
+                className={input}
               />
             </label>
-            <label style={label}>
+            <label className={label}>
               Parent or guardian's email
               <input
                 name="guardianEmail"
@@ -386,15 +378,15 @@ function JoinForm() {
                 maxLength={254}
                 value={values.guardianEmail}
                 onChange={(e) => set("guardianEmail", e.target.value)}
-                style={input}
+                className={input}
               />
             </label>
           </div>
         )}
 
-        <fieldset style={{ border: "none", padding: 0, margin: 0, ...label }}>
+        <fieldset className={label} style={{ border: "none", padding: 0, margin: 0 }}>
           <span>Gender</span>
-          <div style={{ display: "flex", gap: 18, color: "var(--white)" }}>
+          <div style={{ display: "flex", gap: 18 }}>
             <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input
                 type="radio"
@@ -423,14 +415,14 @@ function JoinForm() {
           </div>
         </fieldset>
 
-        <label style={label}>
+        <label className={label}>
           Where are you in aviation right now?
           <select
             name="careerStage"
             required
             value={values.careerStage}
             onChange={(e) => set("careerStage", e.target.value)}
-            style={input}
+            className={input}
           >
             <option value="" disabled>
               Select one…
@@ -443,9 +435,9 @@ function JoinForm() {
           </select>
         </label>
 
-        <fieldset style={{ border: "none", padding: 0, margin: 0, ...label }}>
+        <fieldset className={label} style={{ border: "none", padding: 0, margin: 0 }}>
           <span>What are you hoping we help you with? (pick any)</span>
-          <div style={{ display: "grid", gap: 6, color: "var(--white)" }}>
+          <div style={{ display: "grid", gap: 6 }}>
             {/* Safeguarding: mentorship is not available to members under 18,
                 so those options are never offered to them. */}
             {LOOKING_FOR.filter(
@@ -489,7 +481,7 @@ function JoinForm() {
           </label>
         </div>
 
-        <label style={checkboxRow}>
+        <label className={checkboxRow}>
           <input
             type="checkbox"
             name="terms"
@@ -501,7 +493,7 @@ function JoinForm() {
             I agree to the WAI-ME terms and privacy policy. (required)
           </span>
         </label>
-        <label style={checkboxRow}>
+        <label className={checkboxRow}>
           <input
             type="checkbox"
             name="attestation"
@@ -514,7 +506,7 @@ function JoinForm() {
             (required)
           </span>
         </label>
-        <label style={checkboxRow}>
+        <label className={checkboxRow}>
           <input
             type="checkbox"
             name="marketing"
@@ -528,7 +520,7 @@ function JoinForm() {
             applicants, so no one is shown a consent the server would refuse.
             The server enforces the same rule whatever the client sends. */}
         {!isMinor && values.gender === "female" && (
-          <label style={checkboxRow}>
+          <label className={checkboxRow}>
             <input
               type="checkbox"
               name="pipeline"
@@ -545,14 +537,14 @@ function JoinForm() {
 
         <Turnstile onToken={setToken} />
 
-        <button type="submit" disabled={busy} style={primaryBtn}>
+        <button type="submit" disabled={busy} className={primaryBtn}>
           Continue
         </button>
-        {error !== null && <p style={errorText}>{error}</p>}
+        {error !== null && <p className={errorText}>{error}</p>}
       </form>
-      <p style={{ ...muted, fontSize: 13 }}>
+      <p className={muted} style={{ fontSize: 13 }}>
         Already a member?{" "}
-        <a href="/portal" style={{ color: "var(--sky)" }}>
+        <a href="/portal">
           Sign in
         </a>
         .
@@ -576,7 +568,7 @@ function Turnstile({ onToken }: { onToken: (token: string) => void }) {
       if (window.turnstile && widgetId === undefined) {
         widgetId = window.turnstile.render(container, {
           sitekey,
-          theme: "dark",
+          theme: "light",
           callback: onToken,
           // Clear a stale token client-side so the member re-verifies instead
           // of hitting a confusing server rejection.

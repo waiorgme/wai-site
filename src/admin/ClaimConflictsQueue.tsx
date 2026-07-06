@@ -46,12 +46,12 @@ export function ClaimConflictsQueue() {
       : [...new Set(rows.map((r) => r.duplicate_group))];
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Claim conflicts</h2>
+    <section className={queueSection}>
+      <h2 className={queueTitle}>Claim conflicts</h2>
       {rows === undefined ? (
-        <p style={muted}>Loading…</p>
+        <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={muted}>No rows waiting.</p>
+        <p className={muted}>No rows waiting.</p>
       ) : (
         groups.map((group) => {
           const groupRows = rows.filter((r) => r.duplicate_group === group);
@@ -59,20 +59,11 @@ export function ClaimConflictsQueue() {
           return (
             <div
               key={group}
-              style={
-                isGroup
-                  ? {
-                      display: "grid",
-                      gap: 10,
-                      padding: 10,
-                      borderRadius: 12,
-                      border: "1px dashed rgba(207, 224, 245, 0.22)",
-                    }
-                  : { display: "contents" }
-              }
+              className={isGroup ? "pn-group" : undefined}
+              style={isGroup ? undefined : { display: "contents" }}
             >
               {isGroup && (
-                <p style={{ ...rowMeta, margin: 0 }}>
+                <p className={rowMeta}>
                   These records share one email address.
                 </p>
               )}
@@ -97,6 +88,14 @@ const stateTag: Record<string, string> = {
   conflict: "conflict",
   suppressed_minor: "held (under 18)",
   archived_conflict: "archived",
+};
+
+// Tag tone: a live conflict is the one state that needs a human now (err);
+// held/archived stay neutral.
+const stateTagClass: Record<string, string> = {
+  conflict: `${tag} pn-tag--err`,
+  suppressed_minor: tag,
+  archived_conflict: tag,
 };
 
 function ConflictRowCard({
@@ -129,16 +128,18 @@ function ConflictRowCard({
   const hasLivePair = row.live_duplicate_count > 1;
 
   return (
-    <div style={rowCard}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <p style={rowName}>{row.masked_name}</p>
-        <span style={tag}>{stateTag[row.claim_state] ?? row.claim_state}</span>
+    <div className={rowCard}>
+      <div className="pn-row-head">
+        <p className={rowName}>{row.masked_name}</p>
+        <span className={stateTagClass[row.claim_state] ?? tag}>
+          {stateTag[row.claim_state] ?? row.claim_state}
+        </span>
         {hasLivePair && row.claim_state === "conflict" && (
-          <span style={tag}>duplicate email pair</span>
+          <span className={tag}>duplicate email pair</span>
         )}
       </div>
-      <p style={rowMeta}>{readableReason(row.conflict_reason, row.claim_state)}</p>
-      <p style={rowMeta}>
+      <p className={rowMeta}>{readableReason(row.conflict_reason, row.claim_state)}</p>
+      <p className={rowMeta}>
         Match signals: email {row.match_signals.email ? "yes" : "no"}, name{" "}
         {row.match_signals.name ? "yes" : "no"}, mobile{" "}
         {row.match_signals.mobile ? "yes" : "no"}, dob{" "}
@@ -150,8 +151,8 @@ function ConflictRowCard({
           email is a deliberate, audited, one-at-a-time action for the wave-run
           ops routine's personal-email commitment. */}
       {revealed !== null ? (
-        <p role="status" style={{ ...rowMeta, margin: 0 }}>
-          Contact email: <strong style={{ color: "var(--white)" }}>{revealed}</strong>
+        <p role="status" className={rowMeta}>
+          Contact email: <strong>{revealed}</strong>
         </p>
       ) : (
         <ConfirmAction
@@ -175,7 +176,7 @@ function ConflictRowCard({
       )}
 
       {row.claim_state === "conflict" && (
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+        <div className="pn-actions">
           <ConfirmAction
             label="This is the verified person: release"
             confirmLabel="Yes, release"
@@ -210,19 +211,19 @@ function ConflictRowCard({
               return { ok: false, message };
             }}
           >
-            <label style={label}>
+            <label className={label}>
               Corrected email (optional)
               <input
-                style={input}
+                className={input}
                 value={correctedEmail}
                 onChange={(e) => setCorrectedEmail(e.target.value)}
                 placeholder="leave blank to keep the current email"
               />
             </label>
-            <label style={label}>
+            <label className={label}>
               Resolution note (optional)
               <input
-                style={input}
+                className={input}
                 value={releaseNote}
                 onChange={(e) => setReleaseNote(e.target.value)}
                 placeholder="e.g. confirmed by reply from the email on file"
@@ -255,10 +256,10 @@ function ConflictRowCard({
                   : { ok: false, message: "That could not be completed." };
               }}
             >
-              <label style={label}>
+              <label className={label}>
                 Archive note (optional)
                 <input
-                  style={input}
+                  className={input}
                   value={archiveNote}
                   onChange={(e) => setArchiveNote(e.target.value)}
                   placeholder="e.g. duplicate belongs to a different person"
