@@ -31,16 +31,16 @@ export const maybePromoteToActive = async (
   if (member.lifecycle_state !== "active") return false;
   if (!isProfileComplete(member)) return false;
 
-  const hasAttendance = await ctx.db
+  const registrations = await ctx.db
     .query("eventRegistrations")
     .withIndex("by_member_time", (q) => q.eq("member_id", memberId))
-    .collect()
-    .then((rows) => rows.some((r) => r.state === "attended"));
-  const hasApplication = await ctx.db
+    .collect();
+  const hasAttendance = registrations.some((r) => r.state === "attended");
+  const applications = await ctx.db
     .query("opportunityApplications")
     .withIndex("by_member_time", (q) => q.eq("member_id", memberId))
-    .collect()
-    .then((rows) => rows.some((r) => r.state !== "withdrawn"));
+    .collect();
+  const hasApplication = applications.some((r) => r.state !== "withdrawn");
   if (!hasAttendance && !hasApplication) return false;
 
   await ctx.db.patch(memberId, { standing: "active_member" });

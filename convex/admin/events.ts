@@ -246,6 +246,16 @@ export const upsertEvent = mutation({
       return { ok: false, error: "validation" };
     }
 
+    // The meeting link becomes a member-facing href once she registers:
+    // https only, bounded length, same rule as recording/materials
+    // (Gate 4 blocker, 2026-07-07).
+    if (
+      args.meeting_link !== undefined &&
+      !(args.meeting_link.startsWith("https://") && args.meeting_link.length <= 500)
+    ) {
+      return { ok: false, error: "validation" };
+    }
+
     const timezone =
       args.timezone === undefined || args.timezone.trim() === ""
         ? "GST"

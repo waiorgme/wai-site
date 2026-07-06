@@ -93,6 +93,10 @@ export function PartnerDetail({
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null);
   const [sealConfirm, setSealConfirm] = useState<"granted" | "withdrawn" | null>(null);
+  // Propose-then-confirm on the record save itself (Gate 4, 2026-07-07): the
+  // vault guardrail is confirmation before EVERY change, and a single-click
+  // save also commits staged deliverable edits.
+  const [saveConfirm, setSaveConfirm] = useState(false);
 
   if (
     detail !== undefined &&
@@ -419,7 +423,7 @@ export function PartnerDetail({
                 type="button"
                 className="pn-btn"
                 disabled={busy}
-                onClick={() => void onSave()}
+                onClick={() => setSaveConfirm(true)}
               >
                 {busy
                   ? "Working…"
@@ -428,6 +432,30 @@ export function PartnerDetail({
                     : "Save changes"}
               </button>
             </div>
+            {saveConfirm && (
+              <Modal
+                title={
+                  effectiveId === undefined
+                    ? "Create this partner record?"
+                    : "Save these changes?"
+                }
+                sub={`${form.name.trim() || "Unnamed partner"} · ${TIER_WORDS[form.tier]} · ${form.deliverables.length} deliverable${form.deliverables.length === 1 ? "" : "s"}`}
+                onClose={() => setSaveConfirm(false)}
+                onConfirm={() => {
+                  setSaveConfirm(false);
+                  void onSave();
+                }}
+                confirmLabel={
+                  effectiveId === undefined ? "Yes, create it" : "Yes, save it"
+                }
+                footNote="This change is recorded."
+              >
+                <p className="pn-meta">
+                  This writes the whole record: relationship details, MOU
+                  facts, and every deliverable row as it stands above.
+                </p>
+              </Modal>
+            )}
           </PanelCard>
         </div>
 

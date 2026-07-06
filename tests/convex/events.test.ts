@@ -585,6 +585,29 @@ describe("admin events: create, publish, cancel, postpone, links", () => {
     ]);
   });
 
+  it("upsert refuses non-https meeting links at the boundary (Gate 4)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    // The link becomes a member-facing href: https only, bounded length.
+    for (const bad of [
+      "http://meet.example.com/x",
+      "javascript:alert(1)",
+      `https://meet.example.com/${"x".repeat(500)}`,
+    ]) {
+      expect(
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ meeting_link: bad }),
+        ),
+      ).toEqual({ ok: false, error: "validation" });
+    }
+    const ok = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ meeting_link: "https://meet.example.com/session" }),
+    );
+    expect(ok.ok).toBe(true);
+  });
+
   it("upsert validates times, capacity and the priority window", async () => {
     const t = convexTest(schema, modules);
     const asAdmin = await signIn(t, ADMIN_EMAIL);
