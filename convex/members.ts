@@ -28,6 +28,7 @@ import {
   validateProfileFields,
   type ProfileFields,
 } from "./lib/profile";
+import { maybePromoteToActive } from "./lib/standing";
 
 import { POLICY_VERSION } from "./lib/policy";
 
@@ -240,6 +241,15 @@ export const updateProfile = mutation({
       after_summary: `fields=[${Object.keys(fields).join(",")}] complete=${profile_complete}`,
       source: "member",
     });
+
+    // Standing Rung 2 hook: a profile save can complete the automatic gate
+    // (profile complete + at least one qualifying action already taken). The
+    // helper self-checks every condition and is idempotent.
+    await maybePromoteToActive(
+      ctx,
+      member._id,
+      "completed your profile after taking part",
+    );
 
     return { ok: true, profile_complete };
   },
