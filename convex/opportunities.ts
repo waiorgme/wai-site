@@ -310,7 +310,7 @@ export const apply = mutation({
       "application_received",
       "Application received",
       `We've got your application for ${opportunity.title}. Every applicant hears back, win or lose.`,
-      "/portal/opportunities",
+      "/portal#opportunities",
     );
     // Applying is a qualifying action for the automatic Rung-2 standing gate.
     await maybePromoteToActive(ctx, member._id, "applied to an opportunity");

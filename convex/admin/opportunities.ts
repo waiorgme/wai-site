@@ -522,7 +522,7 @@ export const recordResult = mutation({
         "application_result",
         "Congratulations, you were selected",
         `Congratulations! You have been selected for ${opportunity.title}. We will be in touch with the next steps.`,
-        "/portal/opportunities",
+        "/portal#opportunities",
       );
     } else {
       await notify(
@@ -531,7 +531,7 @@ export const recordResult = mutation({
         "application_result",
         "About your application",
         `Thank you for applying to ${opportunity.title}. This one went to another member. Your profile stays in the running for what comes next - keep an eye on Opportunities.`,
-        "/portal/opportunities",
+        "/portal#opportunities",
       );
     }
     return { ok: true };

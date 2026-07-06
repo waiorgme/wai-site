@@ -261,7 +261,10 @@ export const rsvp = mutation({
       return { ok: false, error: "not_found" };
     }
     const now = Date.now();
-    if (event.state !== "published") {
+    // Postponed events run on their new date and keep taking RSVPs: nothing
+    // re-publishes a postponed event, so refusing here would strand it
+    // (integration fix, 2026-07-06).
+    if (event.state !== "published" && event.state !== "postponed") {
       return { ok: false, error: "closed" };
     }
     if (now >= event.starts_at) {
@@ -346,7 +349,7 @@ export const rsvp = mutation({
         "event_rsvp",
         `You're registered: ${event.title}`,
         `Your seat is confirmed for ${event.title} on ${dateLabel}. Your event pass is ready in My events.`,
-        "/portal/events",
+        "/portal#events",
       );
     } else {
       // No queue-position promises: honest, plain words only.
@@ -356,7 +359,7 @@ export const rsvp = mutation({
         "event_rsvp",
         `You're on the waitlist: ${event.title}`,
         `${event.title} on ${dateLabel} is full right now. You're on the waitlist, we'll tell you the moment a seat opens.`,
-        "/portal/events",
+        "/portal#events",
       );
     }
 
@@ -372,7 +375,10 @@ const promoteEarliestWaitlisted = async (
   event: Doc<"events">,
   now: number,
 ): Promise<void> => {
-  if (event.state !== "published" || event.starts_at <= now) {
+  if (
+    (event.state !== "published" && event.state !== "postponed") ||
+    event.starts_at <= now
+  ) {
     return;
   }
   const waitlisted = await ctx.db
@@ -406,7 +412,7 @@ const promoteEarliestWaitlisted = async (
     "event_waitlist_promoted",
     `A seat opened: ${event.title}`,
     `Good news. A seat opened up and you're now registered for ${event.title} on ${eventDateLabel(event.starts_at)}. Your event pass is ready in My events.`,
-    "/portal/events",
+    "/portal#events",
   );
 };
 

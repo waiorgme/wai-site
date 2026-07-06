@@ -706,13 +706,14 @@ describe("admin events: create, publish, cancel, postpone, links", () => {
     const notes = await notificationsFor(t, memberA!._id);
     expect(notes.some((n) => n.title.includes("New date"))).toBe(true);
 
-    // Postponed events stay visible but take no new RSVPs.
+    // Postponed events stay visible AND keep taking RSVPs: the event runs on
+    // its new date and nothing re-publishes it (integration fix, 2026-07-06).
     const asB = await signIn(t, "b@example.com");
     const list = await asB.query(api.events.listEvents, {});
     expect(list!.some((e) => e.eventId === eventId)).toBe(true);
     expect(await asB.mutation(api.events.rsvp, { eventId })).toEqual({
-      ok: false,
-      error: "closed",
+      ok: true,
+      state: "registered",
     });
   });
 

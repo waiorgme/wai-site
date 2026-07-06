@@ -416,7 +416,7 @@ export const cancelEvent = mutation({
         "event_update",
         `Cancelled: ${event.title}`,
         `We're sorry, ${event.title} on ${eventDateLabel(event.starts_at)} is cancelled. ${reason}. We hope to see you at the next one.`,
-        "/portal/events",
+        "/portal#events",
       );
     }
     await writeAudit(ctx, {
@@ -471,7 +471,7 @@ export const postponeEvent = mutation({
         "event_update",
         `New date: ${event.title}`,
         `${event.title} has moved to ${eventDateLabel(args.newStartsAt)}. Your booking still stands, there is nothing you need to do.`,
-        "/portal/events",
+        "/portal#events",
       );
     }
     await writeAudit(ctx, {
