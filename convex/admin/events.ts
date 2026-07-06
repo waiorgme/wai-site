@@ -588,6 +588,9 @@ type CheckInResult =
 // Marking attended runs the Rung-2 standing gate (a qualifying action).
 export const checkIn = mutation({
   args: {
+    // The desk always operates ONE event: a pass code from a different live
+    // event must never mark attendance elsewhere (integration fix, 2026-07-07).
+    eventId: v.id("events"),
     checkinCode: v.optional(v.string()),
     registrationId: v.optional(v.id("eventRegistrations")),
     outcome: v.union(v.literal("attended"), v.literal("no_show")),
@@ -612,7 +615,7 @@ export const checkIn = mutation({
             )
             .unique()
         : await ctx.db.get(args.registrationId as Id<"eventRegistrations">);
-    if (reg === null || reg.state === "cancelled") {
+    if (reg === null || reg.state === "cancelled" || reg.event_id !== args.eventId) {
       return { ok: false, error: "not_found" };
     }
     const event = await ctx.db.get(reg.event_id);

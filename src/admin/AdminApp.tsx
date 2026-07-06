@@ -1,28 +1,45 @@
-import { useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { convex } from "../portal/convex";
 import { sendLinkErrorMessage } from "../portal/errors";
 import { api } from "../../convex/_generated/api";
-import type { AdminOverviewCounts } from "../../convex/admin/overview";
+import type { Id } from "../../convex/_generated/dataModel";
 import { card, errorText, h1, input, linkBtn, muted, primaryBtn } from "../portal/ui";
-import { queueSection, queueTitle, rowMeta } from "./ui";
+import { AppShell, SideNav } from "../panel/kit";
+import type { NavGroup } from "../panel/kit";
 import { ClaimConflictsQueue } from "./ClaimConflictsQueue";
 import { PipelineReviewsQueue } from "./PipelineReviewsQueue";
 import { PendingGuardiansQueue } from "./PendingGuardiansQueue";
 import { DataRequestsQueue } from "./DataRequestsQueue";
 import { AdminAuditLog } from "./AdminAuditLog";
+import type { AdminViewName, Go } from "./views/shared";
+import { initials } from "./views/shared";
+import { OverviewV2 } from "./views/OverviewV2";
+import { MembersView } from "./views/MembersView";
+import { MemberDetail } from "./views/MemberDetail";
+import { CertificatesView } from "./views/CertificatesView";
+import { EventsView } from "./views/EventsView";
+import { EventEditor } from "./views/EventEditor";
+import { EventRegistrationsView } from "./views/EventRegistrationsView";
+import { OpportunitiesView } from "./views/OpportunitiesView";
+import { OpportunityEditor } from "./views/OpportunityEditor";
+import { PartnersView } from "./views/PartnersView";
+import { PartnerDetail } from "./views/PartnerDetail";
+import { ReportsView } from "./views/ReportsView";
 
 // The /admin fallback UI (admin-panel spec). A distinct surface from /portal so
 // a member-facing bug can never leak admin controls to an ordinary session. The
 // server check (requireSuperAdmin) is what actually protects the data; the UI
 // hiding below is a courtesy (criterion 1, deny-by-default).
 //
-// panel-design slice: the console shell (spec criteria 8-9). One island, no
-// routing - a sidebar of local-state views (Overview, the four queues by their
-// exact names, the audit log, honest Soon seams) over the locked light system:
-// navy hero band, paper main, zero gold.
+// panel-experience slice: the signed-in console is the full workspace shell
+// (AppShell + SideNav over local view state) - overview, members, certificates,
+// events, opportunities, partners, the four review queues by their exact
+// names, reports and the audit log. Every write anywhere in it is
+// propose-then-confirm and audited. The auth gates, sign-in and denied cards
+// below are unchanged from round 1.
 
 export function AdminApp() {
   return (
@@ -97,11 +114,6 @@ function AdminGate() {
 }
 
 type QueueView = "conflicts" | "pipeline" | "guardians" | "dataRequests";
-type SoonView = "members" | "partners" | "events" | "content";
-type AdminView = "overview" | QueueView | "audit" | SoonView;
-
-// The console is wider than the portal dashboard (dense queue rows + sidebar).
-const consoleWidth = { "--pn-maxw": "1280px" } as CSSProperties;
 
 const QUEUE_LABELS: Record<QueueView, string> = {
   conflicts: "Claim conflicts",
@@ -110,30 +122,29 @@ const QUEUE_LABELS: Record<QueueView, string> = {
   dataRequests: "Data requests",
 };
 
-// The honest Soon seams (spec scope decision 3): plain, factual copy about what
-// exists today - never UI implying unbuilt capability.
-const SOON_SEAMS: Record<SoonView, { name: string; copy: string }> = {
-  members: {
-    name: "Members",
-    copy: "Member records live safely in the database and are managed through the review queues for now. A browsable member list is coming in a later update.",
-  },
-  partners: {
-    name: "Partners",
-    copy: "Corporate partnering today: a company reads the public partner page, emails support@waiorg.me, and you take it from there. Partner records here are coming in a later update.",
-  },
-  events: {
-    name: "Events",
-    copy: "Event management is coming in a later update.",
-  },
-  content: {
-    name: "Content",
-    copy: "The website's pages and news are updated by the team for now. A content editor here is coming in a later update.",
-  },
-};
+type AdminViewState = { v: AdminViewName; id?: string };
 
 function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
-  const [view, setView] = useState<AdminView>("overview");
+  const [view, setView] = useState<AdminViewState>({ v: "overview" });
   const counts = useQuery(api.admin.overview.getAdminOverview);
+  // The admin is herself a member (the allowlist resolves through the members
+  // table), so the identity block can carry her real email.
+  const me = useQuery(api.members.getCurrentMember);
+  const paneRef = useRef<HTMLDivElement | null>(null);
+  const mounted = useRef(false);
+
+  const go: Go = (v, id) => setView(id === undefined ? { v } : { v, id });
+
+  // View switches move focus to the fresh pane (SPA focus discipline) and
+  // return the scroll to the top. Skipped on first mount.
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    window.scrollTo(0, 0);
+    paneRef.current?.focus();
+  }, [view.v, view.id]);
 
   const queueCount = (queue: QueueView): number | undefined => {
     if (counts === undefined) {
@@ -151,237 +162,147 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
     }
   };
 
+  // A nav entry stays lit for its detail/editor sub-views.
+  const activeFor: Partial<Record<AdminViewName, ReadonlyArray<AdminViewName>>> = {
+    members: ["members", "member"],
+    events: ["events", "eventEditor", "eventRegs"],
+    opportunities: ["opportunities", "opportunityEditor"],
+    partners: ["partners", "partnerEditor"],
+  };
+  const item = (key: AdminViewName, label: string) => ({
+    key,
+    label,
+    active: (activeFor[key] ?? [key]).includes(view.v),
+    onSelect: () => go(key),
+  });
+
+  const groups: NavGroup[] = [
+    { label: "Today", items: [item("overview", "Overview")] },
+    {
+      label: "Membership",
+      items: [item("members", "Members"), item("certificates", "Certificates")],
+    },
+    {
+      label: "Programmes",
+      items: [
+        item("events", "Events"),
+        item("opportunities", "Opportunities"),
+        item("partners", "Partners"),
+      ],
+    },
+    {
+      label: "Review queues",
+      items: (Object.keys(QUEUE_LABELS) as QueueView[]).map((queue) => {
+        const count = queueCount(queue);
+        return {
+          ...item(queue, QUEUE_LABELS[queue]),
+          count,
+          live: count !== undefined && count > 0,
+        };
+      }),
+    },
+    {
+      label: "System",
+      items: [item("reports", "Reports"), item("audit", "Recent panel actions")],
+    },
+  ];
+
+  const page = (() => {
+    switch (view.v) {
+      case "overview":
+        return <OverviewV2 counts={counts} go={go} />;
+      case "members":
+        return <MembersView go={go} />;
+      case "member":
+        return (
+          <MemberDetail key={view.id} memberId={view.id as Id<"members">} go={go} />
+        );
+      case "certificates":
+        return <CertificatesView go={go} />;
+      case "events":
+        return <EventsView go={go} />;
+      case "eventEditor":
+        return (
+          <EventEditor
+            key={view.id ?? "new"}
+            eventId={view.id as Id<"events"> | undefined}
+            go={go}
+          />
+        );
+      case "eventRegs":
+        return (
+          <EventRegistrationsView
+            key={view.id}
+            eventId={view.id as Id<"events">}
+            go={go}
+          />
+        );
+      case "opportunities":
+        return <OpportunitiesView go={go} />;
+      case "opportunityEditor":
+        return (
+          <OpportunityEditor
+            key={view.id ?? "new"}
+            id={view.id as Id<"opportunities"> | undefined}
+            go={go}
+          />
+        );
+      case "partners":
+        return <PartnersView go={go} />;
+      case "partnerEditor":
+        return (
+          <PartnerDetail
+            key={view.id ?? "new"}
+            partnerId={view.id as Id<"partners"> | undefined}
+            go={go}
+          />
+        );
+      case "reports":
+        return <ReportsView />;
+      case "conflicts":
+        return <ClaimConflictsQueue />;
+      case "pipeline":
+        return <PipelineReviewsQueue />;
+      case "guardians":
+        return <PendingGuardiansQueue />;
+      case "dataRequests":
+        return <DataRequestsQueue />;
+      case "audit":
+        return <AdminAuditLog />;
+    }
+  })();
+
   return (
-    <>
-      <div className="pn-hero">
-        <div className="pn-hero-inner" style={consoleWidth}>
-          <div className="pn-bar">
-            <img
-              src="/assets/wai-me-logo-on-dark.png"
-              alt="Women in Aviation Middle East"
-            />
-            <button type="button" className={linkBtn} onClick={onSignOut}>
+    <AppShell
+      brand={
+        <>
+          <img src="/assets/wai-me-logo-on-dark.png" alt="" />
+          <span className="lk">
+            <span className="nm">WAI-ME</span>
+            <span className="sub">Admin console</span>
+          </span>
+        </>
+      }
+      nav={<SideNav groups={groups} label="Admin sections" />}
+      identity={
+        <>
+          <span className="pn-initials">
+            {me == null || me.name.trim() === "" ? "SA" : initials(me.name)}
+          </span>
+          <span className="who">
+            <span className="nm">{me == null ? "Super admin" : me.name}</span>
+            {me == null ? null : <span className="em">{me.email}</span>}
+            <button type="button" className="out" onClick={onSignOut}>
               Sign out
             </button>
-          </div>
-          {/* "Safe actions" is the vault's own name for this fixed action set
-              (02 Admin Approach - Agent-Operated); the sentence below stays the
-              verbatim shell-framing promise. */}
-          <p className="pn-eyebrow">Safe actions</p>
-          <h1 className="pn-h1">Admin console</h1>
-          <p>
-            The safe-actions fallback. Every change here asks you to confirm, and
-            is recorded below.
-          </p>
-        </div>
-      </div>
-      <div className="pn-main">
-        <div className="pn-main-inner" style={consoleWidth}>
-          <div className="pn-shell">
-            <div className="pn-side">
-              <nav aria-label="Admin sections">
-                <div className="nav-grp">
-                  <p className="grp">Today</p>
-                  <NavItem active={view === "overview"} onSelect={() => setView("overview")}>
-                    Overview
-                  </NavItem>
-                </div>
-                <div className="nav-grp">
-                  <p className="grp">Review queues</p>
-                  {(Object.keys(QUEUE_LABELS) as QueueView[]).map((queue) => (
-                    <NavItem
-                      key={queue}
-                      active={view === queue}
-                      onSelect={() => setView(queue)}
-                      count={queueCount(queue)}
-                    >
-                      {QUEUE_LABELS[queue]}
-                    </NavItem>
-                  ))}
-                </div>
-                <div className="nav-grp">
-                  <p className="grp">Activity</p>
-                  <NavItem active={view === "audit"} onSelect={() => setView("audit")}>
-                    Recent panel actions
-                  </NavItem>
-                </div>
-                <div className="nav-grp">
-                  <p className="grp">Coming soon</p>
-                  {(Object.keys(SOON_SEAMS) as SoonView[]).map((seam) => (
-                    <NavItem
-                      key={seam}
-                      soon
-                      active={view === seam}
-                      onSelect={() => setView(seam)}
-                    >
-                      {SOON_SEAMS[seam].name}
-                    </NavItem>
-                  ))}
-                </div>
-              </nav>
-            </div>
-            <div className="pn-stack">
-              {view === "overview" && (
-                <AdminOverview counts={counts} onOpen={setView} />
-              )}
-              {view === "conflicts" && <ClaimConflictsQueue />}
-              {view === "pipeline" && <PipelineReviewsQueue />}
-              {view === "guardians" && <PendingGuardiansQueue />}
-              {view === "dataRequests" && <DataRequestsQueue />}
-              {view === "audit" && <AdminAuditLog />}
-              {(view === "members" ||
-                view === "partners" ||
-                view === "events" ||
-                view === "content") && (
-                <div className="pn-slot">
-                  <span className="pn-soon">Soon</span>
-                  <p className="pn-name">{SOON_SEAMS[view].name}</p>
-                  <p className={rowMeta}>{SOON_SEAMS[view].copy}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function NavItem({
-  active,
-  onSelect,
-  count,
-  soon,
-  children,
-}: {
-  active: boolean;
-  onSelect: () => void;
-  // Live queue count from the overview query; absent while it loads.
-  count?: number;
-  soon?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className={soon ? "pn-nav-item is-soon" : "pn-nav-item"}
-      aria-current={active ? "true" : undefined}
-      onClick={onSelect}
+          </span>
+        </>
+      }
     >
-      <span>{children}</span>
-      {soon ? (
-        <span className="n">Soon</span>
-      ) : (
-        count !== undefined && (
-          <span className={count > 0 ? "n live" : "n"}>{count}</span>
-        )
-      )}
-    </button>
-  );
-}
-
-// The Overview view (spec criterion 9): plain-worded PII-free counts, the
-// queues ordered by what is waiting, and a peek at the latest panel actions.
-function AdminOverview({
-  counts,
-  onOpen,
-}: {
-  counts: AdminOverviewCounts | undefined;
-  onOpen: (view: AdminView) => void;
-}) {
-  return (
-    <>
-      {counts === undefined ? (
-        <p className="pn-meta">Loading…</p>
-      ) : (
-        <div className="pn-stats">
-          <div className="pn-stat">
-            <p className="k">Active members</p>
-            <p className="v">{counts.members_active}</p>
-            <p className="s">signed up or claimed, email confirmed</p>
-          </div>
-          <div className="pn-stat">
-            <p className="k">Waiting on a step</p>
-            <p className="v">{counts.members_waiting}</p>
-            <p className="s">guardian, review or email confirmation</p>
-          </div>
-          <div className="pn-stat">
-            <p className="k">Legacy records</p>
-            <p className="v">{counts.legacy_registered}</p>
-            <p className="s">the whole imported list; claimed shown separately</p>
-          </div>
-          <div className="pn-stat">
-            <p className="k">Claimed so far</p>
-            <p className="v">{counts.legacy_claimed}</p>
-            <p className="s">legacy members who moved across</p>
-          </div>
-        </div>
-      )}
-      <section className={queueSection}>
-        <h2 className={queueTitle}>Today's queue</h2>
-        {counts === undefined ? (
-          <p className="pn-meta">Loading…</p>
-        ) : (
-          orderedQueues(counts).map(({ queue, count }) => (
-            <button
-              key={queue}
-              type="button"
-              className="pn-nav-item"
-              onClick={() => onOpen(queue)}
-            >
-              <span>{QUEUE_LABELS[queue]}</span>
-              <span className={count > 0 ? "n live" : "n"}>{count} waiting</span>
-            </button>
-          ))
-        )}
-      </section>
-      <LatestActions onSeeAll={() => onOpen("audit")} />
-    </>
-  );
-}
-
-// Busiest queue first; ties keep the fixed queue order (sort is stable).
-function orderedQueues(
-  counts: AdminOverviewCounts,
-): Array<{ queue: QueueView; count: number }> {
-  return [
-    { queue: "conflicts" as const, count: counts.queue_conflicts },
-    { queue: "pipeline" as const, count: counts.queue_pipeline },
-    { queue: "guardians" as const, count: counts.queue_guardians },
-    { queue: "dataRequests" as const, count: counts.queue_data_requests },
-  ].sort((a, b) => b.count - a.count);
-}
-
-// The first page of the existing audit query, as an overview peek. Read-only,
-// PII-free summaries (server contract); "See all" jumps to the Activity view.
-function LatestActions({ onSeeAll }: { onSeeAll: () => void }) {
-  const page = useQuery(api.admin.audit.listAdminAuditLog, {});
-  return (
-    <section className={queueSection}>
-      <h2 className={queueTitle}>Latest panel actions</h2>
-      {page === undefined ? (
-        <p className="pn-meta">Loading…</p>
-      ) : page.rows.length === 0 ? (
-        <p className="pn-meta">Nothing recorded yet.</p>
-      ) : (
-        <div className="pn-log">
-          {page.rows.map((row) => (
-            <div key={row.id} className="pn-log-row">
-              <span className="pn-when">
-                {new Date(row.timestamp).toLocaleString()}
-              </span>
-              <p className={rowMeta}>
-                <strong>{row.action}</strong> by {row.actor}
-              </p>
-              {row.after_summary && <p className={rowMeta}>{row.after_summary}</p>}
-            </div>
-          ))}
-        </div>
-      )}
-      <button type="button" className={linkBtn} onClick={onSeeAll}>
-        See all
-      </button>
-    </section>
+      <div className="pn-view" ref={paneRef} tabIndex={-1}>
+        {page}
+      </div>
+    </AppShell>
   );
 }
 

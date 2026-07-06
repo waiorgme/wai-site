@@ -519,7 +519,7 @@ describe("admin events: deny-by-default on every function", () => {
       }),
     ).toEqual({ ok: false, error: "not_authorized" });
     expect(
-      await asMember.mutation(api.admin.events.checkIn, {
+      await asMember.mutation(api.admin.events.checkIn, { eventId,
         checkinCode: "whatever",
         outcome: "attended",
       }),
@@ -776,10 +776,10 @@ describe("admin check-in and finalize", () => {
 
     // Exactly one lookup key is required.
     expect(
-      await asAdmin.mutation(api.admin.events.checkIn, { outcome: "attended" }),
+      await asAdmin.mutation(api.admin.events.checkIn, { eventId, outcome: "attended" }),
     ).toEqual({ ok: false, error: "validation" });
     expect(
-      await asAdmin.mutation(api.admin.events.checkIn, {
+      await asAdmin.mutation(api.admin.events.checkIn, { eventId,
         checkinCode: code,
         registrationId: regs[0]._id,
         outcome: "attended",
@@ -787,20 +787,20 @@ describe("admin check-in and finalize", () => {
     ).toEqual({ ok: false, error: "validation" });
 
     expect(
-      await asAdmin.mutation(api.admin.events.checkIn, {
+      await asAdmin.mutation(api.admin.events.checkIn, { eventId,
         checkinCode: code,
         outcome: "attended",
       }),
     ).toEqual({ ok: true, state: "attended" });
     expect(
-      await asAdmin.mutation(api.admin.events.checkIn, {
+      await asAdmin.mutation(api.admin.events.checkIn, { eventId,
         checkinCode: code,
         outcome: "attended",
       }),
     ).toEqual({ ok: true, already: true, state: "attended" });
     // Correction by registration id.
     expect(
-      await asAdmin.mutation(api.admin.events.checkIn, {
+      await asAdmin.mutation(api.admin.events.checkIn, { eventId,
         registrationId: regs[0]._id,
         outcome: "no_show",
       }),
@@ -832,7 +832,7 @@ describe("admin check-in and finalize", () => {
     });
     await asA.mutation(api.events.rsvp, { eventId });
     const regs = await regsForEvent(t, eventId);
-    await asAdmin.mutation(api.admin.events.checkIn, {
+    await asAdmin.mutation(api.admin.events.checkIn, { eventId,
       checkinCode: regs[0].checkin_code,
       outcome: "attended",
     });
@@ -859,7 +859,7 @@ describe("admin check-in and finalize", () => {
     const asA = await signIn(t, "incomplete@example.com");
     await asA.mutation(api.events.rsvp, { eventId });
     const regs = await regsForEvent(t, eventId);
-    await asAdmin.mutation(api.admin.events.checkIn, {
+    await asAdmin.mutation(api.admin.events.checkIn, { eventId,
       checkinCode: regs[0].checkin_code,
       outcome: "attended",
     });
@@ -882,7 +882,7 @@ describe("admin check-in and finalize", () => {
       await asAdmin.mutation(api.admin.events.finalizeAttendance, { eventId }),
     ).toEqual({ ok: true, already: true });
     expect(
-      await asAdmin.mutation(api.admin.events.checkIn, {
+      await asAdmin.mutation(api.admin.events.checkIn, { eventId,
         checkinCode: regs[0].checkin_code,
         outcome: "attended",
       }),

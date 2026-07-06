@@ -128,3 +128,49 @@ export const getAdminOverview = query({
     };
   },
 });
+
+// Report aggregates (spec H18): sanctioned numbers only, computed over ACTIVE
+// members, returned as counts with no individual rows. Minors are counted in
+// operational totals elsewhere but partner-facing surfaces never include them;
+// this internal ops view aggregates by profile facts only (country, career
+// stage) and never returns names or contact data.
+export type ReportAggregates = {
+  pipeline_on: number;
+  by_country: Array<{ label: string; count: number }>;
+  by_career_stage: Array<{ label: string; count: number }>;
+};
+
+const topCounts = (
+  values: Array<string | undefined>,
+  cap: number,
+): Array<{ label: string; count: number }> => {
+  const tally = new Map<string, number>();
+  for (const value of values) {
+    if (!value) continue;
+    tally.set(value, (tally.get(value) ?? 0) + 1);
+  }
+  return [...tally.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, cap);
+};
+
+export const getReportAggregates = query({
+  args: {},
+  handler: async (ctx): Promise<ReportAggregates> => {
+    await requireSuperAdmin(ctx);
+    const members = await ctx.db.query("members").collect();
+    const active = members.filter((m) => m.lifecycle_state === "active");
+    return {
+      pipeline_on: active.filter((m) => m.pipeline_state === "on").length,
+      by_country: topCounts(
+        active.map((m) => m.country_of_residence),
+        12,
+      ),
+      by_career_stage: topCounts(
+        active.map((m) => m.career_stage_answer),
+        8,
+      ),
+    };
+  },
+});

@@ -1504,6 +1504,15 @@ button.pn-notif { cursor: pointer; transition: background .2s var(--ease-out); }
 /* partner deliverable row: label | status select | remove */
 .pn-delrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
 
+/* mini progress cell (members list: bar over a mono percentage) */
+.pn-cell-progress { display: grid; gap: 4px; }
+
+/* bare fieldset for radio groups inside form panels */
+.pn-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+/* partner logo preview in the editor rail */
+.pn-logo-preview { max-inline-size: 100%; border-radius: 10px; border: 1px solid var(--hair-l); }
+
 /* =====================================================================
    MEMBER PORTAL V2 (panel-experience slice - portal app builder)
    Portal-only patterns the workspace kit genuinely lacks: the navy hero
