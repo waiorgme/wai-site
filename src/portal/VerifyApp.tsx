@@ -15,6 +15,15 @@ export function VerifyApp() {
   );
 }
 
+// Brand row above the non-certificate states (light logo asset on paper).
+function Brand() {
+  return (
+    <div className="pn-brand">
+      <img src="/assets/wai-me-logo.png" alt="Women in Aviation Middle East" />
+    </div>
+  );
+}
+
 function Verify() {
   const [token, setToken] = useState<string | null>(null);
   const [slow, setSlow] = useState(false);
@@ -41,45 +50,54 @@ function Verify() {
 
   if (token === null || token === "") {
     return (
-      <div style={card}>
-        <h1 style={h1}>Verify a certificate</h1>
-        <p style={muted}>
-          This page confirms a WAI-ME certificate is genuine. Open it from the
-          link or QR code on a certificate.
-        </p>
-      </div>
+      <>
+        <Brand />
+        <div className={card}>
+          <h1 className={h1}>Verify a certificate</h1>
+          <p className={muted}>
+            This page confirms a WAI-ME certificate is genuine. Open it from the
+            link or QR code on a certificate.
+          </p>
+        </div>
+      </>
     );
   }
   if (cert === undefined) {
     return (
-      <div style={card}>
-        {slow ? (
-          <>
-            <h1 style={h1}>We can't reach our records right now</h1>
-            <p style={muted}>
-              This is usually temporary. Please reload the page in a minute. If
-              it keeps happening, email{" "}
-              <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
-                support@waiorg.me
-              </a>{" "}
-              with the certificate ID and we will confirm it for you.
-            </p>
-          </>
-        ) : (
-          <p style={muted}>Checking certificate…</p>
-        )}
-      </div>
+      <>
+        <Brand />
+        <div className={card}>
+          {slow ? (
+            <>
+              <h1 className={h1}>We can't reach our records right now</h1>
+              <p className={muted}>
+                This is usually temporary. Please reload the page in a minute. If
+                it keeps happening, email{" "}
+                <a href="mailto:support@waiorg.me">
+                  support@waiorg.me
+                </a>{" "}
+                with the certificate ID and we will confirm it for you.
+              </p>
+            </>
+          ) : (
+            <p className={muted}>Checking certificate…</p>
+          )}
+        </div>
+      </>
     );
   }
   if (cert === null) {
     return (
-      <div style={card}>
-        <h1 style={h1}>Certificate not found</h1>
-        <p style={muted}>
-          We couldn't find a certificate for this link. Please check it and try
-          again.
-        </p>
-      </div>
+      <>
+        <Brand />
+        <div className={card}>
+          <h1 className={h1}>Certificate not found</h1>
+          <p className={muted}>
+            We couldn't find a certificate for this link. Please check it and try
+            again.
+          </p>
+        </div>
+      </>
     );
   }
 
@@ -90,35 +108,38 @@ function Verify() {
         ? "This certificate has been revoked"
         : "This certificate has been superseded";
     return (
-      <div style={{ ...card, width: "min(1040px, 100%)", textAlign: "center" }}>
-        <p style={{ ...muted, color: "#ff9b9b", margin: 0, fontWeight: 600 }}>
-          {cert.status === "revoked" ? "Revoked" : "Superseded"}
-        </p>
-        <h1 style={h1}>{headline}</h1>
-        <p style={muted}>
-          This was issued to {cert.recipient_name} (Membership Number WAIME-
-          {cert.membership_number}). It is no longer the current record.
-        </p>
-      </div>
+      <>
+        <Brand />
+        <div className="pn-card" style={{ inlineSize: "min(1040px, 100%)", textAlign: "center" }}>
+          <p className="pn-eyebrow pn-eyebrow--err" style={{ justifySelf: "center" }}>
+            {cert.status === "revoked" ? "Revoked" : "Superseded"}
+          </p>
+          <h1 className={h1}>{headline}</h1>
+          <p className={muted}>
+            This was issued to {cert.recipient_name} (Membership number WAIME-
+            {cert.membership_number}). It is no longer the current record.
+          </p>
+        </div>
+      </>
     );
   }
 
   const verifyUrl = `${window.location.origin}/verify?id=${token}`;
   return (
     <div style={{ display: "grid", gap: 18, width: "min(1040px, 100%)" }}>
-      <div style={{ ...card, width: "100%", textAlign: "center" }}>
-        <p style={{ ...muted, color: "var(--sky)", margin: 0, fontWeight: 600 }}>
+      <div className="pn-card pn-queue" style={{ textAlign: "center" }}>
+        <p className="pn-eyebrow on-paper" style={{ justifySelf: "center" }}>
           Verified genuine
         </p>
-        <h1 style={h1}>
+        <h1 className={h1}>
           {cert.recipient_name} is a member of Women in Aviation Middle East
         </h1>
-        <p style={muted}>
-          Membership Number WAIME-{cert.membership_number}. Issued{" "}
+        <p className={muted}>
+          Membership number WAIME-{cert.membership_number}. Issued{" "}
           {cert.issued_date_label}
           {cert.is_founding ? ". Founding Member" : ""}.
         </p>
-        <button type="button" style={primaryBtn} onClick={() => window.print()}>
+        <button type="button" className={primaryBtn} onClick={() => window.print()}>
           Print / Save as PDF
         </button>
       </div>

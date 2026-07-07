@@ -3,7 +3,8 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { input, label, muted } from "../portal/ui";
 import { ConfirmAction } from "./ConfirmAction";
-import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
+import { queueSection, rowCard, rowMeta, rowName, tag } from "./ui";
+import { plural } from "./views/shared";
 
 // Claim conflicts queue (spec criterion 2, decided mechanic: correct + archive).
 // conflict rows can be RELEASED (confirmed as the verified person, optionally
@@ -21,7 +22,7 @@ const reasonCopy: Record<string, string> = {
 const readableReason = (raw: string | null, state: string): string => {
   if (raw === null) {
     return state === "suppressed_minor"
-      ? "Held until the record shows she is 18. It clears on its own; no action needed here. Email her within 2 working days if contact is warranted."
+      ? "Held until the record shows she is 18; it clears on its own and nothing here needs your action. The one exception: if she has written in asking about her claim, reply personally within 2 working days."
       : "Needs a human review.";
   }
   // The reason may carry appended resolution notes ("base; note"); keep the
@@ -46,12 +47,11 @@ export function ClaimConflictsQueue() {
       : [...new Set(rows.map((r) => r.duplicate_group))];
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Claim conflicts</h2>
+    <section className={queueSection}>
       {rows === undefined ? (
-        <p style={muted}>Loading…</p>
+        <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={muted}>No rows waiting.</p>
+        <p className={muted}>No conflicts waiting.</p>
       ) : (
         groups.map((group) => {
           const groupRows = rows.filter((r) => r.duplicate_group === group);
@@ -59,20 +59,11 @@ export function ClaimConflictsQueue() {
           return (
             <div
               key={group}
-              style={
-                isGroup
-                  ? {
-                      display: "grid",
-                      gap: 10,
-                      padding: 10,
-                      borderRadius: 12,
-                      border: "1px dashed rgba(207, 224, 245, 0.22)",
-                    }
-                  : { display: "contents" }
-              }
+              className={isGroup ? "pn-group" : undefined}
+              style={isGroup ? undefined : { display: "contents" }}
             >
               {isGroup && (
-                <p style={{ ...rowMeta, margin: 0 }}>
+                <p className={rowMeta}>
                   These records share one email address.
                 </p>
               )}
@@ -94,9 +85,17 @@ export function ClaimConflictsQueue() {
 }
 
 const stateTag: Record<string, string> = {
-  conflict: "conflict",
-  suppressed_minor: "held (under 18)",
-  archived_conflict: "archived",
+  conflict: "Conflict",
+  suppressed_minor: "Held (under 18)",
+  archived_conflict: "Archived",
+};
+
+// Tag tone: a live conflict is the one state that needs a human now (err);
+// held/archived stay neutral.
+const stateTagClass: Record<string, string> = {
+  conflict: `${tag} pn-tag--err`,
+  suppressed_minor: tag,
+  archived_conflict: tag,
 };
 
 function ConflictRowCard({
@@ -129,29 +128,32 @@ function ConflictRowCard({
   const hasLivePair = row.live_duplicate_count > 1;
 
   return (
-    <div style={rowCard}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <p style={rowName}>{row.masked_name}</p>
-        <span style={tag}>{stateTag[row.claim_state] ?? row.claim_state}</span>
+    <div className={rowCard}>
+      <div className="pn-row-head">
+        <p className={rowName}>{row.masked_name}</p>
+        <span className={stateTagClass[row.claim_state] ?? tag}>
+          {stateTag[row.claim_state] ?? row.claim_state}
+        </span>
         {hasLivePair && row.claim_state === "conflict" && (
-          <span style={tag}>duplicate email pair</span>
+          <span className={tag}>Duplicate email pair</span>
         )}
       </div>
-      <p style={rowMeta}>{readableReason(row.conflict_reason, row.claim_state)}</p>
-      <p style={rowMeta}>
-        Match signals: email {row.match_signals.email ? "yes" : "no"}, name{" "}
-        {row.match_signals.name ? "yes" : "no"}, mobile{" "}
-        {row.match_signals.mobile ? "yes" : "no"}, dob{" "}
-        {row.match_signals.dob ? "yes" : "no"}. {row.days_since_change} day(s) in
-        this state.
+      <p className={rowMeta}>{readableReason(row.conflict_reason, row.claim_state)}</p>
+      <p className={rowMeta}>
+        Compared with the record on file: email{" "}
+        {row.match_signals.email ? "matches" : "does not"}, name{" "}
+        {row.match_signals.name ? "matches" : "does not"}, mobile{" "}
+        {row.match_signals.mobile ? "matches" : "does not"}, date of birth{" "}
+        {row.match_signals.dob ? "matches" : "does not"}.{" "}
+        {plural(row.days_since_change, "day", "days")} in this state.
       </p>
 
       {/* Contact email: hidden by default (masked surface). Revealing one row's
           email is a deliberate, audited, one-at-a-time action for the wave-run
           ops routine's personal-email commitment. */}
       {revealed !== null ? (
-        <p role="status" style={{ ...rowMeta, margin: 0 }}>
-          Contact email: <strong style={{ color: "var(--white)" }}>{revealed}</strong>
+        <p role="status" className={rowMeta}>
+          Contact email: <strong>{revealed}</strong>
         </p>
       ) : (
         <ConfirmAction
@@ -169,13 +171,13 @@ function ConflictRowCard({
               setRevealed(res.email);
               return { ok: true, message: `Contact email: ${res.email}` };
             }
-            return { ok: false, message: "That could not be completed." };
+            return { ok: false, message: "That did not go through. Please try again." };
           }}
         />
       )}
 
       {row.claim_state === "conflict" && (
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+        <div className="pn-actions">
           <ConfirmAction
             label="This is the verified person: release"
             confirmLabel="Yes, release"
@@ -206,23 +208,23 @@ function ConflictRowCard({
                     ? "Another live record still shares this email. Archive that one first, or give this one a unique corrected email."
                     : res.error === "validation"
                       ? "That corrected email is not valid."
-                      : "That could not be completed.";
+                      : "That did not go through. Please try again.";
               return { ok: false, message };
             }}
           >
-            <label style={label}>
+            <label className={label}>
               Corrected email (optional)
               <input
-                style={input}
+                className={input}
                 value={correctedEmail}
                 onChange={(e) => setCorrectedEmail(e.target.value)}
                 placeholder="leave blank to keep the current email"
               />
             </label>
-            <label style={label}>
+            <label className={label}>
               Resolution note (optional)
               <input
-                style={input}
+                className={input}
                 value={releaseNote}
                 onChange={(e) => setReleaseNote(e.target.value)}
                 placeholder="e.g. confirmed by reply from the email on file"
@@ -252,13 +254,13 @@ function ConflictRowCard({
                 });
                 return res.ok
                   ? { ok: true, message: "Archived as a conflict." }
-                  : { ok: false, message: "That could not be completed." };
+                  : { ok: false, message: "That did not go through. Please try again." };
               }}
             >
-              <label style={label}>
+              <label className={label}>
                 Archive note (optional)
                 <input
-                  style={input}
+                  className={input}
                   value={archiveNote}
                   onChange={(e) => setArchiveNote(e.target.value)}
                   placeholder="e.g. duplicate belongs to a different person"

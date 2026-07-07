@@ -1,0 +1,1829 @@
+/* =====================================================================
+   WAI-ME product surfaces - "The Climb" on paper (panel-design slice)
+   The light system for the member portal and the admin console, per the
+   locked portal theme in the vault Design Source Brief: paper base, navy
+   headings, sky-core accent, a deep navy hero band on dashboards, gold
+   only on recognition moments.
+
+   Rules carried from the public site:
+   - white 20px cards on paper with --hair-l hairlines
+   - JetBrains Mono uppercase eyebrows/labels/numbers (tabular figures)
+   - full-pill controls, sky-core primary on light
+   - logical properties throughout (RTL-safe), calm motion on --ease-out,
+     hover states behind (hover:hover), reduced-motion neutralised
+   - focus rings re-tuned for light: sky-core (the global --sky-glow ring
+     is dark-surface-tuned), scoped under .panel-scope only
+   ===================================================================== */
+
+/* ---------- page scope ---------- */
+
+.panel-scope {
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--body);
+  min-height: 100dvh;
+}
+
+.panel-scope :focus-visible {
+  outline: 3px solid var(--sky-core);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.panel-scope input[type="checkbox"],
+.panel-scope input[type="radio"] {
+  accent-color: var(--sky-core);
+}
+
+.panel-scope ::selection { background: rgba(1, 139, 225, .22); color: var(--navy); }
+
+/* centered single-card layouts (sign-in, claim, verify, guardian, join) */
+.pn-center {
+  min-height: 100dvh;
+  display: grid;
+  place-items: start center;
+  align-content: start; /* pack rows at the top; auto rows must not stretch across 100dvh */
+  padding: clamp(28px, 6vw, 72px) var(--gutter) clamp(48px, 8vw, 96px);
+}
+
+/* small brand row above centered cards */
+.pn-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  justify-self: center;
+}
+.pn-brand img { block-size: 40px; inline-size: auto; }
+
+/* ---------- type voice ---------- */
+
+.pn-h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(26px, 3.6vw, 40px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  color: var(--paper-ink);
+  text-wrap: balance;
+  overflow-wrap: anywhere; /* interpolated names must never overflow the hero */
+}
+
+/* card-level heading (the old portal h1) */
+.pn-heading {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: var(--paper-ink);
+  text-wrap: balance;
+}
+
+.pn-sectitle {
+  margin: 8px 0 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15.5px;
+  letter-spacing: 0.01em;
+  color: var(--paper-ink);
+}
+
+/* queue/section heading inside a console card */
+.pn-queue-head { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+
+.pn-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--sky-core);
+}
+.pn-eyebrow::before {
+  content: "";
+  inline-size: 26px;
+  block-size: 1px;
+  background: currentColor;
+  opacity: .55;
+}
+.pn-eyebrow.on-paper { color: var(--sky-deep); } /* light-surface form, AA on paper */
+.pn-eyebrow--err { color: var(--err-deep); } /* revoked/superseded status voice */
+
+.pn-muted {
+  margin: 0;
+  color: var(--paper-mut);
+  line-height: 1.55;
+  font-family: var(--body);
+}
+.pn-muted strong, .pn-check strong { color: var(--paper-ink); font-weight: 600; }
+
+.pn-hint {
+  margin: 0;
+  color: var(--paper-mut);
+  font-family: var(--body);
+  font-size: 12.5px;
+  font-weight: 400; /* hints nested in semibold .pn-label stay normal weight */
+  line-height: 1.45;
+}
+
+.pn-error { margin: 0; color: var(--err-deep); font-family: var(--body); font-size: 14px; }
+.pn-ok    { margin: 0; color: var(--ok);  font-family: var(--body); font-size: 14px; }
+
+/* mono voice for IDs, numbers, timestamps */
+.pn-mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* the certificate-name emphasis on the join confirm step */
+.pn-cert-name { font-size: 18px; }
+
+/* a radio/checkbox option row (label text stays normal weight) */
+.pn-opt { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+
+/* profile photo circle: color voice here, geometry stays inline */
+.pn-avatar { background: var(--paper); border: 1px solid var(--hair-l); }
+
+/* ---------- cards, rows, dividers ---------- */
+
+.pn-card {
+  background: var(--white);
+  border: 1px solid var(--hair-l);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-2);
+  padding: 28px 26px;
+  display: grid;
+  gap: 14px;
+  /* grid items stretch to the tallest card in a .pn-grid row; pack rows at
+     the top instead of distributing the slack between them */
+  align-content: start;
+}
+.pn-card--narrow { inline-size: min(480px, 100%); }
+.pn-panel        { inline-size: min(680px, 100%); }
+.pn-queue        { inline-size: 100%; }
+
+/* dense list row inside a queue/section card */
+.pn-row {
+  background: var(--white);
+  border: 1px solid var(--hair-l);
+  border-radius: 16px;
+  box-shadow: var(--shadow-1);
+  padding: 16px 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.pn-row-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pn-actions  { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+
+.pn-name {
+  margin: 0;
+  color: var(--paper-ink);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.pn-meta {
+  margin: 0;
+  color: var(--paper-mut);
+  font-family: var(--body);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.pn-div { border: 0; border-block-start: 1px solid var(--hair-l); margin: 4px 0; }
+
+.pn-dl {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  padding-block: 12px;
+  border-block: 1px solid var(--hair-l);
+}
+
+/* grouped rows that share one email (claim conflicts) */
+.pn-group {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px dashed rgba(15, 35, 63, .3);
+}
+
+/* ---------- recognition (the ONLY gold in the panel system) ---------- */
+
+.pn-gold-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: var(--r-chip);
+  border: 1px solid rgba(212, 162, 76, .5);
+  background: rgba(212, 162, 76, .12);
+  color: var(--gold-deep);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ---------- buttons ---------- */
+
+.pn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: var(--r-chip);
+  border: none;
+  background: var(--sky-core);
+  color: var(--white);
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 12px 30px -12px rgba(1, 139, 225, .7);
+  transition: transform .2s var(--ease-out), box-shadow .25s var(--ease-out);
+}
+.pn-btn:active { transform: scale(.97); }
+.pn-btn:disabled { opacity: .55; cursor: default; box-shadow: none; }
+@media (hover: hover) {
+  .pn-btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 34px -12px rgba(1, 139, 225, .8);
+  }
+}
+
+.pn-btn--ghost {
+  background: transparent;
+  color: var(--paper-ink);
+  border: 1px solid rgba(15, 35, 63, .28);
+  box-shadow: none;
+}
+@media (hover: hover) {
+  .pn-btn--ghost:not(:disabled):hover {
+    background: rgba(15, 35, 63, .05);
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.pn-link {
+  justify-self: start;
+  margin-block-start: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--sky-deep); /* sky-core is 3.6:1 on white; sky-deep clears AA */
+  font-family: var(--body);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (hover: hover) { .pn-link:not(:disabled):hover { color: var(--navy); } }
+/* a disabled link must LOOK unavailable - a normal-looking link that
+   swallows clicks is a dishonest interaction state */
+.pn-link:disabled {
+  color: var(--paper-mut);
+  cursor: default;
+  text-decoration: none;
+}
+
+/* plain email/text links inside panel copy (workspace chrome anchors -
+   nav items, tabs, filter chips, breadcrumbs - carry their own voice) */
+.panel-scope a:not(.pn-btn):not(.pn-link):not(.pn-nav-item):not(.pn-app-nav-item):not(.pn-tab):not(.pn-fchip):not(.pn-crumb) {
+  color: var(--sky-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- forms ---------- */
+
+.pn-label {
+  display: grid;
+  gap: 6px;
+  color: var(--paper-ink);
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pn-input {
+  inline-size: 100%;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 35, 63, .22);
+  background: var(--white);
+  color: var(--paper-ink);
+  font-size: 16px;
+  font-weight: 400;
+  font-family: var(--body);
+  box-sizing: border-box;
+  transition: border-color .2s var(--ease-out), box-shadow .2s var(--ease-out);
+}
+.pn-input:focus-visible {
+  outline: none;
+  border-color: var(--sky-core);
+  box-shadow: 0 0 0 4px rgba(1, 139, 225, .18);
+}
+/* solid muted ink: the .7-alpha value composited to ~3.1:1, below the 4.5:1
+   text lock, and placeholders here carry real example content */
+.pn-input::placeholder { color: var(--paper-mut); }
+
+.pn-textarea { min-block-size: 88px; resize: vertical; line-height: 1.5; }
+
+.pn-check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--paper-mut);
+  font-family: var(--body);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+/* an option that isn't available yet: dimmed, not a live control */
+.pn-check.is-disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* selectable chips (profile editor multi-selects) */
+.pn-chip {
+  padding: 7px 14px;
+  border-radius: var(--r-chip);
+  border: 1px solid rgba(15, 35, 63, .25);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--body);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+@media (hover: hover) { .pn-chip:hover { background: rgba(15, 35, 63, .05); } }
+.pn-chip.is-on,
+.pn-chip[aria-pressed="true"] {
+  border-color: var(--sky-core);
+  background: var(--info-tint);
+  color: var(--sky-deep);
+  font-weight: 600;
+}
+
+/* ---------- status tags ---------- */
+
+.pn-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--r-chip);
+  border: 1px solid rgba(15, 35, 63, .22);
+  color: var(--paper-mut);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pn-tag--info { border-color: var(--info-border); background: var(--info-tint); color: var(--sky-deep); }
+.pn-tag--ok   { border-color: var(--ok-border);   background: var(--ok-tint);   color: var(--ok); }
+.pn-tag--err  { border-color: var(--err-border);  background: var(--err-tint);  color: var(--err-deep); }
+
+/* ---------- propose-then-confirm inset (ConfirmAction) ---------- */
+
+.pn-propose {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--hair-l);
+  background: rgba(15, 35, 63, .04);
+}
+.pn-propose .pn-confirm-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- stat tiles (the light flight-data voice) ---------- */
+
+.pn-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.pn-stat {
+  background: var(--white);
+  border: 1px solid var(--hair-l);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-1);
+  padding: 18px 20px 16px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.pn-stat .k {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sky-deep);
+}
+.pn-stat .v {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--paper-ink);
+  font-variant-numeric: tabular-nums;
+}
+.pn-stat .s { font-family: var(--body); font-size: 12.5px; color: var(--paper-mut); line-height: 1.4; }
+/* word-length values (dates, membership numbers) step down from display size
+   so tiles hold their rhythm instead of wrapping to ragged three-liners */
+.pn-stat .v--text { font-size: 19px; line-height: 1.3; overflow-wrap: anywhere; }
+
+/* ---------- glass instrument strip (inside the navy hero only) ---------- */
+
+.pn-glass {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  background: linear-gradient(180deg, rgba(20, 40, 74, .6), rgba(10, 23, 48, .6));
+  border: 1px solid var(--hair-d);
+  border-radius: var(--r-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+  overflow: hidden;
+}
+.pn-glass .cell {
+  flex: 1 1 150px;
+  display: grid;
+  gap: 4px;
+  padding: 14px 18px;
+  /* wrap-safe dividers: every cell carries start borders and pulls back 1px;
+     the container's overflow:hidden crops the outer edges, so wrapped rows
+     get clean dividers in both axes (LTR and RTL) */
+  border-block-start: 1px solid var(--hair-d);
+  border-inline-start: 1px solid var(--hair-d);
+  margin-block-start: -1px;
+  margin-inline-start: -1px;
+}
+.pn-glass .cell .label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sky-glow);
+}
+.pn-glass .cell .value {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- queue rows (live as Today's queue in OverviewV2) ---------- */
+
+.pn-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  inline-size: 100%;
+  text-align: start;
+  padding: 9px 14px;
+  border-radius: var(--r-chip);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--paper-ink);
+  font-family: var(--body);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s var(--ease-out);
+}
+@media (hover: hover) { .pn-nav-item:not([aria-current="true"]):hover { background: rgba(15, 35, 63, .05); } }
+.pn-nav-item[aria-current="true"] {
+  background: var(--info-tint);
+  border-color: var(--info-border);
+  color: var(--sky-deep);
+}
+.pn-nav-item .n {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 8px;
+  border-radius: var(--r-chip);
+  background: rgba(15, 35, 63, .08);
+  color: var(--paper-ink);
+}
+/* dark text on the sky pill, the lang-toggle precedent: white-on-sky fails AA
+   at badge sizes */
+.pn-nav-item .n.live { background: var(--sky-core); color: #04101f; font-weight: 700; }
+.pn-nav-item.is-soon { color: var(--paper-mut); font-weight: 500; }
+.pn-nav-item.is-soon .n {
+  background: transparent;
+  border: 1px dashed rgba(15, 35, 63, .3);
+  color: var(--paper-mut);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ---------- audit log ---------- */
+
+.pn-log { display: grid; }
+.pn-log-row {
+  padding-block: 10px;
+  border-block-start: 1px solid var(--hair-l);
+  display: grid;
+  gap: 3px;
+  font-size: 13.5px;
+  color: var(--paper-mut);
+  line-height: 1.5;
+}
+.pn-log-row:first-child { border-block-start: none; }
+.pn-when {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--paper-mut);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- generic layout helpers ---------- */
+
+.pn-stack { display: grid; gap: 14px; }
+.pn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.pn-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pn-bar img { block-size: 34px; inline-size: auto; }
+
+/* no-JS fallback note (astro shells) */
+.panel-scope .nojs {
+  color: var(--paper-mut);
+  max-width: 52ch;
+  text-align: center;
+  margin-inline: auto;
+  padding-block-start: 30vh;
+}
+
+/* ---------- motion discipline ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-scope *,
+  .panel-scope *::before,
+  .panel-scope *::after {
+    transition-duration: .001ms !important;
+    animation-duration: .001ms !important;
+  }
+}
+
+/* ---------- portal core additions (panel-design: portal builder) ---------- */
+
+/* centered surfaces stack a brand row, card(s) and footer links with a calm gap */
+.pn-center { row-gap: 18px; }
+
+/* emphasis inside meta copy holds ink, matching .pn-muted strong */
+.pn-meta strong { color: var(--paper-ink); font-weight: 600; }
+
+/* =====================================================================
+   WORKSPACE LAYER (panel-experience slice)
+   The mockup-grade app vocabulary for both consoles: a dark navy sidebar
+   shell (the hero-band voice turned into chrome), main-column rhythm,
+   page headers, KPI washes, panel cards, dense data tables, filter bars,
+   underline tabs, modal-grade propose-confirm, event/notification rows,
+   progress bars, empty states, breadcrumbs.
+   Rules: our tokens only; AA per the round-1 fixes (links sky-deep,
+   error text err-deep, no gold outside recognition); logical properties;
+   hovers behind (hover:hover); motion neutralised under reduced-motion.
+   ===================================================================== */
+
+/* ---------- app shell: [dark sidebar | paper main] ---------- */
+
+.pn-app {
+  /* One capped column below 960px: without minmax(0,1fr) the implicit
+     column grows to max-content and the clipped overflow is unreachable
+     (Gate 3 blocker, 2026-07-07). The >=960px rule overrides. */
+  grid-template-columns: minmax(0, 1fr);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-block-size: 100dvh;
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--body);
+}
+
+/* self-sufficient focus ring (matches .panel-scope, works without it) */
+.pn-app :focus-visible {
+  outline: 3px solid var(--sky-core);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.pn-app-side :focus-visible { outline-color: var(--sky-glow); }
+
+.pn-app-side {
+  background:
+    radial-gradient(700px 420px at 18% -12%, var(--ink-3), transparent 62%),
+    linear-gradient(180deg, var(--navy), var(--ink-2));
+  color: var(--mist);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 960px) {
+  .pn-app { grid-template-rows: auto; grid-template-columns: 244px minmax(0, 1fr); }
+  .pn-app-side {
+    position: sticky;
+    inset-block-start: 0;
+    block-size: 100dvh;
+    overflow-y: auto;
+    padding: 22px 14px 16px;
+  }
+}
+
+.pn-side-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-inline: 10px;
+}
+.pn-side-brand img { block-size: 32px; inline-size: auto; }
+.pn-side-brand .lk { display: grid; gap: 3px; min-inline-size: 0; }
+.pn-side-brand .lk .nm {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 14.5px;
+  line-height: 1;
+  color: var(--white);
+}
+.pn-side-brand .lk .sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sky-glow);
+}
+
+.pn-side-nav { display: grid; gap: 18px; align-content: start; }
+.pn-side-grp { display: grid; gap: 3px; }
+
+.pn-side-label {
+  margin: 0 0 4px;
+  padding-inline: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sky-glow);
+}
+
+.pn-app-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  inline-size: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--mist-mut);
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .2s var(--ease-out), color .2s var(--ease-out);
+}
+@media (hover: hover) {
+  .pn-app-nav-item:not([aria-current="true"]):hover {
+    background: rgba(255, 255, 255, .06);
+    color: var(--white);
+  }
+}
+.pn-app-nav-item[aria-current="true"] {
+  /* sky-deep, not sky-core: white 14px text on sky-core is 3.6:1 (AA-large
+     only); on sky-deep it clears 4.5:1 (round-1 AA discipline). */
+  background: var(--sky-deep);
+  color: var(--white);
+  font-weight: 700;
+}
+.pn-app-nav-item .n {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border-radius: var(--r-chip);
+  background: rgba(255, 255, 255, .1);
+  color: var(--mist);
+}
+.pn-app-nav-item[aria-current="true"] .n { background: var(--white); color: var(--navy); font-weight: 700; }
+/* attention count: dark text on the sky pill (the lang-toggle AA precedent) */
+.pn-app-nav-item .n.live { background: var(--sky-core); color: #04101f; font-weight: 700; }
+.pn-app-nav-item[aria-current="true"] .n.live { background: var(--white); color: var(--navy); }
+.pn-app-nav-item.is-soon { color: rgba(207, 224, 245, .55); font-weight: 500; }
+.pn-app-nav-item.is-soon .n {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, .3);
+  color: var(--mist-mut);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* identity block pinned to the sidebar foot */
+.pn-side-id {
+  margin-block-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--hair-d);
+}
+.pn-side-id .who { display: grid; gap: 1px; min-inline-size: 0; }
+.pn-side-id .who .nm {
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--white);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pn-side-id .who .em {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--mist-mut);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* nav item glyph + label (the label flexes so counts stay end-aligned) */
+.pn-app-nav-item .ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 18px;
+}
+.pn-app-nav-item .ic svg { inline-size: 17px; block-size: 17px; }
+.pn-app-nav-item .lb {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* sidebar collapse toggle: desktop-only (the mobile top bar never collapses) */
+.pn-side-collapse {
+  display: none;
+  flex: none;
+  inline-size: 30px;
+  block-size: 30px;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--mist-mut);
+  cursor: pointer;
+  transition: background .2s var(--ease-out), color .2s var(--ease-out);
+}
+.pn-side-collapse svg { inline-size: 16px; block-size: 16px; }
+@media (hover: hover) {
+  .pn-side-collapse:hover { background: rgba(255, 255, 255, .08); color: var(--white); }
+}
+
+@media (min-width: 960px) {
+  /* no width tween: labels, counts and the brand lockup pop instantly
+     (display:none), so animating only the column read as a half-finished
+     slide - instant collapse is honest and calm */
+  .pn-side-collapse { display: grid; }
+  /* put the 32px brand icon's center on the nav glyph axis (14+5+16 = 35px,
+     matching the 18px icon slot center at 14+12+9) */
+  .pn-side-brand { padding-inline: 5px 10px; }
+  /* no bell between the lockup and the toggle (admin): push the toggle to
+     the end ourselves; the portal's bell already owns the auto margin */
+  .pn-side-brand .lk + .pn-side-collapse { margin-inline-start: auto; }
+
+  /* collapsed rail: brand icon, bell and toggle stack; nav goes icon-only
+     with native tooltips; identity reduces to the initials disc */
+  .pn-app.is-side-collapsed { grid-template-columns: 74px minmax(0, 1fr); }
+  .is-side-collapsed .pn-app-side { padding-inline: 11px; }
+  .is-side-collapsed .pn-side-brand {
+    flex-direction: column;
+    gap: 12px;
+    padding-inline: 0;
+  }
+  .is-side-collapsed .pn-side-brand .lk { display: none; }
+  .is-side-collapsed .pn-bell { margin-inline-start: 0; }
+  .is-side-collapsed .pn-side-brand .lk + .pn-side-collapse { margin-inline-start: 0; }
+  .is-side-collapsed .pn-side-label { display: none; }
+  .is-side-collapsed .pn-side-grp { justify-items: center; }
+  .is-side-collapsed .pn-app-nav-item {
+    position: relative;
+    inline-size: 44px;
+    block-size: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+  .is-side-collapsed .pn-app-nav-item .lb { display: none; }
+  /* only attention counts survive the collapse, as a mini badge on the icon */
+  .is-side-collapsed .pn-app-nav-item .n { display: none; }
+  .is-side-collapsed .pn-app-nav-item .n.live {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-end: 3px;
+    min-inline-size: 16px;
+    block-size: 16px;
+    padding-inline: 3px;
+    font-size: 9px;
+  }
+  .is-side-collapsed .pn-side-id {
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 6px;
+  }
+  .is-side-collapsed .pn-side-id .who { display: none; }
+  /* the only sign-out control must stay reachable in the collapsed rail:
+     it stacks under the initials disc, centered, never display:none */
+  .is-side-collapsed .pn-side-out {
+    margin-inline-start: 0;
+    padding: 4px 2px;
+    text-align: center;
+  }
+}
+
+/* mobile: the sidebar becomes a top bar + horizontal scroll nav */
+@media (max-width: 959px) {
+  .pn-app-side {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 40;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 12px 14px;
+  }
+  .pn-side-id { order: 2; margin-block-start: 0; margin-inline-start: auto; padding: 6px 10px; }
+  .pn-side-nav {
+    order: 3;
+    flex: 1 1 100%;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-block: 2px;
+  }
+  .pn-side-grp { display: flex; gap: 6px; flex: 0 0 auto; }
+  .pn-side-label { display: none; }
+  .pn-app-nav-item { inline-size: auto; white-space: nowrap; padding: 8px 12px; }
+  /* the horizontal chip nav reads better as labels; glyphs would double the
+     scroll length for no wayfinding gain */
+  .pn-app-nav-item .ic { display: none; }
+  /* the scroll strip clips an outset focus ring; inset it instead (the
+     .pn-rowlink precedent) */
+  .pn-side-nav .pn-app-nav-item:focus-visible { outline-offset: -3px; }
+}
+
+/* small phones: the icon and bell still identify the app; hiding the lockup
+   text frees the top row so the member's name is not ellipsized to nothing */
+@media (max-width: 479px) {
+  .pn-side-brand .lk { display: none; }
+}
+
+/* ---------- main column rhythm ---------- */
+
+.pn-app-main {
+  min-inline-size: 0;
+  padding: clamp(18px, 3vw, 30px) min(var(--gutter), 36px) clamp(44px, 6vw, 72px);
+  display: grid;
+  gap: clamp(16px, 2.2vw, 24px);
+  align-content: start;
+}
+
+/* ---------- breadcrumb row ---------- */
+
+.pn-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-mut);
+}
+.pn-crumbs .sep { opacity: .5; }
+.pn-crumb { color: var(--sky-deep); text-decoration: none; }
+@media (hover: hover) { .pn-crumb:hover { text-decoration: underline; text-underline-offset: 3px; } }
+.pn-crumbs [aria-current="page"] { color: var(--paper-mut); }
+
+/* ---------- page header: eyebrow + display h1 + sub | actions ---------- */
+
+.pn-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 18px;
+  flex-wrap: wrap;
+}
+.pn-page-head .lead { display: grid; gap: 6px; min-inline-size: 0; }
+.pn-page-head .pn-h1 { font-size: clamp(24px, 2.6vw, 30px); }
+.pn-page-head .sub {
+  margin: 0;
+  color: var(--paper-mut);
+  font-size: 14px;
+  line-height: 1.55;
+  max-inline-size: 56ch;
+}
+/* convention: ghost buttons first, then exactly ONE primary */
+.pn-page-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+/* compact button size for chrome action clusters */
+.pn-btn--sm { padding: 9px 16px; font-size: 13.5px; }
+
+/* ---------- KPI tile refinements: glyph slot + attention/urgent washes ---------- */
+
+.pn-stat { position: relative; }
+.pn-stat .g {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-end: 14px;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--info-tint);
+  color: var(--sky-deep);
+}
+.pn-stat--glyph .k { padding-inline-end: 44px; }
+
+/* attention: dawn-1 wash, INK text (never gold - warnings are not recognition) */
+.pn-stat--attention {
+  border-color: rgba(255, 193, 116, .6);
+  background: linear-gradient(180deg, rgba(255, 193, 116, .2), rgba(255, 193, 116, .06)), var(--white);
+}
+.pn-stat--attention .k { color: var(--paper-ink); }
+.pn-stat--attention .g { background: rgba(255, 193, 116, .32); color: var(--paper-ink); }
+
+/* urgent: err wash, err-deep text (AA even on the tint) */
+.pn-stat--urgent {
+  border-color: var(--err-border);
+  background: linear-gradient(180deg, rgba(196, 69, 105, .14), rgba(196, 69, 105, .04)), var(--white);
+}
+.pn-stat--urgent .k { color: var(--err-deep); }
+.pn-stat--urgent .v { color: var(--err-deep); }
+.pn-stat--urgent .g { background: var(--err-tint); color: var(--err-deep); }
+
+/* ---------- panel primitive: header row + hairline + body/tight ---------- */
+
+.pn-panel-card {
+  background: var(--white);
+  border: 1px solid var(--hair-l);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.pn-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-block-end: 1px solid var(--hair-l);
+}
+.pn-panel-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: var(--paper-ink);
+}
+.pn-panel-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper-mut);
+}
+.pn-panel-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+}
+/* the stacked-context top margin would sink a header link below the title's
+   optical centerline in this flex row */
+.pn-panel-actions .pn-link { margin-block-start: 0; }
+.pn-panel-body { padding: 18px; display: grid; gap: 14px; }
+/* tight: tables and row lists run edge to edge */
+.pn-panel-body--tight { padding: 0; display: block; }
+.pn-panel-body--tight .pn-filterbar { padding: 12px 18px; border-block-end: 1px solid var(--hair-l); }
+.pn-table-empty { padding: 18px; }
+
+/* ---------- data table ---------- */
+
+.pn-table-wrap { inline-size: 100%; overflow-x: auto; }
+
+.pn-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-family: var(--body);
+  font-size: 13.5px;
+  color: var(--paper-ink);
+}
+.pn-table th {
+  padding: 10px 16px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper-mut);
+  text-align: start;
+  background: rgba(15, 35, 63, .03);
+  border-block-end: 1px solid var(--hair-l);
+  white-space: nowrap;
+}
+.pn-table td {
+  padding: 12px 16px;
+  border-block-end: 1px solid var(--hair-l);
+  vertical-align: middle;
+}
+.pn-table tbody tr:last-child td { border-block-end: none; }
+.pn-table .end { text-align: end; }
+.pn-table .center { text-align: center; }
+@media (hover: hover) {
+  .pn-table tbody tr:hover td { background: rgba(1, 139, 225, .05); }
+}
+.pn-rowlink { cursor: pointer; }
+.pn-table .pn-rowlink:focus-visible { outline-offset: -3px; }
+
+/* identity cell: initials avatar + two-line name/meta */
+.pn-cell-id { display: flex; align-items: center; gap: 10px; }
+.pn-cell-2l { display: grid; gap: 2px; min-inline-size: 0; }
+.pn-cell-2l .t { font-weight: 600; color: var(--paper-ink); line-height: 1.3; }
+.pn-cell-2l .s { font-size: 12px; color: var(--paper-mut); line-height: 1.35; }
+
+/* mono date/number voice */
+.pn-cell-date {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--paper-mut);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* trailing arrow column */
+.pn-cell-arrow { inline-size: 44px; text-align: end; color: var(--paper-mut); }
+.pn-arr { display: inline-flex; vertical-align: middle; }
+[dir="rtl"] .pn-arr svg { transform: scaleX(-1); }
+
+/* initials avatar circle */
+.pn-initials {
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--navy);
+  color: var(--white);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.pn-initials--lg { inline-size: 44px; block-size: 44px; font-size: 15px; }
+
+/* ---------- filter bar: chips with counts + spacer + inline search ---------- */
+
+.pn-filterbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pn-filterbar .sp { flex: 1 1 auto; }
+.pn-fchips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.pn-fchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: var(--r-chip);
+  border: 1px solid rgba(15, 35, 63, .22);
+  background: var(--white);
+  color: var(--paper-ink);
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .2s var(--ease-out), border-color .2s var(--ease-out), color .2s var(--ease-out);
+}
+.pn-fchip .n {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper-mut);
+}
+@media (hover: hover) {
+  .pn-fchip:not([aria-pressed="true"]):hover { background: rgba(15, 35, 63, .05); }
+}
+.pn-fchip[aria-pressed="true"] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--white);
+}
+.pn-fchip[aria-pressed="true"] .n { color: var(--mist); }
+
+.pn-search { position: relative; display: inline-flex; align-items: center; min-inline-size: 200px; flex: 0 1 260px; }
+.pn-search svg {
+  position: absolute;
+  inset-inline-start: 12px;
+  inline-size: 14px;
+  block-size: 14px;
+  color: var(--paper-mut);
+  pointer-events: none;
+}
+.pn-search input {
+  inline-size: 100%;
+  padding: 8px 14px;
+  padding-inline-start: 34px;
+  border-radius: var(--r-chip);
+  border: 1px solid rgba(15, 35, 63, .18);
+  background: rgba(15, 35, 63, .04);
+  color: var(--paper-ink);
+  font-family: var(--body);
+  font-size: 13.5px;
+  transition: border-color .2s var(--ease-out), box-shadow .2s var(--ease-out), background .2s var(--ease-out);
+}
+.pn-search input:focus-visible {
+  outline: none;
+  border-color: var(--sky-core);
+  background: var(--white);
+  box-shadow: 0 0 0 4px rgba(1, 139, 225, .18);
+}
+.pn-search input::placeholder { color: var(--paper-mut); } /* solid: .7 alpha fell below AA */
+
+/* ---------- underline tabs (detail pages; the tab glide pattern) ---------- */
+
+.pn-tabs {
+  display: flex;
+  gap: 2px;
+  border-block-end: 1px solid var(--hair-l);
+  overflow-x: auto;
+}
+.pn-tab {
+  position: relative;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--paper-mut);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color .2s var(--ease-out);
+}
+.pn-tab::after {
+  content: "";
+  position: absolute;
+  inset-inline: 12px;
+  inset-block-end: -1px;
+  block-size: 2px;
+  border-radius: 2px;
+  background: var(--sky-core);
+  transform: scaleX(0);
+  transition: transform .3s var(--ease-spring);
+}
+@media (hover: hover) { .pn-tab:not([aria-current="true"]):hover { color: var(--paper-ink); } }
+.pn-tab[aria-current="true"] { color: var(--navy); }
+.pn-tab[aria-current="true"]::after { transform: scaleX(1); }
+.pn-tab .n {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  border-radius: var(--r-chip);
+  background: rgba(15, 35, 63, .08);
+  color: var(--paper-mut);
+  margin-inline-start: 6px;
+}
+/* navy, not sky-deep: tabs sit on paper, where sky-deep on the info wash
+   composites below AA (it only clears 4.5:1 over white) */
+.pn-tab[aria-current="true"] .n { background: var(--info-tint); color: var(--navy); }
+/* the tabs strip scrolls (overflow-x: auto) and would slice an outset ring */
+.pn-tabs .pn-tab:focus-visible { outline-offset: -3px; }
+
+/* ---------- modal (propose-then-confirm at modal grade) ---------- */
+
+.pn-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(6, 13, 28, .55);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  animation: pn-fade .18s var(--ease-out);
+}
+.pn-modal {
+  inline-size: min(560px, 100%);
+  max-block-size: min(85dvh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+  animation: pn-rise .22s var(--ease-out);
+}
+.pn-modal:focus { outline: none; }
+.pn-modal-head { display: grid; gap: 4px; padding: 22px 26px 14px; }
+.pn-modal-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: var(--paper-ink);
+}
+.pn-modal-sub { margin: 0; font-size: 13.5px; color: var(--paper-mut); line-height: 1.5; overflow-wrap: anywhere; }
+/* body carries the note/reason field slot: a .pn-label + .pn-textarea */
+.pn-modal-body { padding: 4px 26px 20px; overflow-y: auto; display: grid; gap: 14px; }
+.pn-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 26px;
+  border-block-start: 1px solid var(--hair-l);
+  background: rgba(15, 35, 63, .03);
+}
+.pn-modal-foot .note {
+  margin: 0;
+  margin-inline-end: auto;
+  font-size: 12.5px;
+  color: var(--paper-mut);
+  line-height: 1.45;
+}
+@keyframes pn-fade { from { opacity: 0; } }
+@keyframes pn-rise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+
+/* ---------- date-block event row ---------- */
+
+.pn-event {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+}
+.pn-event + .pn-event { border-block-start: 1px solid var(--hair-l); }
+.pn-event .body { display: grid; gap: 4px; min-inline-size: 0; overflow-wrap: anywhere; }
+.pn-event .body .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pn-event .end { display: flex; gap: 10px; align-items: center; }
+
+.pn-date-block {
+  inline-size: 56px;
+  block-size: 56px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--navy), var(--ink-2));
+  color: var(--white);
+  display: grid;
+  place-content: center;
+  row-gap: 2px;
+  text-align: center;
+  flex: none;
+}
+.pn-date-block .m {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sky-glow);
+}
+.pn-date-block .d {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- notification row ---------- */
+
+.pn-notif {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  inline-size: 100%;
+  padding: 14px 18px;
+  padding-inline-start: 36px;
+  border: none;
+  background: none;
+  text-align: start;
+  font-family: var(--body);
+  color: var(--paper-ink);
+}
+button.pn-notif { cursor: pointer; transition: background .2s var(--ease-out); }
+@media (hover: hover) { button.pn-notif:hover { background: rgba(15, 35, 63, .03); } }
+.pn-notif + .pn-notif { border-block-start: 1px solid var(--hair-l); }
+.pn-notif .dot {
+  position: absolute;
+  inset-inline-start: 17px;
+  inset-block-start: 21px;
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 50%;
+  background: var(--sky-core);
+}
+.pn-notif .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pn-notif .t { font-weight: 600; font-size: 14.5px; color: var(--paper-ink); }
+.pn-notif .when {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--paper-mut);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pn-notif .b { display: block; font-size: 13.5px; color: var(--paper-mut); line-height: 1.5; }
+/* read state dims the title only (body stays AA) */
+.pn-notif.is-read .t { color: var(--paper-mut); font-weight: 500; }
+/* rows reusing this layout that never carry an unread dot (standing history)
+   drop the 36px dot inset so they align with the card padding */
+.pn-notif--plain { padding-inline-start: 18px; }
+
+/* ---------- progress bar: label row + track + fill ---------- */
+
+.pn-progress { display: grid; gap: 6px; }
+.pn-progress .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; }
+.pn-progress .row .l { color: var(--paper-ink); font-weight: 600; }
+.pn-progress .row .v {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--paper-mut);
+  font-variant-numeric: tabular-nums;
+}
+.pn-progress .track {
+  block-size: 8px;
+  border-radius: var(--r-chip);
+  background: rgba(15, 35, 63, .1);
+  overflow: hidden;
+}
+.pn-progress .fill {
+  block-size: 100%;
+  border-radius: var(--r-chip);
+  background: var(--sky-core);
+  inline-size: var(--pn-pct, 0%);
+  transition: inline-size .4s var(--ease-out);
+}
+
+/* ---------- empty state (calm, designed, never a server-error feel) ---------- */
+
+.pn-empty {
+  border: 1px dashed rgba(15, 35, 63, .3);
+  border-radius: var(--r-card);
+  padding: 26px 22px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+}
+.pn-empty .k {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper-mut);
+}
+.pn-empty p {
+  margin: 0;
+  color: var(--paper-mut);
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-inline-size: 46ch;
+}
+
+/* ---------- workspace motion discipline ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .pn-app *,
+  .pn-app *::before,
+  .pn-app *::after,
+  .pn-modal-overlay,
+  .pn-modal-overlay *,
+  .pn-modal-overlay *::before,
+  .pn-modal-overlay *::after {
+    transition-duration: .001ms !important;
+    animation-duration: .001ms !important;
+  }
+}
+
+/* =====================================================================
+   ADMIN CONSOLE V2 (panel-experience slice - admin app builder)
+   Small layout helpers the workspace kit genuinely lacks: the editor
+   two-column with a sticky rail, paired form fields, inline button
+   rows, a table pager row, the sidebar sign-out control, breadcrumb
+   buttons (view switches, not links), and deliverable rows.
+   Tokens only; logical properties; hovers behind (hover:hover).
+   ===================================================================== */
+
+/* editor layout: form column + sticky action rail */
+.pn-cols { display: grid; gap: clamp(16px, 2.2vw, 24px); align-items: start; }
+.pn-cols > .main { display: grid; gap: 16px; align-content: start; min-inline-size: 0; }
+.pn-cols > .rail { display: grid; gap: 16px; align-content: start; min-inline-size: 0; }
+@media (min-width: 1100px) {
+  .pn-cols { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+  .pn-cols > .rail { position: sticky; inset-block-start: 16px; }
+}
+
+/* paired form fields */
+.pn-frow { display: grid; gap: 12px; }
+@media (min-width: 640px) { .pn-frow { grid-template-columns: 1fr 1fr; } }
+
+/* inline row of buttons (quick actions, form footers) */
+.pn-btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* table pager row (below a tight-panel table) */
+.pn-pager {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-block-start: 1px solid var(--hair-l);
+}
+.pn-pager .pn-meta { margin-inline-end: auto; }
+
+/* sidebar identity: the sign-out control under the email */
+.pn-side-id .who .out {
+  border: none;
+  background: none;
+  padding: 2px 0 0;
+  text-align: start;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sky-glow);
+}
+@media (hover: hover) { .pn-side-id .who .out:hover { color: var(--white); } }
+
+/* breadcrumbs as buttons (local view switches, not links) */
+.pn-crumbs button.pn-crumb {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--sky-deep);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .pn-crumbs button.pn-crumb:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+
+/* partner deliverable row: label | status select | remove */
+.pn-delrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+
+/* mini progress cell (members list: bar over a mono percentage) */
+.pn-cell-progress { display: grid; gap: 4px; }
+
+/* bare fieldset for radio groups inside form panels */
+.pn-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+/* partner logo preview in the editor rail; block-size capped so a tall
+   portrait upload never turns the rail or the confirm modal into a scroll */
+.pn-logo-preview {
+  max-inline-size: 100%;
+  max-block-size: 200px;
+  inline-size: auto;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--hair-l);
+}
+
+/* =====================================================================
+   MEMBER PORTAL V2 (panel-experience slice - portal app builder)
+   Portal-only patterns the workspace kit genuinely lacks: the navy hero
+   as an in-column card (Home keeps its warmth inside the shell), the
+   sidebar bell + sign-out chrome, the view pane wrapper, the profile
+   checklist, the QR event pass, directory cards, the standing ladder,
+   and a routed-notice line. Tokens only; logical properties; hovers
+   behind (hover:hover); attention washes dawn-tint + ink, never gold.
+   ===================================================================== */
+
+/* the navy hero band as an in-column card (Home + detail heroes) */
+.pn-hero-card {
+  background:
+    radial-gradient(700px 380px at 20% -20%, var(--ink-3), transparent 62%),
+    linear-gradient(180deg, var(--navy), var(--ink-2));
+  color: var(--mist);
+  border-radius: var(--r-card);
+  padding: clamp(22px, 3.4vw, 34px);
+  display: grid;
+  gap: 14px;
+}
+.pn-hero-card .pn-h1 { color: var(--white); }
+.pn-hero-card p { color: var(--mist-mut); }
+.pn-hero-card .pn-eyebrow { color: var(--sky-glow); }
+
+/* mono meta strip under a hero title (date · time · venue) */
+.pn-hero-meta {
+  margin: 0;
+  display: flex;
+  gap: 8px 18px;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.pn-hero-card .pn-hero-meta { color: var(--sky-glow); }
+
+/* sidebar bell: sits at the end of the brand row, unread badge on top */
+.pn-bell {
+  position: relative;
+  margin-inline-start: auto;
+  inline-size: 34px;
+  block-size: 34px;
+  flex: none;
+  border: 1px solid var(--hair-d);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .06);
+  color: var(--mist);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background .2s var(--ease-out), color .2s var(--ease-out);
+}
+.pn-bell svg { inline-size: 16px; block-size: 16px; }
+@media (hover: hover) {
+  .pn-bell:hover { background: rgba(255, 255, 255, .12); color: var(--white); }
+}
+/* dark ink on the sky pill (the lang-toggle AA precedent) */
+.pn-bell .n {
+  position: absolute;
+  inset-block-start: -5px;
+  inset-inline-end: -6px;
+  min-inline-size: 18px;
+  block-size: 18px;
+  padding-inline: 4px;
+  border-radius: var(--r-chip);
+  background: var(--sky-core);
+  color: #04101f;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: grid;
+  place-items: center;
+}
+
+/* sidebar sign-out control at the end of the identity row */
+.pn-side-out {
+  margin-inline-start: auto;
+  flex: none;
+  border: none;
+  background: none;
+  padding: 2px 0;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sky-glow);
+}
+@media (hover: hover) { .pn-side-out:hover { color: var(--white); } }
+
+/* the view pane: keeps the main-column rhythm; focus lands here on view
+   switches (SPA focus discipline), without a ring around the whole page */
+.pn-view {
+  display: grid;
+  gap: clamp(16px, 2.2vw, 24px);
+  align-content: start;
+}
+.pn-app .pn-view:focus,
+.pn-app .pn-view:focus-visible { outline: none; }
+
+/* honest loading/status line inside a tight (edge-to-edge) panel body */
+.pn-panel-body--tight .pn-loading { margin: 0; padding: 14px 18px; }
+
+/* profile completeness checklist (what's left + what each step unlocks) */
+.pn-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.pn-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--paper-mut);
+}
+.pn-steps .ok-mark,
+.pn-steps .todo-mark {
+  flex: none;
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  transform: translateY(3px);
+}
+.pn-steps .ok-mark {
+  background: var(--ok-tint);
+  border: 1px solid var(--ok-border);
+  color: var(--ok);
+}
+.pn-steps .ok-mark svg { inline-size: 11px; block-size: 11px; }
+.pn-steps .todo-mark { border: 1px dashed rgba(15, 35, 63, .35); }
+.pn-steps strong { color: var(--paper-ink); font-weight: 600; }
+.pn-steps strong.done { color: var(--paper-mut); }
+
+/* the routed-notice line (e.g. "finish your profile first, then apply"):
+   dawn-tint attention wash with ink text, never gold */
+.pn-notice {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 193, 116, .6);
+  border-radius: 14px;
+  background: rgba(255, 193, 116, .16);
+  color: var(--paper-ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* the QR event pass (modal body) */
+.pn-pass {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+.pn-pass .nm {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: var(--paper-ink);
+}
+.pn-pass .qr {
+  padding: 14px;
+  background: var(--white);
+  border: 1px solid var(--hair-l);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+}
+
+/* directory member cards */
+.pn-dir-grid { display: grid; gap: 14px; }
+@media (min-width: 720px) { .pn-dir-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1160px) { .pn-dir-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pn-dir-card {
+  background: var(--white);
+  border: 1px solid var(--hair-l);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-1);
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.pn-dir-card .head { display: flex; gap: 12px; align-items: center; }
+/* the text column is a flex item: without min-inline-size:0 a long unbroken
+   name or headline token grows past the card border onto its neighbour */
+.pn-dir-card .head > div { min-inline-size: 0; }
+.pn-dir-card .pn-name,
+.pn-dir-card .head .pn-meta { overflow-wrap: anywhere; }
+.pn-dir-card .pic {
+  inline-size: 44px;
+  block-size: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+/* small chip row (sectors, looking-for) */
+.pn-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* compact facet select in a filter bar (pill voice, auto width) */
+.pn-filterbar .pn-facet {
+  inline-size: auto;
+  flex: 0 1 auto;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  border-radius: var(--r-chip);
+}
+
+/* iOS Safari auto-zooms any focused control under 16px; hold the compact
+   size for desktop only (must follow the base rules to win the cascade) */
+@media (max-width: 959px) {
+  .pn-search input,
+  .pn-filterbar .pn-facet { font-size: 16px; }
+}
+
+/* the standing ladder (four rungs in plain words, her rung marked) */
+.pn-ladder {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.pn-rung {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--hair-l);
+  border-radius: 14px;
+  background: var(--white);
+}
+.pn-rung.is-here { border-color: var(--info-border); background: var(--info-tint); }
+.pn-rung .step {
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--navy);
+  color: var(--white);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pn-rung .body { display: grid; gap: 4px; }
+.pn-rung .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pn-rung .head strong {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--paper-ink);
+}

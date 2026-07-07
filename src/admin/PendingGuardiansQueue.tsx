@@ -2,7 +2,8 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { muted } from "../portal/ui";
 import { ConfirmAction } from "./ConfirmAction";
-import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
+import { queueSection, rowCard, rowMeta, rowName, tag } from "./ui";
+import { fmtGstDate, plural } from "./views/shared";
 
 // Pending guardians queue (spec criterion 4). Read-and-nudge only: the single
 // action resends the guardian email through the member's own send path. There
@@ -10,14 +11,20 @@ import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
 // press on /guardian-confirm remains the only route to confirmed.
 
 const formatSent = (ts: number | null): string =>
-  ts === null ? "not sent yet" : new Date(ts).toLocaleDateString();
+  ts === null ? "not sent yet" : fmtGstDate(ts);
 
 // Plain-language labels for the raw confirmation_state enum (same pattern as
 // reasonCopy in ClaimConflictsQueue), so the surface keeps its plain-language
 // voice.
 const stateLabel: Record<string, string> = {
-  pending: "waiting",
-  expired: "link expired",
+  pending: "Waiting",
+  expired: "Link expired",
+};
+
+// Tag tone: an expired link needs attention (err); waiting stays neutral.
+const stateTagClass: Record<string, string> = {
+  pending: tag,
+  expired: `${tag} pn-tag--err`,
 };
 
 export function PendingGuardiansQueue() {
@@ -25,24 +32,24 @@ export function PendingGuardiansQueue() {
   const resend = useAction(api.guardians.resendGuardianEmailFromPanel);
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Pending guardians</h2>
+    <section className={queueSection}>
       {rows === undefined ? (
-        <p style={muted}>Loading…</p>
+        <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={muted}>No guardian confirmations waiting.</p>
+        <p className={muted}>No guardian confirmations waiting.</p>
       ) : (
         rows.map((row) => (
-          <div key={row.consentId} style={rowCard}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <p style={rowName}>{row.member_first_name} (under 18)</p>
-              <span style={tag}>
+          <div key={row.consentId} className={rowCard}>
+            <div className="pn-row-head">
+              <p className={rowName}>{row.member_first_name} (under 18)</p>
+              <span className={stateTagClass[row.confirmation_state] ?? tag}>
                 {stateLabel[row.confirmation_state] ?? row.confirmation_state}
               </span>
             </div>
-            <p style={rowMeta}>
+            <p className={rowMeta}>
               Guardian: {row.masked_guardian_name}. Last email:{" "}
-              {formatSent(row.token_sent_at)}. Waiting {row.days_waiting} day(s).
+              {formatSent(row.token_sent_at)}. Waiting{" "}
+              {plural(row.days_waiting, "day", "days")}.
             </p>
             <ConfirmAction
               label="Resend the guardian email"

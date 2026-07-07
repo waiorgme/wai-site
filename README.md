@@ -1,7 +1,7 @@
 # wai-site
 
 The new Women in Aviation Middle East public website. Built page-by-page from the WAI-ME vault
-(the single source of truth) through a four-gate AI build harness.
+(the single source of truth) through a five-gate AI build harness.
 
 ## Quick start
 ```bash
@@ -11,7 +11,7 @@ npm run build    # static output to dist/
 ```
 
 ## How pages are built
-Run `/build-page <page>` in Claude Code. It runs four gates and waits for human approval:
+Run `/build-page <page>` in Claude Code. It runs five gates and waits for human approval:
 
 | Gate | Owner | Model | Can skip? |
 |------|-------|-------|-----------|
@@ -19,6 +19,7 @@ Run `/build-page <page>` in Claude Code. It runs four gates and waits for human 
 | 2. Build (Astro components, reuse v3) | `wai-builder` | Claude | no |
 | 3. Design review (design-system fidelity) | `wai-design-review` | Claude | **non-collapsible** |
 | 4. Source-of-truth audit (every claim traces to a vault note) | Codex | Codex | **non-collapsible** |
+| 5. Interaction tests (Playwright, asserts rendered state) | `npm run test:e2e` | — | **non-collapsible**, enforced in CI |
 
 The two independent gates are intentionally split across **two different models** (Claude builds,
 Codex audits) for genuine cross-model independence. This is a right-sized adaptation of

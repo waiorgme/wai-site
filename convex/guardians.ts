@@ -11,7 +11,7 @@ import {
   query,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { requireSuperAdminInAction } from "./lib/adminAuth";
+import { requireAdminInAction } from "./lib/adminAuth";
 import { writeAudit } from "./lib/audit";
 import { issueMembershipCertificate } from "./lib/certificates";
 import {
@@ -463,7 +463,7 @@ export const resendGuardianEmailFromPanel = action({
     // 0 §7.1). On success it yields the authenticated admin's member email.
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdminInAction(ctx);
+      adminEmail = await requireAdminInAction(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }

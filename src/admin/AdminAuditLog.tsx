@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import type { AdminAuditRow } from "../../convex/admin/audit";
 import { linkBtn, muted } from "../portal/ui";
-import { queueSection, queueTitle, rowCard, rowMeta } from "./ui";
+import { queueSection, rowMeta } from "./ui";
+import { fmtGstDateTime, plainAction } from "./views/shared";
 
 // Audit visibility, read-only (spec criterion 8). Recent admin_fallback audit
 // rows, paginated, so a super admin can see what the panel itself has done.
@@ -10,34 +12,51 @@ import { queueSection, queueTitle, rowCard, rowMeta } from "./ui";
 
 export function AdminAuditLog() {
   const [cursor, setCursor] = useState<string | undefined>(undefined);
+  // Pages already read stay on screen: "Show older" appends the next page
+  // below instead of replacing the view, so the newest rows never vanish and
+  // there is nothing to navigate back from.
+  const [loaded, setLoaded] = useState<AdminAuditRow[]>([]);
   const page = useQuery(api.admin.audit.listAdminAuditLog, { cursor });
+  const rows = [...loaded, ...(page?.rows ?? [])];
 
   return (
-    <section style={queueSection}>
-      <h2 style={queueTitle}>Recent panel actions</h2>
-      {page === undefined ? (
-        <p style={muted}>Loading…</p>
-      ) : page.rows.length === 0 ? (
-        <p style={muted}>Nothing recorded yet.</p>
+    <section className={queueSection}>
+      {page === undefined && rows.length === 0 ? (
+        <p className={muted}>Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className={muted}>Nothing recorded yet.</p>
       ) : (
         <>
-          {page.rows.map((row) => (
-            <div key={row.id} style={rowCard}>
-              <p style={rowMeta}>
-                <strong style={{ color: "var(--white)" }}>{row.action}</strong> by{" "}
-                {row.actor} on {new Date(row.timestamp).toLocaleString()}
-              </p>
-              {row.after_summary && <p style={rowMeta}>{row.after_summary}</p>}
-            </div>
-          ))}
-          {page.nextCursor !== null && (
-            <button
-              type="button"
-              style={linkBtn}
-              onClick={() => setCursor(page.nextCursor ?? undefined)}
-            >
-              Show older
-            </button>
+          {/* Same hairline log treatment as the Overview peek: read-only rows
+              do not need boxed cards. */}
+          <div className="pn-log">
+            {rows.map((row) => (
+              <div key={row.id} className="pn-log-row">
+                <span className="pn-when">{fmtGstDateTime(row.timestamp)}</span>
+                <p className={rowMeta}>
+                  <strong>{plainAction(row.action)}</strong> by {row.actor}
+                </p>
+                {row.after_summary && (
+                  <p className={rowMeta}>{row.after_summary}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          {page === undefined ? (
+            <p className={muted}>Loading…</p>
+          ) : (
+            page.nextCursor !== null && (
+              <button
+                type="button"
+                className={linkBtn}
+                onClick={() => {
+                  setLoaded(rows);
+                  setCursor(page.nextCursor ?? undefined);
+                }}
+              >
+                Show older
+              </button>
+            )
           )}
         </>
       )}

@@ -1,12 +1,18 @@
-import { useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
-import { linkBtn, muted, primaryBtn } from "../portal/ui";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { linkBtn, primaryBtn } from "../portal/ui";
 
 // The one propose-then-confirm pattern for every admin write (spec criterion 7,
 // the vault's propose-then-confirm rule made concrete once). Shows a
 // plain-language summary of what will change, requires an explicit second click
 // ("Yes, do this" / "Cancel"), and shows the resulting state inline (no silent
 // success). Reused by all four queues.
+//
+// panel-design quirk fix (spec criterion 12, recorded): a SUCCESS outcome stays
+// terminal, but a FAILED outcome now offers "Try again", returning to the
+// proposing step with the caller's inputs preserved - so a validation miss
+// (e.g. a required note left empty) no longer dead-ends the action until a
+// reload. The two-step confirm is never collapsed.
 
 type Result = { ok: boolean; message: string };
 
@@ -17,6 +23,7 @@ export function ConfirmAction({
   onConfirm,
   children,
   disabled,
+  confirmDisabled,
 }: {
   // The trigger button copy (e.g. "Resend the guardian email").
   label: string;
@@ -30,19 +37,53 @@ export function ConfirmAction({
   // Optional extra inputs shown while proposing (e.g. a verification note).
   children?: ReactNode;
   disabled?: boolean;
+  // Keeps the confirm button off until required inputs are filled (the server
+  // check stays the backstop).
+  confirmDisabled?: boolean;
 }) {
   const [proposing, setProposing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Result | null>(null);
+  const proposeRef = useRef<HTMLDivElement | null>(null);
+  const okRef = useRef<HTMLParagraphElement | null>(null);
+  const failRef = useRef<HTMLDivElement | null>(null);
+
+  // Each step transition unmounts the focused element, dropping focus to
+  // <body>; move focus with the step so keyboard and screen-reader users keep
+  // their place in the row (same discipline as AdminConsole's view pane).
+  useEffect(() => {
+    if (outcome === null) {
+      if (proposing) {
+        proposeRef.current?.focus();
+      }
+    } else if (outcome.ok) {
+      okRef.current?.focus();
+    } else {
+      failRef.current?.focus();
+    }
+  }, [proposing, outcome]);
 
   if (outcome !== null) {
+    if (outcome.ok) {
+      return (
+        <p role="status" className="pn-ok" tabIndex={-1} ref={okRef}>
+          {outcome.message}
+        </p>
+      );
+    }
     return (
-      <p
-        role="status"
-        style={{ ...muted, margin: 0, color: outcome.ok ? "var(--sky)" : "#ff9b9b" }}
-      >
-        {outcome.message}
-      </p>
+      <div className="pn-stack" tabIndex={-1} ref={failRef}>
+        <p role="alert" className="pn-error">
+          {outcome.message}
+        </p>
+        <button
+          type="button"
+          className={linkBtn}
+          onClick={() => setOutcome(null)}
+        >
+          Try again
+        </button>
+      </div>
     );
   }
 
@@ -50,7 +91,7 @@ export function ConfirmAction({
     return (
       <button
         type="button"
-        style={linkBtn}
+        className={linkBtn}
         disabled={disabled}
         onClick={() => setProposing(true)}
       >
@@ -60,14 +101,14 @@ export function ConfirmAction({
   }
 
   return (
-    <div style={proposeBox}>
-      <p style={{ ...muted, margin: 0, fontSize: 14 }}>{summary}</p>
+    <div className="pn-propose" tabIndex={-1} ref={proposeRef}>
+      <p className="pn-meta">{summary}</p>
       {children}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <div className="pn-confirm-row">
         <button
           type="button"
-          style={{ ...primaryBtn, opacity: busy ? 0.7 : 1 }}
-          disabled={busy}
+          className={primaryBtn}
+          disabled={busy || confirmDisabled}
           onClick={async () => {
             setBusy(true);
             try {
@@ -87,7 +128,7 @@ export function ConfirmAction({
         </button>
         <button
           type="button"
-          style={linkBtn}
+          className={linkBtn}
           disabled={busy}
           onClick={() => setProposing(false)}
         >
@@ -97,12 +138,3 @@ export function ConfirmAction({
     </div>
   );
 }
-
-const proposeBox: CSSProperties = {
-  display: "grid",
-  gap: 12,
-  padding: "12px 14px",
-  borderRadius: "var(--r-card)",
-  border: "1px solid rgba(207, 224, 245, 0.22)",
-  background: "var(--ink)",
-};

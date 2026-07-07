@@ -31,5 +31,6 @@ Real logo asset only · gold = recognition only · no em-dashes (regular hyphens
 concept images marked · copy verbatim from the vault.
 
 ## How to build a page
-Run `/build-page <name>` in this repo. It runs the four gates in order
-(Spec → Build → Design review → Codex source-of-truth audit), then waits for human approval.
+Run `/build-page <name>` in this repo. It runs the five gates in order
+(Spec → Build → Design review → Codex source-of-truth audit → Playwright interaction tests),
+then waits for human approval.

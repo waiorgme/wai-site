@@ -57,7 +57,7 @@ export function MembershipCertificate(data: CertificateData) {
         <div style={goldRule} />
 
         <div style={presented}>We are honoured to present this certificate to</div>
-        <div style={name}>{data.recipientName}</div>
+        <div style={nameStyle(data.recipientName)}>{data.recipientName}</div>
         <div style={nameUnderline} />
 
         <div style={body}>
@@ -73,7 +73,7 @@ export function MembershipCertificate(data: CertificateData) {
           <img
             src="/assets/cert/mervat-signature.png"
             alt=""
-            style={{ height: 56, objectFit: "contain" }}
+            style={{ height: 96, objectFit: "contain", marginBottom: -10 }}
           />
           <div style={sigLine} />
           <div style={who}>
@@ -194,7 +194,18 @@ const foundingTag: CSSProperties = {
 };
 const goldRule: CSSProperties = { width: 120, height: 3, background: GOLD, margin: "18px 0 22px", borderRadius: 2 };
 const presented: CSSProperties = { fontFamily: fontBody, color: NAVY, fontSize: 15, letterSpacing: "0.04em" };
-const name: CSSProperties = { fontFamily: fontDisplay, fontWeight: 700, color: NAVY, fontSize: 46, margin: "12px 0 6px" };
+// One line always: on the fixed 1122x794 canvas a long compound name must
+// scale down, never wrap into the signature/QR footer band.
+const nameStyle = (recipient: string): CSSProperties => ({
+  fontFamily: fontDisplay,
+  fontWeight: 700,
+  color: NAVY,
+  fontSize:
+    recipient.length > 26 ? Math.max(22, 46 - (recipient.length - 26)) : 46,
+  whiteSpace: "nowrap",
+  maxWidth: 940,
+  margin: "12px 0 6px",
+});
 const nameUnderline: CSSProperties = { width: 430, height: 1, background: "rgba(10,29,63,0.25)", marginBottom: 20 };
 const body: CSSProperties = { fontFamily: fontBody, color: NAVY, fontSize: 17, lineHeight: 1.6, maxWidth: 660 };
 const dateLabel: CSSProperties = { fontFamily: fontMono, color: NAVY, fontSize: 14, marginTop: 16, opacity: 0.85 };

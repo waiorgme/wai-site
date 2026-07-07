@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { ageInYears, isValidDob } from "../../convex/lib/age";
@@ -7,6 +7,7 @@ import {
   checkboxRow,
   errorText,
   h1,
+  hint,
   input,
   label,
   muted,
@@ -37,6 +38,15 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
 
   const firstName = candidateName.split(" ")[0];
 
+  // An outcome card replaces the whole form, so move focus to its heading -
+  // the same view-switch focus discipline the portal shell follows.
+  const outcomeHeading = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (outcome !== null) {
+      outcomeHeading.current?.focus();
+    }
+  }, [outcome]);
+
   // The talent pipeline is women-only and never offered to minors (Stage 0
   // lane rules, same as the join form): the option renders only when the
   // declared gender is female and the declared DOB is not under 18. The
@@ -47,9 +57,9 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
 
   if (outcome === "conflict") {
     return (
-      <div style={card}>
-        <h1 style={h1}>One detail needs a human look</h1>
-        <p style={muted}>
+      <div className={card}>
+        <h1 className={h1} tabIndex={-1} ref={outcomeHeading}>One detail needs a human look</h1>
+        <p className={muted}>
           Thanks, {firstName}. The date of birth you entered doesn't match what
           we have on file from before, so a team member will check your record
           and email you at this address to sort it out. Nothing is wrong with
@@ -61,9 +71,9 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
 
   if (outcome === "minor") {
     return (
-      <div style={card}>
-        <h1 style={h1}>One extra step, because you are under 18</h1>
-        <p style={muted}>
+      <div className={card}>
+        <h1 className={h1} tabIndex={-1} ref={outcomeHeading}>One extra step, because you are under 18</h1>
+        <p className={muted}>
           Welcome back, {firstName}. Because you are under 18, a parent or
           guardian needs to confirm your membership before your account opens.
           Our team will contact you by email to arrange that step.
@@ -73,17 +83,26 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
   }
 
   return (
-    <div style={card}>
-      <h1 style={h1}>Welcome back, {firstName}</h1>
-      <p style={muted}>
+    <div className={card}>
+      <h1 className={h1}>Welcome back, {firstName}</h1>
+      <p className={muted}>
         You're already on our member list. Confirm a few details and your
         membership moves to the new WAI-ME home, including your membership
         certificate.
       </p>
       <form
-        style={{ display: "grid", gap: 14, marginTop: 4 }}
+        className="pn-stack"
         onSubmit={async (event) => {
           event.preventDefault();
+          // The certificate prints this name verbatim, so a first name alone
+          // is not enough - match the server's full-name rule with a kinder
+          // message than the generic refusal.
+          if (name.trim().split(/\s+/).length < 2) {
+            setError(
+              "Please enter your full name (first and family name) - it appears on your certificate exactly as written here.",
+            );
+            return;
+          }
           setBusy(true);
           setError(null);
           try {
@@ -115,21 +134,23 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
           }
         }}
       >
-        <label style={label}>
-          Your name, as it will appear on your certificate
+        <label className={label}>
+          Your full name, as it will appear on your certificate
           <input
             type="text"
             required
             maxLength={90}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={input}
+            className={input}
           />
         </label>
 
-        <fieldset style={{ border: "none", padding: 0, margin: 0, ...label }}>
-          <span>Gender</span>
-          <div style={{ display: "flex", gap: 18, color: "var(--white)" }}>
+        <fieldset className={label} style={{ border: "none", padding: 0, margin: 0 }}>
+          {/* The rendered legend sits outside the label's grid, so restore
+              the 6px gap it no longer gets from the grid. */}
+          <legend style={{ padding: 0, marginBlockEnd: 6 }}>Gender</legend>
+          <div className="pn-actions">
             <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input
                 type="radio"
@@ -158,10 +179,10 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
           </div>
         </fieldset>
 
-        <label style={label}>
+        <label className={label}>
           Date of birth
           {hasDobOnFile && (
-            <span style={{ ...muted, fontSize: 13, fontWeight: 400 }}>
+            <span className={hint}>
               We check this against the record we already hold, to make sure
               it's really you.
             </span>
@@ -169,26 +190,27 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
           <input
             type="date"
             required
+            max={new Date().toISOString().slice(0, 10)}
             value={dob}
             onChange={(e) => setDob(e.target.value)}
-            style={input}
+            className={input}
           />
         </label>
 
-        <label style={checkboxRow}>
+        <label className={checkboxRow}>
           <input type="checkbox" required checked={terms} onChange={(e) => setTerms(e.target.checked)} />
           <span>I agree to the WAI-ME terms and privacy policy. (required)</span>
         </label>
-        <label style={checkboxRow}>
+        <label className={checkboxRow}>
           <input type="checkbox" required checked={attestation} onChange={(e) => setAttestation(e.target.checked)} />
           <span>I confirm my details, including age and gender, are accurate. (required)</span>
         </label>
-        <label style={checkboxRow}>
+        <label className={checkboxRow}>
           <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
           <span>Email me about events, opportunities and news. (optional)</span>
         </label>
         {showPipeline && (
-          <label style={checkboxRow}>
+          <label className={checkboxRow}>
             <input type="checkbox" checked={pipeline} onChange={(e) => setPipeline(e.target.checked)} />
             <span>
               Make my profile searchable by corporate partners with jobs,
@@ -197,10 +219,10 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
           </label>
         )}
 
-        <button type="submit" disabled={busy} style={primaryBtn}>
+        <button type="submit" disabled={busy} className={primaryBtn}>
           {busy ? "Claiming your membership…" : "Claim my membership"}
         </button>
-        {error !== null && <p style={errorText}>{error}</p>}
+        {error !== null && <p role="alert" className={errorText}>{error}</p>}
       </form>
     </div>
   );

@@ -1,5 +1,5 @@
 import { query } from "../_generated/server";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { maskName } from "../lib/adminMask";
 
 // Admin pending-guardians queue (spec criterion 4, and the visibility handed to
@@ -29,7 +29,7 @@ export type PendingGuardianRow = {
 export const listPendingGuardians = query({
   args: {},
   handler: async (ctx): Promise<PendingGuardianRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const now = Date.now();
     const pending = await ctx.db.query("guardianConsents").collect();
     const rows: PendingGuardianRow[] = [];

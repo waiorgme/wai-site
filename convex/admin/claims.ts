@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { maskName } from "../lib/adminMask";
 import { writeAudit } from "../lib/audit";
 import { isValidJoinEmail, normalizeEmail } from "../lib/joinValidation";
@@ -58,7 +58,7 @@ export type ConflictRow = {
 export const listConflicts = query({
   args: {},
   handler: async (ctx): Promise<ConflictRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const now = Date.now();
     const conflicts = await ctx.db
       .query("importedMembers")
@@ -140,7 +140,7 @@ export const revealContactEmail = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -215,7 +215,7 @@ export const resolveConflictAsClaimed = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -379,7 +379,7 @@ export const archiveConflictRow = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }

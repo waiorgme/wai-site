@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { linkBtn, muted } from "./ui";
+import { hint, linkBtn, muted } from "./ui";
 
 // "Your data" (admin-panel spec criterion 5; vault Privacy & Data Protection +
 // privacy policy line 73). The signed-in member can ask for an export or erasure
@@ -19,6 +19,9 @@ export function YourData({ compact = false }: { compact?: boolean }) {
   const submit = useMutation(api.admin.dataRequests.submitMyDataRequest);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Erasure is propose-then-confirm: a stray tap must never file a deletion
+  // request the member cannot retract here. Export stays one tap.
+  const [confirmingErasure, setConfirmingErasure] = useState(false);
 
   const request = async (kind: "export" | "erasure") => {
     setBusy(true);
@@ -41,44 +44,80 @@ export function YourData({ compact = false }: { compact?: boolean }) {
 
   return (
     <section
+      // Functional inline style: compact keeps the section flush inside its
+      // own card; non-compact draws a light hairline above (logical border).
       style={{
         display: "grid",
         gap: 10,
-        borderTop: compact ? "none" : "1px solid rgba(207, 224, 245, 0.12)",
-        paddingTop: compact ? 0 : 16,
+        borderBlockStart: compact ? "none" : "1px solid var(--hair-l)",
+        paddingBlockStart: compact ? 0 : 16,
       }}
     >
-      <p style={{ ...muted, margin: 0 }}>
-        <strong style={{ color: "var(--white)" }}>Your data.</strong> You can ask
+      <p className={muted}>
+        <strong>Your data.</strong> You can ask
         us to send you a copy of the data we hold about you, or to delete it. A
         team member reviews every request before we act on it.
       </p>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+      <div className="pn-actions">
         <button
           type="button"
-          style={linkBtn}
+          className={linkBtn}
           disabled={busy}
           onClick={() => void request("export")}
         >
           Ask for a copy of my data
         </button>
-        <button
-          type="button"
-          style={linkBtn}
-          disabled={busy}
-          onClick={() => void request("erasure")}
-        >
-          Ask us to delete my data
-        </button>
+        {!confirmingErasure && (
+          <button
+            type="button"
+            className={linkBtn}
+            disabled={busy}
+            onClick={() => {
+              setMessage(null);
+              setConfirmingErasure(true);
+            }}
+          >
+            Ask us to delete my data
+          </button>
+        )}
       </div>
+      {confirmingErasure && (
+        <div className="pn-propose">
+          <p className={muted}>
+            This asks us to delete your whole account and data. A person
+            reviews the request before anything happens.
+          </p>
+          <div className="pn-confirm-row">
+            <button
+              type="button"
+              className="pn-btn"
+              disabled={busy}
+              onClick={() => {
+                setConfirmingErasure(false);
+                void request("erasure");
+              }}
+            >
+              Yes, ask us to delete it
+            </button>
+            <button
+              type="button"
+              className={linkBtn}
+              disabled={busy}
+              onClick={() => setConfirmingErasure(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       {message !== null && (
-        <p role="status" style={{ ...muted, fontSize: 13, margin: 0 }}>
+        <p role="status" className={muted}>
           {message}
         </p>
       )}
-      <p style={{ ...muted, fontSize: 12.5, margin: 0, opacity: 0.75 }}>
+      <p className={hint}>
         You can also email{" "}
-        <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+        <a href="mailto:support@waiorg.me">
           support@waiorg.me
         </a>
         .

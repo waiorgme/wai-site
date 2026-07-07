@@ -81,6 +81,8 @@ export const ensureMyMembershipCertificate = mutation({
     if (member === null || member.lifecycle_state !== "active") {
       return { ok: false };
     }
+    // The shared issuer notifies on a FIRST issuance itself (it is
+    // idempotent: a re-run returns the existing row and stays silent).
     const certId = await issueMembershipCertificate(ctx, member);
     const cert = await ctx.db.get(certId);
     return { ok: true, verify_token: cert?.verify_token };

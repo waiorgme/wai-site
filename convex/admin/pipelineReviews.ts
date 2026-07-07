@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { applyPipelineDecision, type PipelineDecideResult } from "../lib/pipelineDecide";
 import { latestPipelineConsent } from "../lib/pipeline";
 import { maskName } from "../lib/adminMask";
@@ -31,7 +31,7 @@ export type PendingReviewRow = {
 export const listPendingReviews = query({
   args: {},
   handler: async (ctx): Promise<PendingReviewRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const now = Date.now();
     const reviews = await ctx.db
       .query("pipelineEligibilityReviews")
@@ -77,7 +77,7 @@ export const decidePipelineReviewFromPanel = mutation({
     // throw); only queries throw (Stage 0 §7.1).
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }

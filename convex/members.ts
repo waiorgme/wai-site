@@ -5,6 +5,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { writeAudit } from "./lib/audit";
+import { logActivity, logActivityOnce } from "./lib/activity";
 import { ageInYears, deriveAgeBlock, isValidDob } from "./lib/age";
 import { evaluateMemberLane } from "./lib/memberLane";
 import { dobConflicts, namesRoughlyMatch } from "./lib/claim";
@@ -28,6 +29,7 @@ import {
   validateProfileFields,
   type ProfileFields,
 } from "./lib/profile";
+import { maybePromoteToActive } from "./lib/standing";
 
 import { POLICY_VERSION } from "./lib/policy";
 
@@ -240,6 +242,20 @@ export const updateProfile = mutation({
       after_summary: `fields=[${Object.keys(fields).join(",")}] complete=${profile_complete}`,
       source: "member",
     });
+
+    // Funnel step 3 (activity-log spec §B.5): her first profile save is the
+    // "onboarding started" signal. Once per member - a later edit is not a
+    // second start.
+    await logActivityOnce(ctx, member._id, "onboarding_started");
+
+    // Standing Rung 2 hook: a profile save can complete the automatic gate
+    // (profile complete + at least one qualifying action already taken). The
+    // helper self-checks every condition and is idempotent.
+    await maybePromoteToActive(
+      ctx,
+      member._id,
+      "completed your profile after taking part",
+    );
 
     return { ok: true, profile_complete };
   },
@@ -480,6 +496,11 @@ export const createPendingMember = internalMutation({
     await insertConsent(ctx, memberId, "marketing", args.consents.marketing, now);
     await insertConsent(ctx, memberId, "pipeline", pipelineConsent, now);
 
+    // Funnel step 1 (activity-log spec §B.3): every join counts, the minor
+    // path included - minors are excluded from partner surfaces, never from
+    // operational counting.
+    await logActivity(ctx, memberId, "join_submitted");
+
     await writeAudit(ctx, {
       actor: email,
       role: "visitor",
@@ -688,10 +709,14 @@ export const matchClaim = mutation({
     }
     const now = Date.now();
     const confirmed = args.nameConfirmed.trim();
+    // The confirmed name is printed on the certificate verbatim, so it must
+    // be a full name: first + family name at minimum (Issam, 2026-07-07).
+    const nameParts = confirmed.split(/\s+/);
     if (
       confirmed.length < 2 ||
       confirmed.length > 90 ||
-      confirmed.split(/\s+/).length > 6 ||
+      nameParts.length < 2 ||
+      nameParts.length > 6 ||
       !isValidDob(args.dobAnswer, now)
     ) {
       return { ok: false, error: "validation" };
@@ -868,6 +893,9 @@ export const matchClaim = mutation({
       source: "member",
     });
 
+    // Claim-rate KPI (activity-log spec §B.6): one row per finished claim.
+    await logActivity(ctx, memberId, "claim_completed");
+
     // The first win, with her own legacy number (DATA-1).
     const member = await ctx.db.get(memberId);
     if (member !== null) {
@@ -1035,6 +1063,9 @@ export const setPipelineOptIn = mutation({
         after_summary: "pipeline=true attested; eligibility review opened",
         source: "member",
       });
+      // Pipeline opt-in KPI (activity-log spec §B.9): counted at her
+      // request, whatever the review later decides.
+      await logActivity(ctx, member._id, "pipeline_opted_in");
       return { ok: true, pipeline_state: "review_pending" };
     }
 

@@ -8,9 +8,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { internal } from "./_generated/api";
-import { issueMembershipCertificate } from "./lib/certificates";
-import { ensurePipelineReviewOnActivation } from "./lib/pipeline";
+import { confirmEmailForMember } from "./lib/activation";
 import { consumeKey } from "./rateLimit";
 import {
   GLOBAL_DAY,
@@ -129,50 +127,15 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     },
     // Fires only on actual authentication - after the magic link is verified and
     // just before the session is created. This is the real "email verified"
-    // signal, so we advance the lifecycle here (§6): minors → pending_guardian,
-    // unknown age → pending_review (SEC-3: never auto-activated, a human looks
-    // first), standard/ally (consents captured at join) → active.
+    // signal, so the lifecycle advances here (§6). The transition itself lives
+    // in lib/activation.ts so the funnel wiring stays testable.
     async beforeSessionCreation(baseCtx, { userId }) {
       const ctx = baseCtx as unknown as MutationCtx;
       const member = await memberForUser(ctx, userId);
-      if (member === null || member.lifecycle_state !== "email_unverified") {
+      if (member === null) {
         return;
       }
-      const next =
-        member.member_lane === "minor"
-          ? "pending_guardian"
-          : member.member_lane === "restricted_unknown"
-            ? "pending_review"
-            : "active";
-      await ctx.db.patch(member._id, { lifecycle_state: next });
-      await ctx.db.insert("auditLog", {
-        actor: member.email,
-        role: "member",
-        action: "confirmMagicLink",
-        target_id: member._id,
-        before_summary: "lifecycle=email_unverified",
-        after_summary: `lifecycle=${next}`,
-        timestamp: Date.now(),
-        source: "system",
-      });
-      // The first win: issue the membership certificate the moment the email is
-      // verified - but ONLY for members who reach `active` here. Minors get it
-      // after guardian confirmation (a later slice); unknown-age accounts get it
-      // after human review. Idempotent.
-      if (next === "active") {
-        await issueMembershipCertificate(ctx, member);
-        // Pipeline invariant: if she gave the attested pipeline consent at
-        // join, the eligibility review opens NOW, when the member is real.
-        await ensurePipelineReviewOnActivation(ctx, member);
-      }
-      // 13-17: her email is verified, so the guardian's confirmation email
-      // goes out now (Under-18 decision: a real confirmation step). Scheduled:
-      // the send is an action (Resend network call), never inside this txn.
-      if (next === "pending_guardian") {
-        await ctx.scheduler.runAfter(0, internal.guardians.sendGuardianEmail, {
-          memberId: member._id,
-        });
-      }
+      await confirmEmailForMember(ctx, member);
     },
   },
 });

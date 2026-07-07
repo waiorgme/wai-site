@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { checkboxRow, errorText, linkBtn, muted } from "./ui";
-import { YourData } from "./YourData";
 
 // "Your choices": the two opt-in toggles (field spec Group H). Labels and
 // tips follow the field spec's plain-language microcopy. Both default OFF;
@@ -14,24 +13,30 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const setPipeline = useMutation(api.members.setPipelineOptIn);
   const [confirmingPipeline, setConfirmingPipeline] = useState(false);
   const [attested, setAttested] = useState(false);
+  // Optimistic tick for the directory checkbox: it is server-controlled, so
+  // without this the tick visibly reverts while the mutation runs.
+  const [pendingDirectory, setPendingDirectory] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (settings === undefined) {
-    return <p style={muted}>Loading your choices…</p>;
+    return <p className={muted}>Loading your choices…</p>;
   }
   if (settings === null) {
-    return <p style={muted}>There's no member profile linked to this email yet.</p>;
+    return <p className={muted}>There's no member profile linked to this email yet.</p>;
   }
 
   if (settings.locked) {
     // The directory/pipeline toggles open at 18; data rights do not wait for
-    // that (they apply to every member), so Your data still renders here.
+    // that (they apply to every member) and live on the Your data page.
     return (
-      <div style={{ display: "grid", gap: 16 }}>
-        <p style={muted}>These options open when you turn 18.</p>
-        <YourData />
-        <button type="button" style={linkBtn} onClick={onClose}>
+      <div className="pn-stack">
+        <p className={muted}>These options open when you turn 18.</p>
+        <p className={muted}>
+          To ask for a copy of your data, or ask us to delete it, see{" "}
+          <a href="#your-data">Your data</a>.
+        </p>
+        <button type="button" className={linkBtn} onClick={onClose}>
           Back
         </button>
       </div>
@@ -56,19 +61,34 @@ export function Settings({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <section style={{ display: "grid", gap: 8 }}>
-        <label style={checkboxRow}>
+        <label className={checkboxRow}>
           <input
             type="checkbox"
             disabled={busy}
-            checked={settings.directory_visible}
-            onChange={(e) => void run(() => setDirectory({ value: e.target.checked }))}
+            checked={pendingDirectory ?? settings.directory_visible}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setPendingDirectory(next);
+              void run(async () => {
+                try {
+                  const res = await setDirectory({ value: next });
+                  if (!res.ok) {
+                    setPendingDirectory(null);
+                  }
+                  return res;
+                } catch (err) {
+                  setPendingDirectory(null);
+                  throw err;
+                }
+              });
+            }}
           />
           <span>
-            <strong style={{ color: "var(--white)" }}>
+            <strong>
               Show my profile in the member directory
             </strong>
             <br />
-            Turn this on to appear in our members' directory, so other women in
+            Turn this on to appear in our member directory, so other women in
             aviation can find and connect with you. Off by default, it's your
             choice.
           </span>
@@ -81,7 +101,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
       <section style={{ display: "grid", gap: 8 }}>
         {settings.pipeline_state === "off" || settings.pipeline_state === "rejected" ? (
           <>
-            <label style={checkboxRow}>
+            <label className={checkboxRow}>
               <input
                 type="checkbox"
                 disabled={busy}
@@ -92,7 +112,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 }}
               />
               <span>
-                <strong style={{ color: "var(--white)" }}>
+                <strong>
                   Open to opportunities, let approved corporate partners find me
                   for jobs, internships and scholarships
                 </strong>
@@ -104,10 +124,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
               </span>
             </label>
             {settings.pipeline_state === "rejected" && !confirmingPipeline && (
-              <p style={{ ...muted, fontSize: 14 }}>
+              <p className={muted}>
                 This isn't switched on for your profile right now. If you think
                 that's a mistake, write to us at{" "}
-                <a href="mailto:support@waiorg.me" style={{ color: "var(--sky)" }}>
+                <a href="mailto:support@waiorg.me">
                   support@waiorg.me
                 </a>
                 .
@@ -115,7 +135,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
             )}
             {confirmingPipeline && (
               <div style={{ display: "grid", gap: 10, paddingInlineStart: 26 }}>
-                <label style={checkboxRow}>
+                <label className={checkboxRow}>
                   <input
                     type="checkbox"
                     checked={attested}
@@ -128,7 +148,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 </label>
                 <button
                   type="button"
-                  style={{ ...linkBtn, justifySelf: "start" }}
+                  className={linkBtn}
                   disabled={!attested || busy}
                   onClick={() =>
                     void run(async () => {
@@ -148,8 +168,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           <div style={{ display: "grid", gap: 8 }}>
-            <p style={{ ...muted, margin: 0 }}>
-              <strong style={{ color: "var(--white)" }}>
+            <p className={muted}>
+              <strong>
                 Open to opportunities:
               </strong>{" "}
               {settings.pipeline_state === "review_pending"
@@ -158,7 +178,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
             </p>
             <button
               type="button"
-              style={{ ...linkBtn, justifySelf: "start" }}
+              className={linkBtn}
               disabled={busy}
               onClick={() => void run(() => setPipeline({ value: false }))}
             >
@@ -169,11 +189,14 @@ export function Settings({ onClose }: { onClose: () => void }) {
       </section>
       )}
 
-      {error !== null && <p style={errorText}>{error}</p>}
+      {error !== null && <p role="alert" className={errorText}>{error}</p>}
 
-      <YourData />
+      <p className={muted}>
+        To ask for a copy of your data, or ask us to delete it, see{" "}
+        <a href="#your-data">Your data</a>.
+      </p>
 
-      <button type="button" style={linkBtn} onClick={onClose}>
+      <button type="button" className={linkBtn} onClick={onClose}>
         Back
       </button>
     </div>
