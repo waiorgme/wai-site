@@ -28,6 +28,11 @@ jobs:
       - name: Type check (astro check)
         run: npm run check
 
+      # astro check only covers what Astro compiles; plain .ts/.tsx (convex/,
+      # tests/) needs tsc, so the AGENTS.md merge rule is machine-enforced.
+      - name: Type check (tsc)
+        run: npm run typecheck
+
       - name: Unit tests
         run: npm test
 
