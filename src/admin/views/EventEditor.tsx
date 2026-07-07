@@ -335,7 +335,9 @@ export function EventEditor({
                     ? "Only a draft can be published."
                     : res.error === "missing_logistics"
                       ? "Add the details members need before publishing: an online session needs its meeting link, an in-person one needs its venue."
-                      : "That did not go through. Please try again.",
+                      : res.error === "youth_not_launched"
+                        ? "Under-18 events open in a later phase, once the safeguards are in place. This one can stay as a draft for now."
+                        : "That did not go through. Please try again.",
               },
         );
       } else if (kind === "cancel") {
@@ -640,17 +642,21 @@ export function EventEditor({
                   <strong>Adults</strong>
                 </span>
               </label>
-              <label className="pn-check">
+              {/* Under-18 events are a later phase: they open once the
+                  safeguards (vetted volunteers, the two-adult rule, guardian
+                  and photo consent) are in place. Not offered at launch, so
+                  no session goes live without them. */}
+              <label className="pn-check is-disabled">
                 <input
                   type="radio"
                   name="audience"
-                  checked={form.audience_lane === "youth"}
-                  disabled={isClosed || isLive}
-                  onChange={() => set("audience_lane", "youth")}
+                  checked={false}
+                  disabled
+                  readOnly
                 />
                 <span>
-                  <strong>Under 18</strong> - shown only to members under 18;
-                  adults never see it, and adult sessions never appear to them.
+                  <strong>Under 18</strong> - opens in a later phase, once the
+                  under-18 safeguards are in place. Not available yet.
                 </span>
               </label>
               {isLive ? (

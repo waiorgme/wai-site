@@ -183,6 +183,13 @@ branch); PlacementLog; partner-facing portal.
   needs its meeting link and an in-person event its venue before publish (and a live edit
   cannot strip either) - no member gets a confirmed seat to nowhere. Drafts may still be
   incomplete.
+- **Hosted under-18 events are a LATER PHASE, not built at launch** (round-11 required
+  fix, honouring Under-18 Safeguards Part 3): `publishEvent` refuses `audience_lane:
+  "youth"` server-side (they need vetted volunteers + two-adult rule + guardian/photo
+  consent first), the editor's "Under 18" option is disabled with an honest note, and the
+  youth portal stays the "Aviation for Girls" signpost. The lane VISIBILITY filter stays
+  forward-compatible for when the safeguarding model ships; at launch no youth event
+  publishes, so minors see an empty events list.
 - **Certificate-issued notification lives in the shared issuer** (round-4 required fix):
   every issuance path - activation, migrated claim, guardian confirmation, the fallback
   mutation - notifies exactly once, past the idempotency return.

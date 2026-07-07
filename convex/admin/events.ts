@@ -417,7 +417,8 @@ type StateChangeResult =
         | "not_found"
         | "validation"
         | "invalid_state"
-        | "missing_logistics";
+        | "missing_logistics"
+        | "youth_not_launched";
     };
 
 // Draft to published: the one move that puts an event on the member board.
@@ -439,6 +440,15 @@ export const publishEvent = mutation({
     }
     if (event.state !== "draft") {
       return { ok: false, error: "invalid_state" };
+    }
+    // HOSTED under-18 events are a LATER PHASE (vault Under-18 Safeguards
+    // Part 3): they require vetted volunteers, the two-adult rule, and
+    // guardian + photo consent, none of which exist yet. At launch the youth
+    // portal is only the "Aviation for Girls" signpost, so a youth event
+    // cannot go live - it stays a draft until the safeguarding model ships
+    // (Gate 4 round 11). Server-side, so no direct call can bypass it.
+    if (event.audience_lane === "youth") {
+      return { ok: false, error: "youth_not_launched" };
     }
     // Publishing puts the event on the member board and opens RSVPs, so it
     // must be attendable NOW: an online session needs its join link, an

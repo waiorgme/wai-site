@@ -1041,19 +1041,12 @@ describe("audience lane freezes once live (Gate 4 round 3)", () => {
 
     const created = await asAdmin.mutation(
       api.admin.events.upsertEvent,
-      upsertArgs({ audience_lane: "youth" as const }),
+      upsertArgs({ audience_lane: "adult" as const }),
     );
     const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
 
-    // Draft: the lane is still a free choice.
-    expect(
-      (
-        await asAdmin.mutation(
-          api.admin.events.upsertEvent,
-          upsertArgs({ eventId, audience_lane: "adult" as const }),
-        )
-      ).ok,
-    ).toBe(true);
+    // Draft: the lane is still a free choice (youth drafts are allowed; they
+    // just cannot be PUBLISHED yet - covered by the youth-publish test below).
     expect(
       (
         await asAdmin.mutation(
@@ -1062,25 +1055,29 @@ describe("audience lane freezes once live (Gate 4 round 3)", () => {
         )
       ).ok,
     ).toBe(true);
+    expect(
+      (
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ eventId, audience_lane: "adult" as const }),
+        )
+      ).ok,
+    ).toBe(true);
 
     await asAdmin.mutation(api.admin.events.publishEvent, { eventId });
-    const asMinor = await signIn(t, "younger@example.com", {
-      member_lane: "minor",
-      date_of_birth: "2011-05-01",
-      guardian_consent_state: "confirmed",
-    });
-    expect((await asMinor.mutation(api.events.rsvp, { eventId })).ok).toBe(true);
+    const asMember = await signIn(t, "adult-booker@example.com");
+    expect((await asMember.mutation(api.events.rsvp, { eventId })).ok).toBe(true);
 
-    // Live with a minor booked: flipping to adult is refused, her booking
+    // Live with a member booked: flipping to youth is refused, her booking
     // and the lane promise stand.
     expect(
       await asAdmin.mutation(
         api.admin.events.upsertEvent,
-        upsertArgs({ eventId, audience_lane: "adult" as const }),
+        upsertArgs({ eventId, audience_lane: "youth" as const }),
       ),
     ).toEqual({ ok: false, error: "lane_locked" });
     const row = await t.run(async (ctx) => ctx.db.get(eventId));
-    expect(row!.audience_lane).toBe("youth");
+    expect(row!.audience_lane).toBe("adult");
 
     // Same-lane edits still flow (fixing a typo on a live event is normal).
     expect(
@@ -1089,12 +1086,37 @@ describe("audience lane freezes once live (Gate 4 round 3)", () => {
           api.admin.events.upsertEvent,
           upsertArgs({
             eventId,
-            audience_lane: "youth" as const,
-            title: "Girls in Aviation Day (updated)",
+            audience_lane: "adult" as const,
+            title: "Skills Clinic (updated)",
           }),
         )
       ).ok,
     ).toBe(true);
+  });
+});
+
+describe("hosted under-18 events are a later phase (Gate 4 round 11)", () => {
+  it("a youth event cannot be published - the safeguards are not built yet", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const created = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ audience_lane: "youth" as const }),
+    );
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+    expect(
+      await asAdmin.mutation(api.admin.events.publishEvent, { eventId }),
+    ).toEqual({ ok: false, error: "youth_not_launched" });
+    // It stays a draft, invisible to every lane including minors.
+    expect((await t.run(async (ctx) => ctx.db.get(eventId)))!.state).toBe(
+      "draft",
+    );
+    const asMinor = await signIn(t, "younger@example.com", {
+      member_lane: "minor",
+      date_of_birth: "2011-05-01",
+      guardian_consent_state: "confirmed",
+    });
+    expect(await asMinor.query(api.events.listEvents, {})).toEqual([]);
   });
 });
 

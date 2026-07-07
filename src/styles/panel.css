@@ -352,6 +352,8 @@
   font-size: 13.5px;
   line-height: 1.5;
 }
+/* an option that isn't available yet: dimmed, not a live control */
+.pn-check.is-disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* selectable chips (profile editor multi-selects) */
 .pn-chip {
