@@ -210,9 +210,14 @@ function SeatCard({
   const [showPass, setShowPass] = useState(false);
 
   const now = Date.now();
+  // is_past means ENDED; a session that already started is underway - the
+  // server refuses new RSVPs from starts_at, so the button must not offer one.
+  const underway =
+    event.state !== "cancelled" && now >= event.starts_at && !event.is_past;
   const closed =
     event.state === "cancelled" ||
     event.is_past ||
+    underway ||
     (event.registration_closes_at !== null &&
       now >= event.registration_closes_at);
   const full =
@@ -411,7 +416,9 @@ function SeatCard({
             ? "This session was cancelled, so there's nothing to register for."
             : event.is_past
               ? "This session has already run."
-              : "Registration is closed for this one."}
+              : underway
+                ? "This session is underway - registration closed when it started."
+                : "Registration is closed for this one."}
         </p>
       ) : priorityBlocked ? (
         <>

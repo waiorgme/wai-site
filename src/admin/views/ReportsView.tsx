@@ -1,8 +1,9 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { PlatformHealth } from "../../../convex/admin/overview";
 import { PageHeader, PanelCard, ProgressBar, StatTile } from "../../panel/kit";
 import type { Lifecycle } from "./shared";
-import { gstYear, LIFECYCLE_WORDS } from "./shared";
+import { fmtGstDate, gstYear, LIFECYCLE_WORDS } from "./shared";
 
 // Reports (panel-experience spec H18): sanctioned aggregates ONLY, composed
 // from the queries this console already has plus getReportAggregates
@@ -28,6 +29,7 @@ const LIFECYCLE_ORDER: ReadonlyArray<Lifecycle> = [
 export function ReportsView() {
   const counts = useQuery(api.admin.overview.getAdminOverview);
   const aggregates = useQuery(api.admin.overview.getReportAggregates);
+  const health = useQuery(api.admin.overview.getPlatformHealth);
   const events = useQuery(api.admin.events.adminListEvents);
   const opportunities = useQuery(api.admin.opportunities.adminListOpportunities);
   // Fetched for its lifecycle_counts aggregate only.
@@ -118,6 +120,48 @@ export function ReportsView() {
             )}
           </PanelCard>
 
+          <PanelCard title="Join funnel">
+            {health === undefined ? (
+              <p className="pn-meta">Loading…</p>
+            ) : health.funnel.join_submitted === 0 ? (
+              <p className="pn-meta">
+                No joins recorded yet - the funnel starts counting with the
+                first Join form submission on the new site.
+              </p>
+            ) : (
+              <>
+                <ProgressBar
+                  label="Joined (form submitted)"
+                  value={100}
+                  valueLabel={String(health.funnel.join_submitted)}
+                />
+                <ProgressBar
+                  label="Confirmed her email"
+                  value={
+                    (health.funnel.email_confirmed /
+                      health.funnel.join_submitted) *
+                    100
+                  }
+                  valueLabel={String(health.funnel.email_confirmed)}
+                />
+                <ProgressBar
+                  label="Started her profile"
+                  value={
+                    (health.funnel.onboarding_started /
+                      health.funnel.join_submitted) *
+                    100
+                  }
+                  valueLabel={String(health.funnel.onboarding_started)}
+                />
+                <p className="pn-meta">
+                  Everyone who joined through the new site, under-18 members
+                  included. Members claiming their old-list record are counted
+                  in the card above, not here.
+                </p>
+              </>
+            )}
+          </PanelCard>
+
           <PanelCard title="Members by status">
             {members === undefined ? (
               <p className="pn-meta">Loading…</p>
@@ -198,9 +242,103 @@ export function ReportsView() {
               />
             </div>
           </PanelCard>
+
+          <PanelCard title="Platform health check">
+            {health === undefined ? (
+              <p className="pn-meta">Loading…</p>
+            ) : (
+              <HealthCheck health={health} />
+            )}
+          </PanelCard>
         </div>
       </div>
     </>
+  );
+}
+
+/* ---------- the four kill-criteria counters (PRD §13) ---------- */
+
+// Plain words per counter, honest before launch: measures that cannot mean
+// anything yet say so instead of alarming. The settled rule is stated in
+// full at the bottom so the numbers never float without their meaning.
+function HealthCheck({ health }: { health: PlatformHealth }) {
+  const k = health.kill_criteria;
+  // Before the review date is set (an owner action at launch), red tags
+  // would only shout about a platform that has not started - stay neutral.
+  const live = health.review_at !== null;
+  return (
+    <>
+      <HealthRow
+        label="Old-list claim rate"
+        detail={
+          k.claim_rate.pct === null
+            ? "Starts counting when the old list is imported."
+            : `${k.claim_rate.pct}% claimed (${k.claim_rate.claimed} of ${k.claim_rate.registered}). Watch level: below ${k.claim_rate.threshold_pct}%.`
+        }
+        missed={live ? k.claim_rate.missed : null}
+      />
+      <HealthRow
+        label="Monthly event"
+        detail={`${6 - k.event_floor.months_missed} of the last ${k.event_floor.months_checked} full months had a session that ran. Watch level: 2 or more months without one.`}
+        missed={live ? k.event_floor.missed : null}
+      />
+      <HealthRow
+        label="Corporate partners"
+        detail={
+          k.corporate_partners.active_count === 0
+            ? "No active partner yet."
+            : `${k.corporate_partners.active_count} active ${k.corporate_partners.active_count === 1 ? "partner" : "partners"}.`
+        }
+        missed={live ? k.corporate_partners.missed : null}
+      />
+      <HealthRow
+        label="Monthly active members"
+        detail={
+          k.monthly_active.pct === null
+            ? "Starts counting with the first claimed members."
+            : `${k.monthly_active.active_30d} members active in the last 30 days - ${k.monthly_active.pct}% of claimed. Watch level: below ${k.monthly_active.threshold_pct}%.`
+        }
+        missed={live ? k.monthly_active.missed : null}
+      />
+      <p className="pn-meta">
+        The settled rule: if two or more of these are missed at the fixed
+        six-month review, pause heavy platform building and rethink. WAI-ME
+        itself is never in question - only where build effort goes.{" "}
+        {health.review_at !== null
+          ? `Review date: ${fmtGstDate(health.review_at)}.`
+          : "The review date is set at launch."}
+      </p>
+    </>
+  );
+}
+
+function HealthRow({
+  label,
+  detail,
+  missed,
+}: {
+  label: string;
+  detail: string;
+  // null = not meaningful yet (pre-launch or no data): neutral tag.
+  missed: boolean | null;
+}) {
+  return (
+    <div className="pn-row-head">
+      <span
+        className={
+          missed === null
+            ? "pn-tag"
+            : missed
+              ? "pn-tag pn-tag--err"
+              : "pn-tag pn-tag--ok"
+        }
+      >
+        {missed === null ? "Not started" : missed ? "Missed" : "On track"}
+      </span>
+      <span className="pn-meta">
+        <strong>{label}.</strong> {detail}
+      </span>
+    </div>
   );
 }
 
