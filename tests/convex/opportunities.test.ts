@@ -552,7 +552,7 @@ describe("admin lifecycle", () => {
     ).toEqual({ ok: false, error: "validation" });
   });
 
-  it("close: open -> closed with the reason in the audit trail", async () => {
+  it("close: open -> closed; the reason lives on the record, not the audit summary", async () => {
     const t = convexTest(schema, modules);
     const asAdmin = (await signIn(t, ADMIN_EMAIL)).session;
     const oppId = await insertOpp(t);
@@ -564,10 +564,14 @@ describe("admin lifecycle", () => {
     ).toEqual({ ok: true });
     const row = await t.run(async (ctx) => ctx.db.get(oppId));
     expect(row?.state).toBe("closed");
+    // Gate 4 round 12: the reason is kept ON the record; the immutable audit
+    // summary carries only the structured fact that a reason was given.
+    expect(row?.close_reason).toBe("partner paused the intake");
     const audits = await auditRows(t, "closeOpportunity");
     expect(audits).toHaveLength(1);
     expect(audits[0].actor).toBe(ADMIN_EMAIL);
-    expect(audits[0].after_summary).toContain("partner paused the intake");
+    expect(audits[0].after_summary).toBe("state=closed reason_present=true");
+    expect(audits[0].after_summary).not.toContain("partner paused");
     expect(
       await asAdmin.mutation(api.admin.opportunities.closeOpportunity, {
         id: oppId,

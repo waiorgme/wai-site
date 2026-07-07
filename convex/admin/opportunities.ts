@@ -399,9 +399,9 @@ type CloseResult =
   | { ok: true; already?: true }
   | { ok: false; error: "not_authorized" | "not_found" };
 
-// Close (propose-then-confirm in the UI): open -> closed. The schema keeps no
-// close-reason field, so the optional reason is recorded in the audit trail
-// itself (capped; it describes the listing, never a member).
+// Close (propose-then-confirm in the UI): open -> closed. The optional reason
+// is kept ON the opportunity record; the audit summary carries only
+// reason_present (Gate 4 round 12).
 export const closeOpportunity = mutation({
   args: { id: v.id("opportunities"), reason: v.optional(v.string()) },
   handler: async (ctx, args): Promise<CloseResult> => {
@@ -421,16 +421,18 @@ export const closeOpportunity = mutation({
     if (opportunity.state !== "open") {
       return { ok: false, error: "not_found" };
     }
-    await ctx.db.patch(args.id, { state: "closed" });
     const reason = (args.reason ?? "").trim().slice(0, REASON_MAX);
+    await ctx.db.patch(args.id, {
+      state: "closed",
+      close_reason: reason.length > 0 ? reason : undefined,
+    });
     await writeAudit(ctx, {
       actor: adminEmail,
       role: "admin_fallback",
       action: "closeOpportunity",
       target_id: args.id,
       before_summary: "state=open",
-      after_summary:
-        reason.length > 0 ? `state=closed reason=${reason}` : "state=closed",
+      after_summary: `state=closed reason_present=${reason.length > 0}`,
       source: "admin_fallback",
     });
     return { ok: true };

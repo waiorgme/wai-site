@@ -177,9 +177,41 @@ const roleValidForArea = (area: string | undefined, role: string): boolean => {
 const set = (value: string | undefined): boolean =>
   value !== undefined && value !== "";
 
+// Length caps for the FREE-TEXT profile fields (Gate 4 round 12): these are
+// member-submitted and later shown on the directory card, the admin dossier,
+// and application views, so they are bounded at the write boundary - not left
+// to the 1 MB document ceiling. Bio is the one long field; the rest are short
+// labels. Array fields are also capped so a picklist can't be spammed.
+const FREE_TEXT_MAX: Partial<Record<keyof ProfileFields, number>> = {
+  headline: 140,
+  bio: 1200,
+  nationality: 60,
+  country_of_residence: 60,
+  role: 80,
+  second_role: 80,
+  current_job_title: 120,
+  current_employer: 120,
+  certifications_other: 200,
+  field_of_study: 120,
+  institution: 160,
+};
+const ARRAY_MAX = 20;
+
 export const validateProfileFields = (
   fields: ProfileFields,
 ): string | null => {
+  for (const [key, max] of Object.entries(FREE_TEXT_MAX)) {
+    const value = fields[key as keyof ProfileFields];
+    if (typeof value === "string" && value.length > max) {
+      return key;
+    }
+  }
+  for (const key of ["sectors", "certifications", "looking_for"] as const) {
+    const arr = fields[key];
+    if (arr !== undefined && arr.length > ARRAY_MAX) {
+      return key;
+    }
+  }
   if (set(fields.career_stage_answer) && !inSet(fields.career_stage_answer!, CAREER_STAGES)) {
     return "career_stage_answer";
   }

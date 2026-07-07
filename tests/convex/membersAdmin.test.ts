@@ -367,6 +367,33 @@ describe("changeMemberStatus: legal transition matrix", () => {
     }
   });
 
+  it("the reason is kept as an admin note, never in the immutable audit summary (Gate 4 round 12)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const memberId = await insertMember(t, "reasoned@example.com", {
+      lifecycle_state: "active",
+    });
+    await asAdmin.mutation(api.admin.members.changeMemberStatus, {
+      memberId,
+      to: "suspended",
+      reason: "conduct report upheld by the committee",
+    });
+    // The raw reason is NOT in the audit summary...
+    const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+    const row = audits.find(
+      (a) => a.action === "changeMemberStatus" && a.target_id === memberId,
+    );
+    expect(row?.after_summary).toBe("lifecycle_state=suspended reason_present=true");
+    expect(row?.after_summary ?? "").not.toContain("conduct report");
+    // ...it lives on an admin note, in context, for the dossier.
+    const notes = await asAdmin.query(api.admin.members.listMemberNotes, {
+      memberId,
+    });
+    expect(notes.some((n) => n.text.includes("conduct report upheld"))).toBe(
+      true,
+    );
+  });
+
   it("illegal transitions are refused and nothing changes", async () => {
     const t = convexTest(schema, modules);
     const asAdmin = await signIn(t, ADMIN_EMAIL);

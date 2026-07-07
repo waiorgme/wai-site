@@ -114,9 +114,11 @@ export function EventRegistrationsView({
                   ? "That code does not match a live booking."
                   : res.error === "not_seated"
                     ? "That member is on the waiting list - a seat has to open before she can be checked in."
-                    : res.error === "invalid_state"
-                      ? "This event is not open for check-in."
-                      : "That did not go through. Please try again.",
+                    : res.error === "not_eligible"
+                      ? "Her account is no longer active for this event, so she can't be marked attended. Mark a no-show, or check her status under Members."
+                      : res.error === "invalid_state"
+                        ? "This event is not open for check-in."
+                        : "That did not go through. Please try again.",
             },
       );
       if (res.ok) {
@@ -332,9 +334,11 @@ function MarkCell({ row, eventId }: { row: AdminRegistrationRow; eventId: Id<"ev
           text:
             res.error === "not_seated"
               ? "She's on the waiting list - a seat has to open first."
-              : res.error === "invalid_state"
-                ? "This event is not open for check-in."
-                : "That did not go through. Please try again.",
+              : res.error === "not_eligible"
+                ? "Her account is no longer active for this event - mark a no-show, or check Members."
+                : res.error === "invalid_state"
+                  ? "This event is not open for check-in."
+                  : "That did not go through. Please try again.",
         });
       }
     } catch {

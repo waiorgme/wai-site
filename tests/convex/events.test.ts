@@ -1520,3 +1520,71 @@ describe("a published event must be attendable (Gate 4 round 10)", () => {
     ).toBe("https://meet.example.com/clinic");
   });
 });
+
+describe("check-in re-checks the registrant's current eligibility (Gate 4 round 12)", () => {
+  it("a member suspended after RSVP cannot be marked attended - no standing, no activity - but a no-show records", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const asMember = await signIn(t, "suspended-later@example.com");
+    await asMember.mutation(api.events.rsvp, { eventId });
+    const reg = (await regsForEvent(t, eventId))[0];
+    const member = await memberByEmail(t, "suspended-later@example.com");
+    await t.run(async (ctx) => {
+      await ctx.db.patch(member!._id, { lifecycle_state: "suspended" as const });
+    });
+
+    // Attended is refused; her registration is untouched and she gets no
+    // attendance activity.
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        registrationId: reg._id,
+        outcome: "attended",
+      }),
+    ).toEqual({ ok: false, error: "not_eligible" });
+    expect((await regsForEvent(t, eventId))[0].state).toBe("registered");
+    const activity = await t.run(async (ctx) =>
+      ctx.db
+        .query("activityLog")
+        .filter((q) => q.eq(q.field("member_id"), member!._id))
+        .collect(),
+    );
+    expect(activity.filter((a) => a.type === "event_checked_in")).toHaveLength(0);
+
+    // A no-show still records (no credit, just the fact she did not attend).
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        registrationId: reg._id,
+        outcome: "no_show",
+      }),
+    ).toEqual({ ok: true, state: "no_show" });
+  });
+
+  it("a member corrected to a lane that no longer sees the event cannot be marked attended", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t); // adult event
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const asMember = await signIn(t, "corrected@example.com");
+    await asMember.mutation(api.events.rsvp, { eventId });
+    const reg = (await regsForEvent(t, eventId))[0];
+    const member = await memberByEmail(t, "corrected@example.com");
+    // Corrected to restricted_unknown: the adult event's lane no longer admits her.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(member!._id, {
+        member_lane: "restricted_unknown" as const,
+        date_of_birth: undefined,
+        age_confidence: "unknown" as const,
+        date_of_birth_source: "unknown" as const,
+      });
+    });
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        registrationId: reg._id,
+        outcome: "attended",
+      }),
+    ).toEqual({ ok: false, error: "not_eligible" });
+  });
+});

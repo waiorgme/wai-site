@@ -116,16 +116,19 @@ export const revokeCertificate = mutation({
     if (cert.status !== "valid") {
       return { ok: false, error: "ineligible" };
     }
-    await ctx.db.patch(cert._id, { status: "revoked" });
-    // The reason is the admin's operational wording (the vault requires
-    // revoke-with-reason recorded); bounded, and never member contact data.
+    // The reason is kept ON the certificate row; the immutable audit summary
+    // carries only reason_present (Gate 4 round 12).
+    await ctx.db.patch(cert._id, {
+      status: "revoked",
+      revoke_reason: reason.slice(0, REASON_MAX),
+    });
     await writeAudit(ctx, {
       actor: adminEmail,
       role: "admin_fallback",
       action: "revokeCertificate",
       target_id: cert._id,
       before_summary: `cert=WAIME-MEM-${cert.membership_number} status=valid`,
-      after_summary: `cert=WAIME-MEM-${cert.membership_number} status=revoked reason="${reason.slice(0, REASON_MAX)}"`,
+      after_summary: `cert=WAIME-MEM-${cert.membership_number} status=revoked reason_present=true`,
       source: "admin_fallback",
     });
     return { ok: true };

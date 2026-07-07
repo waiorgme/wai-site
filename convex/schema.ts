@@ -270,6 +270,10 @@ export default defineSchema({
       v.literal("revoked"),
     ),
     supersedes_id: v.optional(v.id("certificates")),
+    // The admin's operational reason for a revoke, kept ON the record (not in
+    // the immutable audit summary): the audit carries only the structured
+    // fact that a reason was given (Gate 4 round 12 data minimisation).
+    revoke_reason: v.optional(v.string()),
     template_version: v.string(),
     idempotency_key: v.string(),
   })
@@ -442,6 +446,9 @@ export default defineSchema({
       v.literal("closed"),
       v.literal("decided"),
     ),
+    // The admin's operational reason for an early close, kept ON the record;
+    // the audit summary carries only reason_present (Gate 4 round 12).
+    close_reason: v.optional(v.string()),
     created_at: v.number(),
     published_at: v.optional(v.number()),
     result_published_at: v.optional(v.number()),

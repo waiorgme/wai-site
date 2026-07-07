@@ -8,7 +8,7 @@ import { writeAudit } from "../lib/audit";
 import { logActivityOnce } from "../lib/activity";
 import { notify } from "../lib/notify";
 import { maybePromoteToActive } from "../lib/standing";
-import { eventDateLabel } from "../events";
+import { eventDateLabel, laneSeesEvent } from "../events";
 
 // Admin events console (panel-experience spec §A.3). Every function here is
 // requireAdmin, deny-by-default: queries throw the neutral not_authorized,
@@ -730,7 +730,8 @@ type CheckInResult =
         | "not_found"
         | "validation"
         | "invalid_state"
-        | "not_seated";
+        | "not_seated"
+        | "not_eligible";
     };
 
 // Producer-marked check-in (MVP attendance rule: never auto-detected).
@@ -793,6 +794,22 @@ export const checkIn = mutation({
     }
     if (reg.state === args.outcome) {
       return { ok: true, already: true, state: args.outcome };
+    }
+    // Marking ATTENDED grants attendance evidence + the Rung-2 standing
+    // credit, so the registrant must STILL be eligible at check-in time
+    // (Gate 4 round 12): a member since suspended, or corrected to
+    // minor/restricted so this event's lane no longer admits her, must not
+    // collect credit from a stale registration or pass. no_show has no
+    // credit, so it always records (she simply did not attend).
+    if (args.outcome === "attended") {
+      const member = await ctx.db.get(reg.member_id);
+      if (
+        member === null ||
+        member.lifecycle_state !== "active" ||
+        !laneSeesEvent(member.member_lane, event.audience_lane)
+      ) {
+        return { ok: false, error: "not_eligible" };
+      }
     }
     const before = reg.state;
     await ctx.db.patch(reg._id, {

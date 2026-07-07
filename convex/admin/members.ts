@@ -598,16 +598,23 @@ export const changeMemberStatus = mutation({
       return { ok: false, error: "invalid_transition" };
     }
     await ctx.db.patch(member._id, { lifecycle_state: args.to });
-    // The reason is the admin's own operational wording (spec F14 requires it
-    // recorded with the change); it is bounded and the UI instructs plain
-    // operational text, never member PII.
+    // The admin's operational reason is kept as an admin NOTE on the member -
+    // the dossier's purpose-built, in-context place for it - not baked into
+    // the immutable audit summary, which carries only the structured fact
+    // that a reason was recorded (Gate 4 round 12 data minimisation).
+    await ctx.db.insert("adminNotes", {
+      member_id: member._id,
+      author: adminEmail,
+      text: `Status changed ${from} -> ${args.to}: ${reason.slice(0, 500)}`,
+      created_at: Date.now(),
+    });
     await writeAudit(ctx, {
       actor: adminEmail,
       role: "admin_fallback",
       action: "changeMemberStatus",
       target_id: member._id,
       before_summary: `lifecycle_state=${from}`,
-      after_summary: `lifecycle_state=${args.to} reason="${reason.slice(0, 140)}"`,
+      after_summary: `lifecycle_state=${args.to} reason_present=true`,
       source: "admin_fallback",
     });
     return { ok: true, lifecycle_state: args.to };

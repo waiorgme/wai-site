@@ -578,3 +578,35 @@ describe("standing Rung-2 hook on the real updateProfile mutation", () => {
     expect(history).toHaveLength(0);
   });
 });
+
+describe("profile free-text is bounded at the write boundary (Gate 4 round 12)", () => {
+  it("an over-long bio, headline, or spammed array is refused; a normal profile saves", async () => {
+    const t = convexTest(schema, modules);
+    const { as } = await signInMember(t, "bounds@example.com");
+    // Over-long bio.
+    expect(
+      (await as.mutation(api.members.updateProfile, { bio: "x".repeat(1201) })).error,
+    ).toBe("invalid:bio");
+    // Over-long headline.
+    expect(
+      (await as.mutation(api.members.updateProfile, { headline: "y".repeat(141) })).error,
+    ).toBe("invalid:headline");
+    // Spammed array.
+    expect(
+      (
+        await as.mutation(api.members.updateProfile, {
+          sectors: Array.from({ length: 21 }, (_, i) => `Sector ${i}`),
+        })
+      ).error,
+    ).toBe("invalid:sectors");
+    // A normal profile within bounds saves.
+    expect(
+      (
+        await as.mutation(api.members.updateProfile, {
+          bio: "A short, honest bio.",
+          headline: "First Officer, A320",
+        })
+      ).ok,
+    ).toBe(true);
+  });
+});

@@ -190,6 +190,19 @@ branch); PlacementLog; partner-facing portal.
   youth portal stays the "Aviation for Girls" signpost. The lane VISIBILITY filter stays
   forward-compatible for when the safeguarding model ships; at launch no youth event
   publishes, so minors see an empty events list.
+- **Check-in re-checks current eligibility** (round-12 required fix): marking a member
+  ATTENDED (which grants attendance evidence + the Rung-2 standing credit) re-checks she
+  is still active and still admitted by the event's lane - a member since suspended or
+  corrected to minor/restricted cannot collect credit from a stale registration or pass.
+  A no-show always records (no credit).
+- **Member free-text is bounded at the write boundary** (round-12 required fix):
+  `validateProfileFields` caps every free-text profile field (bio, headline, employer,
+  etc.) and the picklist arrays before storage - not left to the 1 MB document ceiling.
+- **Admin reasons stay OFF the immutable audit summary** (round-12 required fix): a
+  status-change reason is kept as an admin note (the dossier's in-context place); revoke
+  and opportunity-close reasons live on their own records (`revoke_reason`,
+  `close_reason`); the audit summary carries only `reason_present`. `cancelEvent` already
+  did this (the reason is member-facing on the event).
 - **Certificate-issued notification lives in the shared issuer** (round-4 required fix):
   every issuance path - activation, migrated claim, guardian confirmation, the fallback
   mutation - notifies exactly once, past the idempotency return.
