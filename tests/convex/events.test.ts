@@ -1284,3 +1284,72 @@ describe("dossier audit actors never leak the member's email (Gate 4 round 6)", 
     expect(audits.some((a) => a.actor === "dossier-leak@example.com")).toBe(true);
   });
 });
+
+describe("check-in is seat-holders only (Gate 4 round 8)", () => {
+  it("a waitlisted member cannot be marked attended - by row OR by pass code - and gets no standing/activity", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t, { capacity: 1 });
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const asSeated = await signIn(t, "seated@example.com");
+    const asWaiting = await signIn(t, "waiting@example.com");
+    await asSeated.mutation(api.events.rsvp, { eventId }); // registered
+    await asWaiting.mutation(api.events.rsvp, { eventId }); // waitlisted
+
+    const regs = await regsForEvent(t, eventId);
+    const waitingReg = regs.find((r) => r.state === "waitlisted")!;
+
+    // By row id: refused.
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        registrationId: waitingReg._id,
+        outcome: "attended",
+      }),
+    ).toEqual({ ok: false, error: "not_seated" });
+
+    // By her real pass code: also refused (a scanned code is no bypass).
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        checkinCode: waitingReg.checkin_code,
+        outcome: "attended",
+      }),
+    ).toEqual({ ok: false, error: "not_seated" });
+
+    // Her row is untouched, no attendance activity, no standing bump.
+    const after = await regsForEvent(t, eventId);
+    expect(after.find((r) => r._id === waitingReg._id)!.state).toBe("waitlisted");
+    const activity = await t.run(async (ctx) =>
+      ctx.db
+        .query("activityLog")
+        .filter((q) => q.eq(q.field("member_id"), waitingReg.member_id))
+        .collect(),
+    );
+    expect(activity.filter((a) => a.type === "event_checked_in")).toHaveLength(0);
+    const waiting = await memberByEmail(t, "waiting@example.com");
+    expect(waiting!.standing ?? "member").toBe("member");
+  });
+
+  it("once promoted off the waitlist, the same member checks in normally", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t, { capacity: 1 });
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const asSeated = await signIn(t, "seat2@example.com");
+    const asWaiting = await signIn(t, "wait2@example.com");
+    await asSeated.mutation(api.events.rsvp, { eventId }); // registered
+    await asWaiting.mutation(api.events.rsvp, { eventId }); // waitlisted
+    // The seat holder cancels: the waitlisted member auto-promotes.
+    await asSeated.mutation(api.events.cancelMyRsvp, { eventId });
+
+    const regs = await regsForEvent(t, eventId);
+    const promoted = regs.find((r) => r.state === "registered")!;
+    expect(promoted.promoted_from_waitlist_at).not.toBeNull();
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        registrationId: promoted._id,
+        outcome: "attended",
+      }),
+    ).toEqual({ ok: true, state: "attended" });
+  });
+});

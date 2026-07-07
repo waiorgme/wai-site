@@ -654,7 +654,12 @@ type CheckInResult =
   | { ok: true; state: "attended" | "no_show"; already?: true }
   | {
       ok: false;
-      error: "not_authorized" | "not_found" | "validation" | "invalid_state";
+      error:
+        | "not_authorized"
+        | "not_found"
+        | "validation"
+        | "invalid_state"
+        | "not_seated";
     };
 
 // Producer-marked check-in (MVP attendance rule: never auto-detected).
@@ -692,6 +697,19 @@ export const checkIn = mutation({
         : await ctx.db.get(args.registrationId as Id<"eventRegistrations">);
     if (reg === null || reg.state === "cancelled" || reg.event_id !== args.eventId) {
       return { ok: false, error: "not_found" };
+    }
+    // Only a SEAT HOLDER can be checked in: registered (attending), or an
+    // attended/no_show row being corrected. A waitlisted member never got a
+    // seat, so marking her attended would hand out attendance evidence and
+    // Active-standing credit while bypassing the capacity/lane/lifecycle
+    // checks the promotion path enforces (Gate 4 round 8). She must be
+    // promoted through cancelMyRsvp's freed-seat path first.
+    if (
+      reg.state !== "registered" &&
+      reg.state !== "attended" &&
+      reg.state !== "no_show"
+    ) {
+      return { ok: false, error: "not_seated" };
     }
     const event = await ctx.db.get(reg.event_id);
     if (event === null) {

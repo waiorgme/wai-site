@@ -112,9 +112,11 @@ export function EventRegistrationsView({
               message:
                 res.error === "not_found"
                   ? "That code does not match a live booking."
-                  : res.error === "invalid_state"
-                    ? "This event is not open for check-in."
-                    : "That did not go through. Please try again.",
+                  : res.error === "not_seated"
+                    ? "That member is on the waiting list - a seat has to open before she can be checked in."
+                    : res.error === "invalid_state"
+                      ? "This event is not open for check-in."
+                      : "That did not go through. Please try again.",
             },
       );
       if (res.ok) {
@@ -152,6 +154,16 @@ export function EventRegistrationsView({
       case "actions":
         if (row.state === "cancelled") {
           return <span className="pn-meta">Cancelled her booking</span>;
+        }
+        // A waitlisted member never got a seat, so there is nothing to check
+        // in: a seat has to free first, which promotes her automatically
+        // (Gate 4 round 8). No mark buttons on a waitlisted row.
+        if (row.state === "waitlisted") {
+          return (
+            <span className="pn-meta">
+              On the waiting list - a seat must open before she can attend
+            </span>
+          );
         }
         if (!canMark) {
           return (
@@ -318,9 +330,11 @@ function MarkCell({ row, eventId }: { row: AdminRegistrationRow; eventId: Id<"ev
         setMessage({
           ok: false,
           text:
-            res.error === "invalid_state"
-              ? "This event is not open for check-in."
-              : "That did not go through. Please try again.",
+            res.error === "not_seated"
+              ? "She's on the waiting list - a seat has to open first."
+              : res.error === "invalid_state"
+                ? "This event is not open for check-in."
+                : "That did not go through. Please try again.",
         });
       }
     } catch {
