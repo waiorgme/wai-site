@@ -936,7 +936,12 @@ function LogoPanel({
           confirmDisabled={linking}
           footNote="This change is recorded in the audit log."
         >
-          <img src={pending.preview} alt="New logo preview" className="pn-logo-preview" />
+          {/* The preview is always a browser-minted object URL; the guard
+              makes that invariant explicit (and satisfies scanners tracing
+              the picked file into the src attribute). */}
+          {pending.preview.startsWith("blob:") ? (
+            <img src={pending.preview} alt="New logo preview" className="pn-logo-preview" />
+          ) : null}
         </Modal>
       ) : null}
     </PanelCard>
