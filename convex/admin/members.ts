@@ -173,7 +173,11 @@ export const listMembers = query({
         : searched.filter((m) => m.lifecycle_state === args.lifecycle);
     filtered.sort((a, b) => b.created_at - a.created_at);
     const total = filtered.length;
-    const page = Math.max(1, Math.floor(args.page ?? 1));
+    const page_count = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    // Clamped to the real page count: if rows shrink reactively while the
+    // admin sits on a later page, she lands on the last page instead of an
+    // empty view over a contradictory count strip.
+    const page = Math.min(Math.max(1, Math.floor(args.page ?? 1)), page_count);
     const start = (page - 1) * PAGE_SIZE;
     const rows = filtered.slice(start, start + PAGE_SIZE).map((m) => ({
       memberId: m._id,
@@ -188,7 +192,7 @@ export const listMembers = query({
     return {
       rows,
       page,
-      page_count: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+      page_count,
       total,
       lifecycle_counts,
     };

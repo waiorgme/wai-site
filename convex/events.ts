@@ -147,7 +147,10 @@ const toMemberRow = async (
   priority_window_start: event.priority_window_start ?? null,
   priority_window_end: event.priority_window_end ?? null,
   my_state: myState(await myRegistration(ctx, memberId, event._id)),
-  is_past: event.starts_at < now,
+  // Past means ENDED: a two-hour session that started ten minutes ago is
+  // live, not history - exactly when an online attendee hunts for the join
+  // link (design sweep, 2026-07-07). New RSVPs still close at starts_at.
+  is_past: event.ends_at < now,
 });
 
 // The member events list: published and postponed events, upcoming first, plus
@@ -165,7 +168,10 @@ export const listEvents = query({
     const now = Date.now();
     const horizon = now - RECENT_PAST_MS;
     const events: Doc<"events">[] = [];
-    for (const state of ["published", "postponed"] as const) {
+    // attendance_finalized stays on the board too: finalizing attendance
+    // must not vanish a delivered event from "Recent past events" (the
+    // 60-day promise above) or cut off recordings and the Attended mark.
+    for (const state of ["published", "postponed", "attendance_finalized"] as const) {
       const batch = await ctx.db
         .query("events")
         .withIndex("by_state_start", (q) =>
@@ -177,11 +183,13 @@ export const listEvents = query({
     const visible = events.filter((e) =>
       laneSeesEvent(member.member_lane, e.audience_lane),
     );
+    // The upcoming/past split matches is_past: ended events are history,
+    // a session underway still lists as upcoming.
     const upcoming = visible
-      .filter((e) => e.starts_at >= now)
+      .filter((e) => e.ends_at >= now)
       .sort((a, b) => a.starts_at - b.starts_at);
     const past = visible
-      .filter((e) => e.starts_at < now)
+      .filter((e) => e.ends_at < now)
       .sort((a, b) => b.starts_at - a.starts_at);
     const rows: MemberEventRow[] = [];
     for (const event of [...upcoming, ...past]) {
@@ -361,7 +369,7 @@ export const rsvp = mutation({
         member._id,
         "event_rsvp",
         `You're registered: ${event.title}`,
-        `Your seat is confirmed for ${event.title} on ${dateLabel}. Your event pass is ready in My events.`,
+        `Your seat is confirmed for ${event.title} on ${dateLabel}. Open the session in Events to see your pass.`,
         "/portal#events",
       );
     } else {
@@ -424,7 +432,7 @@ const promoteEarliestWaitlisted = async (
     next.member_id,
     "event_waitlist_promoted",
     `A seat opened: ${event.title}`,
-    `Good news. A seat opened up and you're now registered for ${event.title} on ${eventDateLabel(event.starts_at)}. Your event pass is ready in My events.`,
+    `Good news. A seat opened up and you're now registered for ${event.title} on ${eventDateLabel(event.starts_at)}. Open the session in Events to see your pass.`,
     "/portal#events",
   );
 };
@@ -532,7 +540,8 @@ export const myEvents = query({
         city: event.city ?? null,
         event_state: event.state,
         my_state: reg.state,
-        is_past: event.starts_at < now,
+        // Same rule as the board: past means ENDED, not started.
+        is_past: event.ends_at < now,
       });
     }
     rows.sort((a, b) => a.starts_at - b.starts_at);
