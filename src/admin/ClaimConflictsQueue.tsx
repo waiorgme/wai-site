@@ -3,7 +3,8 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { input, label, muted } from "../portal/ui";
 import { ConfirmAction } from "./ConfirmAction";
-import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
+import { queueSection, rowCard, rowMeta, rowName, tag } from "./ui";
+import { plural } from "./views/shared";
 
 // Claim conflicts queue (spec criterion 2, decided mechanic: correct + archive).
 // conflict rows can be RELEASED (confirmed as the verified person, optionally
@@ -21,7 +22,7 @@ const reasonCopy: Record<string, string> = {
 const readableReason = (raw: string | null, state: string): string => {
   if (raw === null) {
     return state === "suppressed_minor"
-      ? "Held until the record shows she is 18. It clears on its own; no action needed here. Email her within 2 working days if contact is warranted."
+      ? "Held until the record shows she is 18; it clears on its own and nothing here needs your action. The one exception: if she has written in asking about her claim, reply personally within 2 working days."
       : "Needs a human review.";
   }
   // The reason may carry appended resolution notes ("base; note"); keep the
@@ -47,11 +48,10 @@ export function ClaimConflictsQueue() {
 
   return (
     <section className={queueSection}>
-      <h2 className={queueTitle}>Claim conflicts</h2>
       {rows === undefined ? (
         <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p className={muted}>No rows waiting.</p>
+        <p className={muted}>No conflicts waiting.</p>
       ) : (
         groups.map((group) => {
           const groupRows = rows.filter((r) => r.duplicate_group === group);
@@ -85,9 +85,9 @@ export function ClaimConflictsQueue() {
 }
 
 const stateTag: Record<string, string> = {
-  conflict: "conflict",
-  suppressed_minor: "held (under 18)",
-  archived_conflict: "archived",
+  conflict: "Conflict",
+  suppressed_minor: "Held (under 18)",
+  archived_conflict: "Archived",
 };
 
 // Tag tone: a live conflict is the one state that needs a human now (err);
@@ -135,16 +135,17 @@ function ConflictRowCard({
           {stateTag[row.claim_state] ?? row.claim_state}
         </span>
         {hasLivePair && row.claim_state === "conflict" && (
-          <span className={tag}>duplicate email pair</span>
+          <span className={tag}>Duplicate email pair</span>
         )}
       </div>
       <p className={rowMeta}>{readableReason(row.conflict_reason, row.claim_state)}</p>
       <p className={rowMeta}>
-        Match signals: email {row.match_signals.email ? "yes" : "no"}, name{" "}
-        {row.match_signals.name ? "yes" : "no"}, mobile{" "}
-        {row.match_signals.mobile ? "yes" : "no"}, dob{" "}
-        {row.match_signals.dob ? "yes" : "no"}. {row.days_since_change} day(s) in
-        this state.
+        Compared with the record on file: email{" "}
+        {row.match_signals.email ? "matches" : "does not"}, name{" "}
+        {row.match_signals.name ? "matches" : "does not"}, mobile{" "}
+        {row.match_signals.mobile ? "matches" : "does not"}, date of birth{" "}
+        {row.match_signals.dob ? "matches" : "does not"}.{" "}
+        {plural(row.days_since_change, "day", "days")} in this state.
       </p>
 
       {/* Contact email: hidden by default (masked surface). Revealing one row's
@@ -170,7 +171,7 @@ function ConflictRowCard({
               setRevealed(res.email);
               return { ok: true, message: `Contact email: ${res.email}` };
             }
-            return { ok: false, message: "That could not be completed." };
+            return { ok: false, message: "That did not go through. Please try again." };
           }}
         />
       )}
@@ -207,7 +208,7 @@ function ConflictRowCard({
                     ? "Another live record still shares this email. Archive that one first, or give this one a unique corrected email."
                     : res.error === "validation"
                       ? "That corrected email is not valid."
-                      : "That could not be completed.";
+                      : "That did not go through. Please try again.";
               return { ok: false, message };
             }}
           >
@@ -253,7 +254,7 @@ function ConflictRowCard({
                 });
                 return res.ok
                   ? { ok: true, message: "Archived as a conflict." }
-                  : { ok: false, message: "That could not be completed." };
+                  : { ok: false, message: "That did not go through. Please try again." };
               }}
             >
               <label className={label}>

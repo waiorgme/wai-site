@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { CertificateAdminRow } from "../../../convex/admin/certificates";
@@ -37,15 +37,36 @@ const COLUMNS: ReadonlyArray<Column> = [
   { key: "actions", header: "Actions", width: "220px" },
 ];
 
+const PAGE_SIZE = 50;
+
 export function CertificatesView({ go }: { go: Go }) {
   const [filter, setFilter] = useState<"all" | CertStatus>("all");
   const [q, setQ] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  // Debounce the server search: the input stays live, the query refires only
+  // after a typing pause, so the table does not flash on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(q), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  // A pasted "WAIME-MEM-104" or "WAIME-104" should just work: the server
+  // matches names and bare digits, so strip the prefix before querying.
+  const normalized = search.trim().replace(/^waime-(mem-)?/i, "");
 
   // One unfiltered query (search server-side); the chips slice client-side so
   // every chip can carry its honest count.
-  const rows = useQuery(api.admin.certificates.listCertificates, {
-    search: q.trim() === "" ? undefined : q.trim(),
+  const live = useQuery(api.admin.certificates.listCertificates, {
+    search: normalized === "" ? undefined : normalized,
   });
+  // Keep the last loaded rows on screen while a refinement loads.
+  const [shown, setShown] = useState(live);
+  if (live !== undefined && live !== shown) {
+    setShown(live);
+  }
+  const rows = live ?? shown;
 
   const chips: ChipOption[] =
     rows === undefined
@@ -65,6 +86,12 @@ export function CertificatesView({ go }: { go: Go }) {
       : filter === "all"
         ? rows
         : rows.filter((r) => r.status === filter);
+
+  // Client-side pages: the data is already loaded, but 1,000+ DOM rows in one
+  // table is heavy, so slice to the same 50-row pages as the members list.
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const renderCell = (row: CertificateAdminRow, col: Column) => {
     switch (col.key) {
@@ -105,6 +132,7 @@ export function CertificatesView({ go }: { go: Go }) {
           <button
             type="button"
             className="pn-link"
+            aria-label={`Open member record for ${row.recipient_name}`}
             onClick={() => go("member", row.memberId)}
           >
             Open
@@ -140,35 +168,67 @@ export function CertificatesView({ go }: { go: Go }) {
           <FilterChips
             options={chips}
             active={filter}
-            onSelect={(key) => setFilter(key as "all" | CertStatus)}
+            onSelect={(key) => {
+              setFilter(key as "all" | CertStatus);
+              setPage(1);
+            }}
             label="Certificate status filter"
           />
           <span className="sp" />
           <SearchInput
             value={q}
-            onChange={setQ}
+            onChange={(value) => {
+              setQ(value);
+              setPage(1);
+            }}
             placeholder="Search by name or number"
           />
         </div>
         {rows === undefined ? (
           <p className="pn-meta pn-loading">Loading…</p>
         ) : (
-          <DataTable
-            columns={COLUMNS}
-            rows={filtered}
-            rowKey={(row) => row.certificateId}
-            renderCell={renderCell}
-            empty={
-              <EmptyState
-                eyebrow="Certificates"
-                message={
-                  q.trim() === ""
-                    ? "No certificates in this view. One is issued each time a membership becomes active."
-                    : "Nothing matches this search - try the member's name or the number without the WAIME-MEM prefix."
-                }
-              />
-            }
-          />
+          <>
+            <DataTable
+              columns={COLUMNS}
+              rows={pageRows}
+              rowKey={(row) => row.certificateId}
+              renderCell={renderCell}
+              empty={
+                <EmptyState
+                  eyebrow="Certificates"
+                  message={
+                    q.trim() === ""
+                      ? "No certificates in this view. One is issued each time a membership becomes active."
+                      : "Nothing matches this search - try the member's name or the number without the WAIME-MEM prefix."
+                  }
+                />
+              }
+            />
+            {filtered.length > 0 ? (
+              <div className="pn-pager">
+                <p className="pn-meta">
+                  Showing {pageRows.length} of {filtered.length} · Page{" "}
+                  {safePage} of {pageCount}
+                </p>
+                <button
+                  type="button"
+                  className="pn-btn pn-btn--ghost pn-btn--sm"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage(safePage - 1)}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="pn-btn pn-btn--ghost pn-btn--sm"
+                  disabled={safePage >= pageCount}
+                  onClick={() => setPage(safePage + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            ) : null}
+          </>
         )}
       </PanelCard>
     </>

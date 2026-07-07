@@ -4,7 +4,7 @@
 // and class-only recipes: the panel-kit.md handoff note (session scratchpad).
 
 import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 
 /* ---------- app shell ---------- */
 
@@ -130,29 +130,39 @@ export function SideNav({
       {groups.map((group, i) => (
         <div className="pn-side-grp" key={group.label ?? i}>
           {group.label ? <p className="pn-side-label">{group.label}</p> : null}
-          {group.items.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={item.soon ? "pn-app-nav-item is-soon" : "pn-app-nav-item"}
-              aria-current={item.active ? "true" : undefined}
-              aria-label={item.label}
-              title={collapsed ? item.label : undefined}
-              onClick={item.onSelect}
-            >
-              {item.icon ? (
-                <span className="ic" aria-hidden="true">
-                  {item.icon}
-                </span>
-              ) : null}
-              <span className="lb">{item.label}</span>
-              {item.soon ? (
-                <span className="n">Soon</span>
-              ) : typeof item.count === "number" ? (
-                <span className={item.live ? "n live" : "n"}>{item.count}</span>
-              ) : null}
-            </button>
-          ))}
+          {group.items.map((item) => {
+            // aria-label overrides the content-derived name, so it must carry
+            // the whole story a sighted user sees: the count pill or Soon.
+            const name = item.soon
+              ? `${item.label}, coming soon`
+              : typeof item.count === "number"
+                ? `${item.label}, ${item.count}`
+                : item.label;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                className={item.soon ? "pn-app-nav-item is-soon" : "pn-app-nav-item"}
+                aria-current={item.active ? "true" : undefined}
+                aria-disabled={item.soon ? true : undefined}
+                aria-label={name}
+                title={collapsed ? name : undefined}
+                onClick={item.onSelect}
+              >
+                {item.icon ? (
+                  <span className="ic" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                ) : null}
+                <span className="lb">{item.label}</span>
+                {item.soon ? (
+                  <span className="n">Soon</span>
+                ) : typeof item.count === "number" ? (
+                  <span className={item.live ? "n live" : "n"}>{item.count}</span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       ))}
     </nav>
@@ -230,7 +240,8 @@ export type Column = {
 };
 
 // Dense table inside a horizontal-scroll wrapper. When onRowClick is given,
-// rows become keyboard-activatable and a trailing arrow column is added.
+// a trailing arrow column holds the real (named, focusable) open control;
+// whole-row click stays as a pointer convenience.
 // Cell voices (identity, two-line, mono date) are class recipes: panel-kit.md.
 export function DataTable<Row>({
   columns,
@@ -238,6 +249,7 @@ export function DataTable<Row>({
   rowKey,
   renderCell,
   onRowClick,
+  rowLabel,
   empty,
 }: {
   columns: ReadonlyArray<Column>;
@@ -245,6 +257,8 @@ export function DataTable<Row>({
   rowKey: (row: Row) => string;
   renderCell: (row: Row, col: Column) => ReactNode;
   onRowClick?: (row: Row) => void;
+  // Accessible name for the row's open button, e.g. (m) => `Open ${m.name}`.
+  rowLabel?: (row: Row) => string;
   // Shown instead of the table when rows is empty (usually an <EmptyState />).
   empty?: ReactNode;
 }) {
@@ -279,15 +293,17 @@ export function DataTable<Row>({
             <tr
               key={rowKey(row)}
               className={onRowClick ? "pn-rowlink" : undefined}
-              tabIndex={onRowClick ? 0 : undefined}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              onKeyDown={
+              onClick={
                 onRowClick
-                  ? (e: KeyboardEvent<HTMLTableRowElement>) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onRowClick(row);
+                  ? (e: MouseEvent<HTMLTableRowElement>) => {
+                      // nested controls (incl. the arrow button) own their clicks
+                      if (
+                        e.target instanceof Element &&
+                        e.target.closest("button, a, input, select, textarea, label")
+                      ) {
+                        return;
                       }
+                      onRowClick(row);
                     }
                   : undefined
               }
@@ -299,7 +315,14 @@ export function DataTable<Row>({
               ))}
               {onRowClick ? (
                 <td className="pn-cell-arrow">
-                  <ArrowGlyph />
+                  <button
+                    type="button"
+                    className="pn-open"
+                    aria-label={rowLabel ? rowLabel(row) : "Open"}
+                    onClick={() => onRowClick(row)}
+                  >
+                    <ArrowGlyph />
+                  </button>
                 </td>
               ) : null}
             </tr>
@@ -414,7 +437,7 @@ export function StatTile({
   label: string;
   value: ReactNode;
   sub?: ReactNode;
-  // Small decorative mark (emoji or svg) in the top-end circle.
+  // Small decorative svg mark (an icons.tsx glyph) in the top-end circle.
   glyph?: ReactNode;
   tone?: "default" | "attention" | "urgent";
 }) {
@@ -487,6 +510,7 @@ export function Modal({
   cancelLabel,
   hideCancel,
   confirmDisabled,
+  busy,
   footNote,
   children,
 }: {
@@ -500,6 +524,9 @@ export function Modal({
   // Read-only dialogs (a pass, a preview) need ONE closer, not two.
   hideCancel?: boolean;
   confirmDisabled?: boolean;
+  // True while the confirm mutation runs: Escape/backdrop stop dismissing
+  // and Cancel disables, so the outcome always lands visibly.
+  busy?: boolean;
   // Audit sentence in the footer, e.g. "This action is recorded.".
   footNote?: ReactNode;
   children?: ReactNode;
@@ -515,6 +542,14 @@ export function Modal({
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+  const busyRef = useRef(busy === true);
+  useEffect(() => {
+    busyRef.current = busy === true;
+  }, [busy]);
+  // Backdrop clicks only close when the press also STARTED on the backdrop:
+  // a drag that begins inside the dialog (text selection in the reason
+  // field) releasing over the overlay must not discard the typed reason.
+  const overlayPressRef = useRef(false);
   useEffect(() => {
     // aria-modal promises the background does not exist: trap Tab inside the
     // dialog, lock body scroll, and hand focus back to the opener on close.
@@ -527,7 +562,7 @@ export function Modal({
     boxRef.current?.focus();
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") {
-        onCloseRef.current();
+        if (!busyRef.current) onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || boxRef.current === null) {
@@ -571,8 +606,11 @@ export function Modal({
   return (
     <div
       className="pn-modal-overlay"
+      onPointerDown={(e) => {
+        overlayPressRef.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && overlayPressRef.current && busy !== true) onClose();
       }}
     >
       <div
@@ -593,7 +631,12 @@ export function Modal({
         <div className="pn-modal-foot">
           {footNote ? <p className="note">{footNote}</p> : null}
           {!hideCancel && (
-            <button type="button" className="pn-btn pn-btn--ghost pn-btn--sm" onClick={onClose}>
+            <button
+              type="button"
+              className="pn-btn pn-btn--ghost pn-btn--sm"
+              onClick={onClose}
+              disabled={busy}
+            >
               {cancelLabel ?? "Cancel"}
             </button>
           )}

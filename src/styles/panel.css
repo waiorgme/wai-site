@@ -37,48 +37,6 @@
 
 .panel-scope ::selection { background: rgba(1, 139, 225, .22); color: var(--navy); }
 
-/* ---------- the navy hero band (locked dashboard shape) ---------- */
-
-.pn-hero {
-  background:
-    radial-gradient(1100px 480px at 50% -20%, var(--ink-3), transparent 62%),
-    linear-gradient(180deg, var(--navy), var(--ink-2));
-  color: var(--mist);
-  padding-block-start: clamp(22px, 4vw, 40px);
-  /* room for the paper section's daylight break to pull up over it */
-  padding-block-end: calc(clamp(26px, 5vw, 54px) + 34px);
-}
-
-.pn-hero-inner {
-  width: 100%;
-  max-width: var(--pn-maxw, 1040px);
-  margin-inline: auto;
-  padding-inline: var(--gutter);
-  display: grid;
-  gap: 18px;
-}
-
-.pn-hero .pn-h1 { color: var(--white); }
-.pn-hero p { color: var(--mist-mut); }
-
-/* the paper section "breaks into daylight" over the band (site signature) */
-.pn-main {
-  position: relative;
-  background: var(--paper);
-  border-radius: 40px 40px 0 0;
-  margin-block-start: -34px;
-  padding-block: clamp(26px, 4.5vw, 46px) clamp(48px, 7vw, 84px);
-}
-
-.pn-main-inner {
-  width: 100%;
-  max-width: var(--pn-maxw, 1040px);
-  margin-inline: auto;
-  padding-inline: var(--gutter);
-  display: grid;
-  gap: clamp(18px, 2.5vw, 26px);
-}
-
 /* centered single-card layouts (sign-in, claim, verify, guardian, join) */
 .pn-center {
   min-height: 100dvh;
@@ -152,7 +110,6 @@
   background: currentColor;
   opacity: .55;
 }
-.pn-hero .pn-eyebrow { color: var(--sky-glow); }
 .pn-eyebrow.on-paper { color: var(--sky-deep); } /* light-surface form, AA on paper */
 .pn-eyebrow--err { color: var(--err-deep); } /* revoked/superseded status voice */
 
@@ -254,34 +211,6 @@
   padding: 12px;
   border-radius: 16px;
   border: 1px dashed rgba(15, 35, 63, .3);
-}
-
-/* ---------- reserved slot: the honest "Soon" state ---------- */
-
-.pn-slot {
-  border: 1px dashed rgba(15, 35, 63, .3);
-  border-radius: var(--r-card);
-  background: transparent;
-  padding: 22px 20px;
-  display: grid;
-  gap: 8px;
-  color: var(--paper-mut);
-}
-.pn-slot .pn-name { color: var(--paper-mut); }
-
-.pn-soon {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: var(--r-chip);
-  border: 1px solid var(--info-border);
-  background: var(--info-tint);
-  color: var(--sky-deep);
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  justify-self: start;
 }
 
 /* ---------- recognition (the ONLY gold in the panel system) ---------- */

@@ -74,7 +74,7 @@ export function CertificateSection({
             </a>
             <ShareButton token={membershipCert.verify_token} />
             <span className="pn-meta pn-mono">
-              Membership Number WAIME-{membershipCert.membership_number}
+              Membership number WAIME-{membershipCert.membership_number}
             </span>
           </div>
         </>
@@ -104,7 +104,7 @@ function ShareButton({ token }: { token: string }) {
   // region inside the button (the button keeps its role and accessible name).
   return (
     <button type="button" className={linkBtn} onClick={() => void onShare()}>
-      <span role="status">{done ? "Link copied ✓" : "Share"}</span>
+      <span role="status">{done ? "Link copied" : "Share"}</span>
     </button>
   );
 }

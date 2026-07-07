@@ -8,6 +8,7 @@ import {
   downloadIcs,
   eventCategoryWord,
   gulfDate,
+  gulfDeadlineLabel,
   gulfTime,
 } from "../format";
 import type { PortalGo } from "../PortalShell";
@@ -99,11 +100,23 @@ export function EventDetailView({
         <p className="pn-eyebrow">{eventCategoryWord(event.category)}</p>
         <h1 className="pn-h1">{event.title}</h1>
         <p className="pn-hero-meta">
-          <span>{gulfDate(event.starts_at)}</span>
-          <span>
-            {gulfTime(event.starts_at)} to {gulfTime(event.ends_at)}{" "}
-            {event.timezone}
-          </span>
+          {/* An event crossing midnight (or running days) carries its end
+              date, so it never reads as ending before it starts. */}
+          {gulfDate(event.starts_at) === gulfDate(event.ends_at) ? (
+            <>
+              <span>{gulfDate(event.starts_at)}</span>
+              <span>
+                {gulfTime(event.starts_at)} to {gulfTime(event.ends_at)}{" "}
+                {event.timezone}
+              </span>
+            </>
+          ) : (
+            <span>
+              {gulfDate(event.starts_at)} {gulfTime(event.starts_at)} to{" "}
+              {gulfDate(event.ends_at)} {gulfTime(event.ends_at)}{" "}
+              {event.timezone}
+            </span>
+          )}
           <span>{whereLabel(event)}</span>
         </p>
         {event.host_name !== null && <p>Hosted by {event.host_name}.</p>}
@@ -122,8 +135,10 @@ export function EventDetailView({
       {event.state === "postponed" && (
         <PanelCard title="New date">
           <p className="pn-meta" role="status">
-            This session was moved. The date and time above are the new ones,
-            and your RSVP still counts.
+            This session was moved. The date and time above are the new ones
+            {event.my_state === "registered" || event.my_state === "waitlisted"
+              ? ", and your RSVP still counts."
+              : "."}
           </p>
         </PanelCard>
       )}
@@ -212,9 +227,11 @@ function SeatCard({
   // enforces the real rule either way.
   const priorityBlocked =
     inPriorityWindow && (membership?.standing ?? "member") === "member";
+  // Date + time (gulfDeadlineLabel): a date-only "opens on 10 July" reads as
+  // self-contradictory on 10 July itself while the window is still closing.
   const priorityOpensLabel =
     event.priority_window_end !== null
-      ? gulfDate(event.priority_window_end)
+      ? gulfDeadlineLabel(event.priority_window_end)
       : null;
 
   const doRsvp = async () => {
@@ -225,7 +242,7 @@ function SeatCard({
       if (res.ok) {
         setMessage(
           res.state === "registered"
-            ? "You're in. Your seat is confirmed and your pass is ready below."
+            ? "You're in. Your seat is confirmed and your pass is ready under My pass."
             : "You're on the waitlist. We'll tell you the moment a seat opens.",
         );
       } else if (res.error === "priority_window") {
@@ -270,6 +287,7 @@ function SeatCard({
       title: event.title,
       description: event.short_description,
       location: whereLabel(event),
+      url: event.meeting_link ?? undefined,
       startsAt: event.starts_at,
       endsAt: event.ends_at,
     });
@@ -299,7 +317,7 @@ function SeatCard({
         ) : (
           <>
             <div className="pn-row-head">
-              <span className="pn-tag pn-tag--ok">Registered ✓</span>
+              <span className="pn-tag pn-tag--ok">Registered</span>
               <span className="pn-meta">Your seat is confirmed.</span>
             </div>
             {event.meeting_link !== null && (
@@ -398,9 +416,13 @@ function SeatCard({
       ) : priorityBlocked ? (
         <>
           <p className="pn-muted">
-            {priorityOpensLabel !== null
-              ? `Seats open to everyone on ${priorityOpensLabel}. `
-              : "Seats open to everyone shortly. "}
+            {full
+              ? priorityOpensLabel !== null
+                ? `This one is full. From ${priorityOpensLabel} you can join the waitlist. `
+                : "This one is full. Shortly you can join the waitlist. "
+              : priorityOpensLabel !== null
+                ? `Seats open to everyone on ${priorityOpensLabel}. `
+                : "Seats open to everyone shortly. "}
             Members who take part get early access -{" "}
             <button
               type="button"
@@ -431,7 +453,13 @@ function SeatCard({
               disabled={busy}
               onClick={() => void doRsvp()}
             >
-              {busy ? "Saving your seat…" : full ? "Join the waitlist" : "RSVP"}
+              {busy
+                ? full
+                  ? "Joining the waitlist…"
+                  : "Saving your seat…"
+                : full
+                  ? "Join the waitlist"
+                  : "RSVP"}
             </button>
           </div>
         </>
@@ -453,10 +481,18 @@ function SeatCard({
           sub={`${event.title} · ${gulfDate(event.starts_at)}`}
           onClose={() => setCancelling(false)}
           onConfirm={() => void doCancel()}
-          confirmLabel="Yes, cancel it"
+          confirmLabel={
+            event.my_state === "waitlisted" ? "Yes, leave it" : "Yes, cancel it"
+          }
           cancelLabel="Keep it"
           confirmDisabled={busy}
-          footNote="If someone is waiting, your seat goes straight to the first person on the waitlist."
+          // A waitlisted member holds no seat, so the seat-passes-on note is
+          // only true for a registered one.
+          footNote={
+            event.my_state === "registered"
+              ? "If someone is waiting, your seat goes straight to the first person on the waitlist."
+              : undefined
+          }
         />
       )}
 
@@ -506,10 +542,13 @@ function PassModal({
               size={168}
               fgColor={QR_NAVY}
               bgColor="#fff"
+              title="Your check-in code"
             />
           </span>
           <p className="pn-meta">
-            Show this at the door - we scan it to check you in.
+            {pass.format === "online"
+              ? "We use this to check you in when the session starts."
+              : "Show this at the door - we scan it to check you in."}
           </p>
           <p className="pn-meta pn-mono">
             {gulfDate(pass.starts_at)} · {gulfTime(pass.starts_at)}{" "}

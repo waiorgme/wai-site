@@ -8,8 +8,8 @@ import { gstYear, LIFECYCLE_WORDS } from "./shared";
 // from the queries this console already has plus getReportAggregates
 // (pipeline opt-in count, active members by country / career stage). No
 // individuals, no export buttons - exports stay with the gated data-request
-// path. The activation funnel keeps the vault integrity rule word for word:
-// the imported list is registered, never implied active.
+// path. The old-list card keeps the vault integrity rule: the imported list
+// is registered, never implied active.
 
 const LIFECYCLE_ORDER: ReadonlyArray<Lifecycle> = [
   "active",
@@ -75,14 +75,14 @@ export function ReportsView() {
 
       <div className="pn-cols">
         <div className="main">
-          <PanelCard title="Activation funnel">
+          <PanelCard title="From the old list to active members">
             {counts === undefined ? (
               <p className="pn-meta">Loading…</p>
             ) : (
               <>
                 <ProgressBar
                   label="Registered (the imported list)"
-                  value={100}
+                  value={counts.legacy_registered > 0 ? 100 : 0}
                   valueLabel={String(counts.legacy_registered)}
                 />
                 <ProgressBar
@@ -109,10 +109,10 @@ export function ReportsView() {
                   valueLabel={String(counts.members_active)}
                 />
                 <p className="pn-meta">
-                  The rule this page keeps: the imported list is registered,
-                  never implied active. Active counts every confirmed member,
-                  new signups included, so it is not a slice of the imported
-                  list.
+                  Being on the old imported list only means registered. A
+                  member counts as active once she has confirmed her own
+                  account - that includes brand-new signups, so Active can be
+                  larger than Claimed.
                 </p>
               </>
             )}
@@ -164,7 +164,7 @@ export function ReportsView() {
               <StatTile
                 label="Attendance marks"
                 value={attendanceTotal ?? "…"}
-                sub="producer-marked, all time"
+                sub="marked at the event door, all time"
               />
             </div>
           </PanelCard>

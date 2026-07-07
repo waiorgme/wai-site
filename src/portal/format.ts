@@ -97,6 +97,16 @@ export const standingLine = (standing: Standing): string =>
       "The community's leading voices. By invitation, when the recognition programme opens.",
   })[standing];
 
+// Holder-voice variants for the invitation standings: the ladder rungs above
+// describe how to get there, which reads wrong to a member who already holds
+// the standing (her Home StandingCard addresses her directly).
+export const standingHolderLine = (standing: Standing): string =>
+  standing === "ambassador"
+    ? "Recognition for members who lift the community - awarded by invitation."
+    : standing === "leadership_circle"
+      ? "Recognition for the community's leading voices - awarded by invitation."
+      : standingLine(standing);
+
 // Deadlines follow the spec's "11:59 PM GST" label convention: Gulf time,
 // 12-hour clock, GST named.
 export const gulfDeadlineLabel = (ts: number): string => {
@@ -114,7 +124,7 @@ export type OpportunityType = "competitive" | "single_winner" | "evergreen";
 // Opportunity types in plain words (no internal jargon on member surfaces).
 export const opportunityTypeWord = (type: OpportunityType): string =>
   ({
-    competitive: "Scholarship - limited places",
+    competitive: "Limited places",
     single_winner: "One placement",
     evergreen: "Ongoing member benefit",
   })[type];
@@ -155,10 +165,14 @@ export const eventCategoryWord = (category: EventCategory): string =>
     conference: "Conference",
   })[category];
 
+// First + last word (matches the admin console's rule, and reads better for
+// multi-part names: "Mervat Al Sultan" is MS, not MA).
 export const initialsOf = (name: string): string => {
   const parts = name.split(/\s+/).filter((part) => part.length > 0);
-  const letters = parts
-    .slice(0, 2)
+  const first = parts.at(0);
+  const last = parts.length > 1 ? parts.at(-1) : undefined;
+  const letters = [first, last]
+    .filter((part): part is string => part !== undefined)
     .map((part) => part.charAt(0).toUpperCase())
     .join("");
   return letters === "" ? "M" : letters;
@@ -173,6 +187,7 @@ export const downloadIcs = (event: {
   title: string;
   description?: string;
   location?: string;
+  url?: string;
   startsAt: number;
   endsAt: number;
 }): void => {
@@ -195,7 +210,16 @@ export const downloadIcs = (event: {
     `DTEND:${stamp(event.endsAt)}`,
     `SUMMARY:${esc(event.title)}`,
     event.location ? `LOCATION:${esc(event.location)}` : null,
-    event.description ? `DESCRIPTION:${esc(event.description)}` : null,
+    event.url ? `URL:${event.url}` : null,
+    // The join link rides in the description too: some calendar apps never
+    // surface the URL property.
+    event.description || event.url
+      ? `DESCRIPTION:${esc(
+          [event.description, event.url ? `Join online: ${event.url}` : null]
+            .filter((part): part is string => Boolean(part))
+            .join("\n"),
+        )}`
+      : null,
     "END:VEVENT",
     "END:VCALENDAR",
   ].filter((line): line is string => line !== null);
@@ -203,7 +227,12 @@ export const downloadIcs = (event: {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "wai-me-event.ics";
+  const slug = event.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  anchor.download = `wai-me-${slug === "" ? "event" : slug}.ics`;
   anchor.click();
   URL.revokeObjectURL(url);
 };

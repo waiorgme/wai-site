@@ -3,7 +3,7 @@ import { api } from "../../../convex/_generated/api";
 import type { AdminOverviewCounts } from "../../../convex/admin/overview";
 import { EmptyState, PageHeader, PanelCard, ProgressBar, StatTile } from "../../panel/kit";
 import type { Go } from "./shared";
-import { greetingForHour, gstYear, localDateEyebrow, plainAction, plural } from "./shared";
+import { fmtGstDateTime, fmtInt, greetingForHour, gstYear, localDateEyebrow, plainAction, plural } from "./shared";
 
 // The console Overview v2 (panel-experience spec H17): a time-of-day greeting
 // (no name - we do not store the admin's name for this surface), a narrative
@@ -132,34 +132,34 @@ export function OverviewV2({
         <div className="pn-stats">
           <StatTile
             label="Active members"
-            value={counts.members_active}
+            value={fmtInt(counts.members_active)}
             sub="signed up or claimed, email confirmed"
           />
           <StatTile
             label="Waiting on a step"
-            value={counts.members_waiting}
+            value={fmtInt(counts.members_waiting)}
             sub="guardian, review or email confirmation"
           />
           <StatTile
             label="Open queue items"
-            value={queueTotal ?? 0}
+            value={fmtInt(queueTotal ?? 0)}
             sub="across the four review queues"
             tone={queueTotal !== undefined && queueTotal > 0 ? "attention" : "default"}
           />
           <StatTile
             label="Upcoming events"
-            value={upcoming ?? "…"}
+            value={upcoming === undefined ? "…" : fmtInt(upcoming)}
             sub="published, still ahead"
           />
           <StatTile
             label="Open opportunities"
-            value={openOpportunities ?? "…"}
+            value={openOpportunities === undefined ? "…" : fmtInt(openOpportunities)}
             sub="taking applications or claims now"
           />
           <StatTile
-            label="Legacy claimed so far"
-            value={counts.legacy_claimed}
-            sub={`of ${counts.legacy_registered} registered records - registered, never implied active`}
+            label="Old list claimed so far"
+            value={fmtInt(counts.legacy_claimed)}
+            sub={`of ${fmtInt(counts.legacy_registered)} people on the old member list - being on that list is not the same as being an active member`}
           />
         </div>
       )}
@@ -176,19 +176,19 @@ export function OverviewV2({
               />
             ) : (
               <>
-                {orderedQueues(counts).map(({ queue, count }) => (
-                  <button
-                    key={queue}
-                    type="button"
-                    className="pn-nav-item"
-                    onClick={() => go(queue)}
-                  >
-                    <span>{QUEUE_LABELS[queue]}</span>
-                    <span className={count > 0 ? "n live" : "n"}>
-                      {count} waiting
-                    </span>
-                  </button>
-                ))}
+                {orderedQueues(counts)
+                  .filter(({ count }) => count > 0)
+                  .map(({ queue, count }) => (
+                    <button
+                      key={queue}
+                      type="button"
+                      className="pn-nav-item"
+                      onClick={() => go(queue)}
+                    >
+                      <span>{QUEUE_LABELS[queue]}</span>
+                      <span className="n live">{count} waiting</span>
+                    </button>
+                  ))}
                 {endedUnfinalized.map((event) => (
                   <button
                     key={event.eventId}
@@ -200,21 +200,24 @@ export function OverviewV2({
                     <span className="n live">ended</span>
                   </button>
                 ))}
-                {closedUndecided.map((opportunity) => (
-                  <button
-                    key={opportunity.opportunityId}
-                    type="button"
-                    className="pn-nav-item"
-                    onClick={() => go("opportunityEditor", opportunity.opportunityId)}
-                  >
-                    <span>Results to record · {opportunity.title}</span>
-                    <span className="n live">
-                      {opportunity.application_counts.received +
-                        opportunity.application_counts.shortlisted}{" "}
-                      waiting
-                    </span>
-                  </button>
-                ))}
+                {closedUndecided.map((opportunity) => {
+                  const pending =
+                    opportunity.application_counts.received +
+                    opportunity.application_counts.shortlisted;
+                  return (
+                    <button
+                      key={opportunity.opportunityId}
+                      type="button"
+                      className="pn-nav-item"
+                      onClick={() => go("opportunityEditor", opportunity.opportunityId)}
+                    >
+                      <span>Results to record · {opportunity.title}</span>
+                      <span className="n live">
+                        {pending > 0 ? `${pending} waiting` : "decide"}
+                      </span>
+                    </button>
+                  );
+                })}
               </>
             )}
           </PanelCard>
@@ -329,9 +332,7 @@ function LatestActions({ onSeeAll }: { onSeeAll: () => void }) {
         <div className="pn-log">
           {page.rows.slice(0, 5).map((row) => (
             <div key={row.id} className="pn-log-row">
-              <span className="pn-when">
-                {new Date(row.timestamp).toLocaleString()}
-              </span>
+              <span className="pn-when">{fmtGstDateTime(row.timestamp)}</span>
               <p className="pn-meta">
                 <strong>{plainAction(row.action)}</strong> by {row.actor}
               </p>

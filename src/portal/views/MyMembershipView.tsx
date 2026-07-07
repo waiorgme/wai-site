@@ -168,9 +168,18 @@ export function MyMembershipView({
               )}
               <span>
                 <strong className={progress.profile_complete ? "done" : undefined}>
-                  Finish your profile basics
+                  {lane === "youth"
+                    ? "Your profile basics"
+                    : "Finish your profile basics"}
                 </strong>
-                {" - five quick fields."}
+                {lane === "youth" ? (
+                  <>
+                    {" - our team completes these with you. Email "}
+                    <a href="mailto:support@waiorg.me">support@waiorg.me</a>.
+                  </>
+                ) : (
+                  " - five quick fields."
+                )}
                 {progress.profile_complete ? (
                   <span className="sr-only"> Done.</span>
                 ) : null}
@@ -188,7 +197,9 @@ export function MyMembershipView({
                 <strong className={tookPart ? "done" : undefined}>
                   Take part once
                 </strong>
-                {" - attend an event, or apply for an opportunity."}
+                {lane === "youth"
+                  ? " - attend an event."
+                  : " - attend an event, or apply for an opportunity."}
                 {tookPart ? <span className="sr-only"> Done.</span> : null}
               </span>
             </li>
@@ -230,12 +241,12 @@ export function MyMembershipView({
             <div className="pn-notif" key={i}>
               <span className="row1">
                 <span className="t">
-                  {plainStanding(entry.from_standing)} →{" "}
+                  {plainStanding(entry.from_standing)} to{" "}
                   {plainStanding(entry.to_standing)}
                 </span>
                 <span className="when">{gulfDate(entry.timestamp)}</span>
               </span>
-              <span className="b">{entry.reason}</span>
+              <span className="b">{plainReason(entry.reason)}</span>
             </div>
           ))}
         </PanelCard>
@@ -280,6 +291,18 @@ export function MyMembershipView({
     </>
   );
 }
+
+// The server writes promotion reasons as "profile complete + {action}"
+// shorthand (convex/lib/standing.ts); member surfaces get the full sentence.
+// Anything unexpected is shown as recorded (honest, never invented).
+const PROMOTION_REASON_PREFIX = "profile complete + ";
+const plainReason = (reason: string): string => {
+  if (!reason.startsWith(PROMOTION_REASON_PREFIX)) return reason;
+  const action = reason.slice(PROMOTION_REASON_PREFIX.length);
+  return action.startsWith("completed your profile")
+    ? `You ${action}.`
+    : `You completed your profile and ${action}.`;
+};
 
 // standing_history rows arrive as plain strings; show known ones in plain
 // words and anything unexpected as recorded (honest, never invented).

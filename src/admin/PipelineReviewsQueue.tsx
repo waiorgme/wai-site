@@ -3,7 +3,9 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { input, label, muted } from "../portal/ui";
 import { ConfirmAction } from "./ConfirmAction";
-import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
+import { queueSection, rowCard, rowMeta, rowName, tag } from "./ui";
+import type { Lane } from "./views/shared";
+import { fmtGstDate, LANE_WORDS, plural } from "./views/shared";
 
 // Pipeline eligibility reviews queue (spec criterion 3). Each pending review can
 // be approved or rejected; the decision calls the SAME logic the break-glass
@@ -11,13 +13,20 @@ import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
 // free-text field). The panel can never approve a non-standard lane (server
 // guard).
 
+// Plain words for the raw consent_source enum (the same phrasing MemberDetail's
+// consents list uses), so no database value sits mid-sentence.
+const CONSENT_SOURCE_WORDS: Record<"join" | "claim" | "settings", string> = {
+  join: "when she joined",
+  claim: "while claiming her record",
+  settings: "in her settings",
+};
+
 export function PipelineReviewsQueue() {
   const rows = useQuery(api.admin.pipelineReviews.listPendingReviews);
   const decide = useMutation(api.admin.pipelineReviews.decidePipelineReviewFromPanel);
 
   return (
     <section className={queueSection}>
-      <h2 className={queueTitle}>Pipeline eligibility reviews</h2>
       {rows === undefined ? (
         <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
@@ -38,7 +47,7 @@ function ReviewRow({
   row: {
     reviewId: string;
     masked_name: string;
-    lane: string;
+    lane: Lane;
     days_open: number;
     consent_on_file: boolean;
     consent_date: number | null;
@@ -55,12 +64,12 @@ function ReviewRow({
     <div className={rowCard}>
       <div className="pn-row-head">
         <p className={rowName}>{row.masked_name}</p>
-        <span className={tag}>lane: {row.lane}</span>
+        <span className={tag}>{LANE_WORDS[row.lane]}</span>
       </div>
       <p className={rowMeta}>
-        Open {row.days_open} day(s).{" "}
+        Open {plural(row.days_open, "day", "days")}.{" "}
         {row.consent_on_file
-          ? `She attested her details are accurate when she opted in (${row.consent_source}${row.consent_date !== null ? `, ${new Date(row.consent_date).toLocaleDateString()}` : ""}).`
+          ? `She attested her details are accurate when she opted in${row.consent_source !== null ? ` (${CONSENT_SOURCE_WORDS[row.consent_source]}${row.consent_date !== null ? `, ${fmtGstDate(row.consent_date)}` : ""})` : ""}.`
           : "No attested consent is on record; approval is not available until she opts in."}
       </p>
       <div className="pn-actions">
@@ -77,7 +86,7 @@ function ReviewRow({
             });
             return res.ok
               ? { ok: true, message: "Approved. Her pipeline is now on." }
-              : { ok: false, message: "That could not be completed." };
+              : { ok: false, message: "That did not go through. Please try again." };
           }}
         >
           <label className={label}>
@@ -102,7 +111,7 @@ function ReviewRow({
             });
             return res.ok
               ? { ok: true, message: "Rejected." }
-              : { ok: false, message: "That could not be completed." };
+              : { ok: false, message: "That did not go through. Please try again." };
           }}
         >
           <label className={label}>

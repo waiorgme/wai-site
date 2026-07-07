@@ -6,7 +6,7 @@ import {
   type MemberView,
   type MembershipCertView,
 } from "./CertificateSection";
-import { standingWord, type Standing } from "../format";
+import { standingLine, standingWord, type Standing } from "../format";
 
 // The youth Home (Under-18 Launch Copy §2, copy VERBATIM from round 1's
 // youth dashboard): her certificate plus the Aviation for Girls home base.
@@ -30,7 +30,7 @@ export function YouthHomeView({
     <>
       <section className="pn-hero-card">
         <p className="pn-eyebrow">Member portal</p>
-        <h1 className="pn-h1">Welcome to Women in Aviation Middle East.</h1>
+        <h1 className="pn-h1">Welcome to Women in Aviation Middle East</h1>
         <p className={muted}>
           You're part of a regional community of women and girls who love
           aviation, and your journey starts here.
@@ -57,6 +57,9 @@ export function YouthHomeView({
             </div>
           )}
         </div>
+        {/* The plain explanation travels with the standing word (vault
+            mandate); the sidebar chip is the only exemption. */}
+        <p className={muted}>{standingLine(standing)}</p>
       </section>
 
       <CertificateSection
@@ -71,7 +74,7 @@ export function YouthHomeView({
         <p className={muted}>
           {"As a member under 18, your home base is "}
           <strong>Aviation for Girls</strong>
-          {", the youth program run by our parent organisation, Women in Aviation International. It's made for you, and it's free:"}
+          {", the youth programme run by our parent organisation, Women in Aviation International. It's made for you, and it's free:"}
         </p>
         <ul
           className={muted}
@@ -105,7 +108,7 @@ export function YouthHomeView({
             rel="noopener"
             className={primaryBtn}
           >
-            Explore Aviation for Girls →
+            Explore Aviation for Girls
           </a>
         </div>
         <p className={muted}>

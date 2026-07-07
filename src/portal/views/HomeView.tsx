@@ -12,7 +12,7 @@ import {
   gulfDate,
   gulfMonthDay,
   gulfTime,
-  standingLine,
+  standingHolderLine,
   standingWord,
   whenLabel,
 } from "../format";
@@ -86,7 +86,10 @@ export function HomeView({
         </div>
       </section>
 
-      <CompletenessCard go={go} />
+      <CompletenessCard
+        restricted={me.member_lane === "restricted_unknown"}
+        go={go}
+      />
 
       <div className="pn-grid">
         <UpcomingEventsCard go={go} />
@@ -116,8 +119,16 @@ export function HomeView({
 }
 
 // The five canonical "profile complete" fields (convex/lib/profile.ts), each
-// with the honest plain-words reason it matters.
-function CompletenessCard({ go }: { go: PortalGo }) {
+// with the honest plain-words reason it matters. The restricted_unknown lane
+// keeps opportunities and the directory locked until her date of birth is
+// confirmed, so its copy must not promise either.
+function CompletenessCard({
+  restricted,
+  go,
+}: {
+  restricted: boolean;
+  go: PortalGo;
+}) {
   const profile = useQuery(api.members.getMyProfile);
   if (profile === undefined) {
     return (
@@ -139,25 +150,33 @@ function CompletenessCard({ go }: { go: PortalGo }) {
     {
       key: "photo",
       label: "A profile photo",
-      unlocks: "shows on your directory card, if you choose to be listed",
+      unlocks: restricted
+        ? "puts a face to your name on your profile"
+        : "shows on your directory card, if you choose to be listed",
       done: profile.photo_url !== null,
     },
     {
       key: "stage",
       label: "Your career stage",
-      unlocks: "helps match the right opportunities to you",
+      unlocks: restricted
+        ? "tells us where you are in your aviation journey"
+        : "helps match the right opportunities to you",
       done: profile.career_stage_answer !== "",
     },
     {
       key: "field",
       label: "Your field",
-      unlocks: "partners see this when you apply",
+      unlocks: restricted
+        ? "tells us what you do in aviation"
+        : "partners see this when you apply",
       done: profile.function_area !== "",
     },
     {
       key: "country",
       label: "Your country",
-      unlocks: "shows on your applications and directory card",
+      unlocks: restricted
+        ? "tells us where in the region you are"
+        : "shows on your applications and directory card",
       done: profile.country_of_residence !== "",
     },
   ];
@@ -184,14 +203,16 @@ function CompletenessCard({ go }: { go: PortalGo }) {
       />
       {complete ? (
         <p className="pn-meta">
-          Your profile is complete - you can apply for opportunities, and it
-          counts toward Active Member standing. Keep it fresh as you grow.
+          {restricted
+            ? "Your profile is complete - it counts toward Active Member standing. Keep it fresh as you grow."
+            : "Your profile is complete - you can apply for opportunities, and it counts toward Active Member standing. Keep it fresh as you grow."}
         </p>
       ) : (
         <>
           <p className="pn-meta">
-            These five basics let you apply for opportunities, and they're half
-            of becoming an Active Member. The other half is taking part once.
+            {restricted
+              ? "These five basics are half of becoming an Active Member. The other half is taking part once."
+              : "These five basics let you apply for opportunities, and they're half of becoming an Active Member. The other half is taking part once."}
           </p>
           <ul className="pn-steps">
             {steps.map((step) => (
@@ -377,13 +398,21 @@ function StandingCard({
       ) : (
         <>
           <p className="pn-meta">
-            You're{" "}
-            {membership.standing === "active_member" ||
-            membership.standing === "ambassador"
-              ? "an"
-              : "a"}{" "}
-            <strong>{standingWord(membership.standing)}</strong>.{" "}
-            {standingLine(membership.standing)}
+            {membership.standing === "leadership_circle" ? (
+              <>
+                You're in the <strong>Leadership Circle</strong>.
+              </>
+            ) : (
+              <>
+                You're{" "}
+                {membership.standing === "active_member" ||
+                membership.standing === "ambassador"
+                  ? "an"
+                  : "a"}{" "}
+                <strong>{standingWord(membership.standing)}</strong>.
+              </>
+            )}{" "}
+            {standingHolderLine(membership.standing)}
           </p>
           {membership.standing === "member" ? (
             <p className="pn-meta">

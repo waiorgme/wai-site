@@ -3,7 +3,8 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { hint, input, label, muted } from "../portal/ui";
 import { ConfirmAction } from "./ConfirmAction";
-import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
+import { queueSection, rowCard, rowMeta, rowName, tag } from "./ui";
+import { plural } from "./views/shared";
 
 // DataRequest admin queue (spec criterion 6, the buildable part). Lists
 // submitted / identity_pending requests and lets the admin approve or reject
@@ -13,8 +14,20 @@ import { queueSection, queueTitle, rowCard, rowMeta, rowName, tag } from "./ui";
 // Plain-language labels for the raw state enum (same pattern as reasonCopy in
 // ClaimConflictsQueue), so the surface keeps its plain-language voice.
 const stateLabel: Record<string, string> = {
-  submitted: "new",
-  identity_pending: "checking identity",
+  submitted: "New",
+  identity_pending: "Checking identity",
+};
+
+// "Export" and "erasure" are GDPR words; the rows say what she actually asked
+// for, in the page sub's own plain terms.
+const kindTag: Record<"export" | "erasure", string> = {
+  export: "Copy of her data",
+  erasure: "Delete her data",
+};
+
+const kindPhrase: Record<"export" | "erasure", string> = {
+  export: "for a copy of her data",
+  erasure: "to delete her data",
 };
 
 export function DataRequestsQueue() {
@@ -23,7 +36,6 @@ export function DataRequestsQueue() {
 
   return (
     <section className={queueSection}>
-      <h2 className={queueTitle}>Data requests</h2>
       {rows === undefined ? (
         <p className={muted}>Loading…</p>
       ) : rows.length === 0 ? (
@@ -59,14 +71,14 @@ function DataRequestRow({
     <div className={rowCard}>
       <div className="pn-row-head">
         <p className={rowName}>{row.subject_email}</p>
-        <span className={`${tag} pn-tag--info`}>{row.kind}</span>
+        <span className={`${tag} pn-tag--info`}>{kindTag[row.kind]}</span>
         <span className={tag}>{stateLabel[row.state] ?? row.state}</span>
       </div>
       <p className={rowMeta}>
         {row.linked_member_name
           ? `Linked to member: ${row.linked_member_name}.`
           : "No linked member on file."}{" "}
-        Open {row.days_open} day(s).
+        Open {plural(row.days_open, "day", "days")}.
       </p>
       <p className={hint}>
         Approving records the decision only. Producing the export or carrying out
@@ -76,8 +88,8 @@ function DataRequestRow({
         <ConfirmAction
           label="Approve"
           confirmLabel="Yes, approve"
-          disabled={false}
-          summary={`Approve this ${row.kind} request for ${row.subject_email}. Record below how you confirmed the person's identity.`}
+          confirmDisabled={approveMethod.trim() === ""}
+          summary={`Approve ${row.subject_email}'s request ${kindPhrase[row.kind]}. Record below how you confirmed the person's identity.`}
           onConfirm={async () => {
             if (approveMethod.trim().length === 0) {
               return { ok: false, message: "Add how identity was confirmed first." };
@@ -89,7 +101,7 @@ function DataRequestRow({
             });
             return res.ok
               ? { ok: true, message: "Approved and recorded." }
-              : { ok: false, message: "That could not be completed." };
+              : { ok: false, message: "That did not go through. Please try again." };
           }}
         >
           <label className={label}>
@@ -105,7 +117,8 @@ function DataRequestRow({
         <ConfirmAction
           label="Reject"
           confirmLabel="Yes, reject"
-          summary={`Reject this ${row.kind} request for ${row.subject_email}. Record below why.`}
+          confirmDisabled={rejectReason.trim() === ""}
+          summary={`Reject ${row.subject_email}'s request ${kindPhrase[row.kind]}. Record below why.`}
           onConfirm={async () => {
             if (rejectReason.trim().length === 0) {
               return { ok: false, message: "Add a short note first." };
@@ -117,7 +130,7 @@ function DataRequestRow({
             });
             return res.ok
               ? { ok: true, message: "Rejected and recorded." }
-              : { ok: false, message: "That could not be completed." };
+              : { ok: false, message: "That did not go through. Please try again." };
           }}
         >
           <label className={label}>

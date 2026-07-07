@@ -5,7 +5,6 @@
 // className={...} (never style={...}).
 
 export const queueSection = "pn-card pn-queue pn-stack";
-export const queueTitle = "pn-sectitle pn-queue-head";
 export const rowCard = "pn-row";
 export const rowMeta = "pn-meta";
 export const rowName = "pn-name";

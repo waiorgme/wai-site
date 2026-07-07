@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -106,6 +106,23 @@ const checkForm = (form: FormState): string | null => {
       return "Capacity must be a whole number of at least 1, or left empty for no limit.";
     }
   }
+  if (
+    form.format === "online" &&
+    form.meeting_link.trim() !== "" &&
+    !form.meeting_link.trim().startsWith("https://")
+  ) {
+    return "The meeting link must start with https://.";
+  }
+  const hostEmail = form.host_email.trim();
+  if (hostEmail !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hostEmail)) {
+    return "The host email does not look like an email address.";
+  }
+  if (form.closes.trim() !== "") {
+    const closes = msFromGstInput(form.closes);
+    if (closes !== null && closes > starts) {
+      return "Registration should close before the event starts.";
+    }
+  }
   const winStart = form.window_start.trim();
   const winEnd = form.window_end.trim();
   if ((winStart === "") !== (winEnd === "")) {
@@ -116,6 +133,9 @@ const checkForm = (form: FormState): string | null => {
     const we = msFromGstInput(winEnd);
     if (ws === null || we === null || we <= ws) {
       return "The priority window must end after it starts.";
+    }
+    if (we > starts) {
+      return "The priority window should end before the event starts.";
     }
   }
   return null;
@@ -157,9 +177,19 @@ export function EventEditor({
   const [cancelReason, setCancelReason] = useState("");
   const [newStarts, setNewStarts] = useState("");
   const [newEnds, setNewEnds] = useState("");
+  const [postponeError, setPostponeError] = useState<string | null>(null);
   const [recording, setRecording] = useState("");
   const [materials, setMaterials] = useState("");
   const [linksOutcome, setLinksOutcome] = useState<{ ok: boolean; message: string } | null>(null);
+
+  // The Save button sits below the fold on this long form; without this a
+  // failed save can produce no visible change in the viewport.
+  const outcomeRef = useRef<HTMLParagraphElement | null>(null);
+  useEffect(() => {
+    if (outcome !== null) {
+      outcomeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [outcome]);
 
   // Initialise the form once the detail arrives (and again if the id changes).
   if (
@@ -236,6 +266,9 @@ export function EventEditor({
       if (res.ok) {
         if (effectiveId === undefined) {
           setSavedId(res.eventId);
+          // The form already holds exactly what was saved; skip the re-seed
+          // when the detail query lands so keystrokes are never reverted.
+          setLoadedFor(res.eventId);
           setOutcome({
             ok: true,
             message: "Saved. This event is a draft until you publish it.",
@@ -250,7 +283,7 @@ export function EventEditor({
             res.error === "invalid_state"
               ? "This event is closed history and can no longer be edited."
               : res.error === "validation"
-                ? "Some details were refused by the server. Check the times, capacity and text lengths."
+                ? "Some details could not be saved. Check the times, capacity, links, the host email and text lengths."
                 : "That did not go through. Please try again.",
         });
       }
@@ -264,6 +297,16 @@ export function EventEditor({
   const runStateChange = async (kind: Exclude<ConfirmKind, null>) => {
     if (effectiveId === undefined) {
       return;
+    }
+    // Validate the new times before anything else so a slip keeps the modal
+    // open with the correction instruction inside it, not behind it.
+    if (kind === "postpone") {
+      const ns = msFromGstInput(newStarts);
+      const ne = msFromGstInput(newEnds);
+      if (ns === null || ne === null || ne <= ns) {
+        setPostponeError("Set a new start and end, with the end after the start.");
+        return;
+      }
     }
     setBusy(true);
     try {
@@ -291,7 +334,7 @@ export function EventEditor({
           res.ok
             ? {
                 ok: true,
-                message: `Cancelled. ${res.notified} ${res.notified === 1 ? "member holding a booking was" : "members holding bookings were"} told, with your reason.`,
+                message: `Cancelled. ${res.notified} ${res.notified === 1 ? "member (registered or on the waiting list) was" : "members (registered or on the waiting list) were"} told, with your reason.`,
               }
             : {
                 ok: false,
@@ -304,17 +347,8 @@ export function EventEditor({
               },
         );
       } else {
-        const ns = msFromGstInput(newStarts);
-        const ne = msFromGstInput(newEnds);
-        if (ns === null || ne === null || ne <= ns) {
-          setOutcome({
-            ok: false,
-            message: "Set a new start and end, with the end after the start.",
-          });
-          setBusy(false);
-          setConfirming(null);
-          return;
-        }
+        const ns = msFromGstInput(newStarts) as number;
+        const ne = msFromGstInput(newEnds) as number;
         const res = await postpone({ eventId: effectiveId, newStartsAt: ns, newEndsAt: ne });
         if (res.ok) {
           // Resync the form times with the move: the form is seeded once per
@@ -327,7 +361,7 @@ export function EventEditor({
           res.ok
             ? {
                 ok: true,
-                message: `Moved. ${res.notified} ${res.notified === 1 ? "member was" : "members were"} told the new date; bookings stand.`,
+                message: `Moved. ${res.notified} ${res.notified === 1 ? "member (registered or on the waiting list) was" : "members (registered or on the waiting list) were"} told the new date; bookings stand.`,
               }
             : {
                 ok: false,
@@ -424,7 +458,7 @@ export function EventEditor({
       />
 
       {outcome !== null ? (
-        <p role="status" className={outcome.ok ? "pn-ok" : "pn-error"}>
+        <p ref={outcomeRef} role="status" className={outcome.ok ? "pn-ok" : "pn-error"}>
           {outcome.message}
         </p>
       ) : null}
@@ -592,7 +626,9 @@ export function EventEditor({
                   disabled={isClosed}
                   onChange={() => set("audience_lane", "adult")}
                 />
-                <span>Adults</span>
+                <span>
+                  <strong>Adults</strong>
+                </span>
               </label>
               <label className="pn-check">
                 <input
@@ -603,10 +639,8 @@ export function EventEditor({
                   onChange={() => set("audience_lane", "youth")}
                 />
                 <span>
-                  Under 18
-                  <br />
-                  Shown only to members under 18. Adult sessions never appear
-                  to them, and this one never appears to adults' boards.
+                  <strong>Under 18</strong> - shown only to members under 18;
+                  adults never see it, and adult sessions never appear to them.
                 </span>
               </label>
             </fieldset>
@@ -639,7 +673,8 @@ export function EventEditor({
             <p className="pn-hint">
               Leave capacity empty for no seat limit. When the seats fill,
               members join a waiting list automatically and are promoted in
-              order when a seat frees up.
+              order when a seat frees up. Leave the closing time empty and
+              members can register right up to the start.
             </p>
             <div className="pn-frow">
               <label className="pn-label">
@@ -725,7 +760,14 @@ export function EventEditor({
                         type="button"
                         className="pn-btn pn-btn--ghost pn-btn--sm"
                         disabled={busy}
-                        onClick={() => setConfirming("postpone")}
+                        onClick={() => {
+                          // Seed with the current schedule so a one-hour slip
+                          // is one field, and stale values never leak through.
+                          setNewStarts(gstInputValue(detail.starts_at));
+                          setNewEnds(gstInputValue(detail.ends_at));
+                          setPostponeError(null);
+                          setConfirming("postpone");
+                        }}
                       >
                         Postpone
                       </button>
@@ -852,11 +894,12 @@ export function EventEditor({
           }}
           onConfirm={() => void runStateChange("cancel")}
           confirmLabel={busy ? "Working…" : "Yes, cancel it"}
+          cancelLabel="Keep it"
           confirmDisabled={busy || cancelReason.trim() === ""}
-          footNote="Recorded in the audit log. Every member holding a booking is told, with your reason."
+          footNote="Recorded in the audit log. Everyone registered or on the waiting list is told, with your reason."
         >
           <label className="pn-label">
-            Reason (members see this)
+            Reason ({cancelReason.length} / 300, members see this)
             <textarea
               className="pn-input pn-textarea"
               value={cancelReason}
@@ -877,15 +920,21 @@ export function EventEditor({
           confirmDisabled={
             busy || newStarts.trim() === "" || newEnds.trim() === ""
           }
-          footNote="Bookings stand. Everyone holding one is told the new date. Recorded in the audit log."
+          footNote="Bookings stand. Everyone registered or on the waiting list is told the new date. Recorded in the audit log."
         >
+          {postponeError !== null ? (
+            <p className="pn-error">{postponeError}</p>
+          ) : null}
           <label className="pn-label">
             New start (GST, Gulf time)
             <input
               type="datetime-local"
               className="pn-input"
               value={newStarts}
-              onChange={(e) => setNewStarts(e.target.value)}
+              onChange={(e) => {
+                setNewStarts(e.target.value);
+                setPostponeError(null);
+              }}
             />
           </label>
           <label className="pn-label">
@@ -894,7 +943,10 @@ export function EventEditor({
               type="datetime-local"
               className="pn-input"
               value={newEnds}
-              onChange={(e) => setNewEnds(e.target.value)}
+              onChange={(e) => {
+                setNewEnds(e.target.value);
+                setPostponeError(null);
+              }}
             />
           </label>
         </Modal>

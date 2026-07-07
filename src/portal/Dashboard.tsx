@@ -81,6 +81,9 @@ export function Dashboard() {
           hasDobOnFile={claim.has_dob_on_file}
           genderOnFile={claim.gender_on_file}
         />
+        <button type="button" className={linkBtn} onClick={() => void signOut()}>
+          Sign out
+        </button>
       </div>
     );
   }
@@ -96,6 +99,9 @@ export function Dashboard() {
             at <a href="mailto:support@waiorg.me">support@waiorg.me</a>.
           </p>
         </div>
+        <button type="button" className={linkBtn} onClick={() => void signOut()}>
+          Sign out
+        </button>
       </div>
     );
   }
@@ -121,7 +127,9 @@ export function Dashboard() {
                 ? "Thanks for confirming your email. A team member is reviewing your details. This page will update as soon as your membership is confirmed."
                 : "Please confirm your email first. Check your inbox for the link we sent you."}
           </p>
-          {me.lifecycle_state === "pending_guardian" && <GuardianResend />}
+          {me.lifecycle_state === "pending_guardian" && (
+            <GuardianResend sent={guardianStatus?.sent === true} />
+          )}
         </div>
         {/* Data rights apply in every state, including while waiting on a
             guardian or a review (vault Privacy & Data Protection). */}
@@ -184,7 +192,7 @@ function Brand() {
 // "Send it again" on the pending-guardian waiting panel. An ACTION whose
 // reply reflects what actually happened: "Sent" only after Resend accepted
 // the email. The server throttles (1/hour, 3/day) and rotates the token.
-function GuardianResend() {
+function GuardianResend({ sent }: { sent: boolean }) {
   const resend = useAction(api.guardians.resendGuardianEmail);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -215,7 +223,11 @@ function GuardianResend() {
           }
         }}
       >
-        {busy ? "Sending…" : "Send the guardian email again"}
+        {busy
+          ? "Sending…"
+          : sent
+            ? "Send the guardian email again"
+            : "Send the guardian email"}
       </button>
       {message !== null && (
         <p className="pn-meta" role="status">

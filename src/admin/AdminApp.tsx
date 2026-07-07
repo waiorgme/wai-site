@@ -4,6 +4,7 @@ import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/re
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { convex } from "../portal/convex";
 import { sendLinkErrorMessage } from "../portal/errors";
+import { ErrorBoundary } from "../portal/ErrorBoundary";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { card, errorText, h1, input, linkBtn, muted, primaryBtn } from "../portal/ui";
@@ -72,7 +73,28 @@ export function AdminApp() {
         </Centered>
       </Unauthenticated>
       <Authenticated>
-        <AdminGate />
+        <ErrorBoundary
+          fallback={
+            <Centered>
+              <div className={card}>
+                <p className="pn-eyebrow on-paper">Admin console</p>
+                <h1 className={h1}>Something went wrong</h1>
+                <p className={muted}>
+                  Something went wrong on our side. Reload the page to continue.
+                </p>
+                <button
+                  type="button"
+                  className={linkBtn}
+                  onClick={() => window.location.reload()}
+                >
+                  Reload the page
+                </button>
+              </div>
+            </Centered>
+          }
+        >
+          <AdminGate />
+        </ErrorBoundary>
       </Authenticated>
     </ConvexAuthProvider>
   );
@@ -138,27 +160,107 @@ const QUEUE_LABELS: Record<QueueView, string> = {
 
 type AdminViewState = { v: AdminViewName; id?: string };
 
+// The console mirrors the portal shell's history mechanic: every view (and
+// detail/editor, via the id in the hash) is a real history entry, so browser
+// Back walks the console and a refresh keeps your place.
+const VIEW_TO_HASH: Readonly<Record<AdminViewName, string>> = {
+  overview: "",
+  members: "#members",
+  member: "#member",
+  certificates: "#certificates",
+  events: "#events",
+  eventEditor: "#event-editor",
+  eventRegs: "#event-registrations",
+  opportunities: "#opportunities",
+  opportunityEditor: "#opportunity-editor",
+  partners: "#partners",
+  partnerEditor: "#partner-editor",
+  reports: "#reports",
+  conflicts: "#claim-conflicts",
+  pipeline: "#pipeline-reviews",
+  guardians: "#pending-guardians",
+  dataRequests: "#data-requests",
+  audit: "#audit",
+};
+
+const HASH_TO_VIEW: Readonly<Record<string, AdminViewName>> = {
+  "#members": "members",
+  "#member": "member",
+  "#certificates": "certificates",
+  "#events": "events",
+  "#event-editor": "eventEditor",
+  "#event-registrations": "eventRegs",
+  "#opportunities": "opportunities",
+  "#opportunity-editor": "opportunityEditor",
+  "#partners": "partners",
+  "#partner-editor": "partnerEditor",
+  "#reports": "reports",
+  "#claim-conflicts": "conflicts",
+  "#pipeline-reviews": "pipeline",
+  "#pending-guardians": "guardians",
+  "#data-requests": "dataRequests",
+  "#audit": "audit",
+};
+
+const ID_VIEWS: ReadonlyArray<AdminViewName> = [
+  "member",
+  "eventEditor",
+  "eventRegs",
+  "opportunityEditor",
+  "partnerEditor",
+];
+
+// A detail hash with its id missing falls back to the list it belongs to.
+const ID_REQUIRED: Partial<Record<AdminViewName, AdminViewName>> = {
+  member: "members",
+  eventRegs: "events",
+};
+
+const hashForView = (view: AdminViewState): string => {
+  const base = VIEW_TO_HASH[view.v];
+  return view.id !== undefined && ID_VIEWS.includes(view.v)
+    ? `${base}/${encodeURIComponent(view.id)}`
+    : base;
+};
+
+const viewFromLocation = (): AdminViewState => {
+  if (typeof window === "undefined") {
+    return { v: "overview" };
+  }
+  const hash = window.location.hash;
+  const slash = hash.indexOf("/");
+  const base = slash === -1 ? hash : hash.slice(0, slash);
+  const v = HASH_TO_VIEW[base] ?? "overview";
+  const id = slash === -1 ? "" : decodeURIComponent(hash.slice(slash + 1));
+  if (id !== "" && ID_VIEWS.includes(v)) {
+    return { v, id };
+  }
+  return { v: ID_REQUIRED[v] ?? v };
+};
+
 // The four round-1 queues and the audit log keep their own internals but open
 // with the same page anatomy as every other console view.
 function QueuePage({
+  eyebrow = "Review queues",
   title,
   sub,
   children,
 }: {
+  eyebrow?: string;
   title: string;
   sub: string;
   children: ReactNode;
 }) {
   return (
     <>
-      <PageHeader eyebrow="Review queues" title={title} sub={sub} />
+      <PageHeader eyebrow={eyebrow} title={title} sub={sub} />
       {children}
     </>
   );
 }
 
 function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
-  const [view, setView] = useState<AdminViewState>({ v: "overview" });
+  const [view, setView] = useState<AdminViewState>(() => viewFromLocation());
   const counts = useQuery(api.admin.overview.getAdminOverview);
   // The admin is herself a member (the allowlist resolves through the members
   // table), so the identity block can carry her real email.
@@ -166,7 +268,23 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
   const paneRef = useRef<HTMLDivElement | null>(null);
   const mounted = useRef(false);
 
-  const go: Go = (v, id) => setView(id === undefined ? { v } : { v, id });
+  const go: Go = (v, id) => {
+    const target: AdminViewState = id === undefined ? { v } : { v, id };
+    setView(target);
+    const hash = hashForView(target);
+    const url = hash === "" ? window.location.pathname : hash;
+    if (window.location.hash !== hash) {
+      history.pushState(null, "", url);
+    }
+  };
+
+  // Manual hash edits and the browser Back/Forward buttons land on the right
+  // view (pushState itself never fires hashchange).
+  useEffect(() => {
+    const onHash = () => setView(viewFromLocation());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   // View switches move focus to the fresh pane (SPA focus discipline) and
   // return the scroll to the top. Skipped on first mount.
@@ -345,6 +463,7 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
       case "audit":
         return (
           <QueuePage
+            eyebrow="System"
             title="Recent panel actions"
             sub="Every change made through this console, newest first. Read-only."
           >
@@ -370,21 +489,32 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
       nav={<SideNav groups={groups} label="Admin sections" />}
       identity={
         <>
-          <span className="pn-initials">
+          <span className="pn-initials" title={me == null ? undefined : me.name}>
             {me == null || me.name.trim() === "" ? "SA" : initials(me.name)}
           </span>
           <span className="who">
             <span className="nm">{me == null ? "Super admin" : me.name}</span>
             {me == null ? null : <span className="em">{me.email}</span>}
-            <button type="button" className="out" onClick={onSignOut}>
-              Sign out
-            </button>
           </span>
+          <button type="button" className="pn-side-out" onClick={onSignOut}>
+            Sign out
+          </button>
         </>
       }
     >
       <div className="pn-view" ref={paneRef} tabIndex={-1}>
-        {page}
+        {/* Keyed by view so navigating away clears a failed pane. */}
+        <ErrorBoundary
+          key={`${view.v}:${view.id ?? ""}`}
+          fallback={
+            <p className="pn-error">
+              Something went wrong loading this view. Reload the page to try
+              again.
+            </p>
+          }
+        >
+          {page}
+        </ErrorBoundary>
       </div>
     </AppShell>
   );
@@ -448,6 +578,7 @@ function AdminSignIn() {
           type="email"
           required
           autoComplete="email"
+          aria-label="Email address"
           placeholder="you@example.com"
           className={input}
         />

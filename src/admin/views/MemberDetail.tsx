@@ -8,6 +8,7 @@ import { EmptyState, Modal, PageHeader, PanelCard, ProgressBar, Tabs } from "../
 import { CertificateRowActions } from "./CertificateActions";
 import type { Go, Lifecycle, Standing } from "./shared";
 import {
+  dateStringLabel,
   fmtGstDate,
   fmtGstDateTime,
   LANE_EXPLAIN,
@@ -93,11 +94,11 @@ export function MemberDetail({
       </nav>
 
       <PageHeader
-        eyebrow={`${LIFECYCLE_WORDS[dossier.lifecycle_state]} · member since ${dossier.joined}`}
+        eyebrow={`${LIFECYCLE_WORDS[dossier.lifecycle_state]} · member since ${dateStringLabel(dossier.joined)}`}
         title={dossier.name}
         sub={
           dossier.membership_number !== null
-            ? `WAIME-MEM-${dossier.membership_number} · ${dossier.source === "migrated" ? "moved across from the old list" : "joined through the site"}`
+            ? `WAIME-MEM-${dossier.membership_number} · shown to members as WAIME-${dossier.membership_number} · ${dossier.source === "migrated" ? "moved across from the old list" : "joined through the site"}`
             : dossier.source === "migrated"
               ? "moved across from the old list"
               : "joined through the site"
@@ -126,7 +127,7 @@ export function MemberDetail({
       {legalMoves.length === 0 ? (
         <p className="pn-meta">
           Status changes here cover active, dormant and suspended. This record
-          is {LIFECYCLE_WORDS[dossier.lifecycle_state].toLowerCase()};{" "}
+          is {LIFECYCLE_WORDS[dossier.lifecycle_state].toLowerCase()}.{" "}
           {LIFECYCLE_EXPLAIN[dossier.lifecycle_state]}
         </p>
       ) : null}
@@ -233,7 +234,7 @@ function StatusChangeModal({
       onConfirm={() => void submit()}
       confirmLabel={busy ? "Working…" : "Yes, change it"}
       confirmDisabled={busy || to === null || reason.trim() === ""}
-      footNote="Recorded in the audit log with your reason. Erasure requests are handled in the data-requests queue, never here."
+      footNote="Recorded in the audit log with your reason. She is not sent an email about this; her portal simply reflects the new status the next time she signs in. Erasure requests are handled in the data-requests queue, never here."
     >
       <p className="pn-meta">
         Only the moves allowed from her current status are listed.
@@ -258,10 +259,12 @@ function StatusChangeModal({
         <textarea
           className="pn-input pn-textarea"
           value={reason}
+          maxLength={140}
           onChange={(e) => setReason(e.target.value)}
           placeholder="Plain operational wording, e.g. 'asked to pause while abroad'"
         />
       </label>
+      <p className="pn-hint">Up to 140 characters.</p>
     </Modal>
   );
 }
@@ -393,7 +396,7 @@ function ConsentsList({
                     : latest.source === "claim"
                       ? "given while claiming"
                       : "given at join"}{" "}
-                  · {fmtGstDate(latest.timestamp)} · policy{" "}
+                  · {fmtGstDate(latest.timestamp)} · terms version{" "}
                   {latest.policy_version}
                 </>
               )}
@@ -627,7 +630,7 @@ const REG_WORDS: Record<
   string
 > = {
   registered: "Registered",
-  waitlisted: "On the waiting list",
+  waitlisted: "On the waitlist",
   cancelled: "Cancelled",
   attended: "Attended",
   no_show: "No show",
@@ -784,6 +787,16 @@ function CertificatesTab({ dossier }: { dossier: MemberDossier }) {
               ) : null}
             </div>
             <p className="pn-meta">Issued {cert.issued_date_label}</p>
+            {cert.status === "superseded" ? (
+              <p className="pn-meta">
+                Superseded - replaced by a newer certificate on this record.
+              </p>
+            ) : null}
+            {cert.status === "revoked" ? (
+              <p className="pn-meta">
+                Revoked - the reason is in the audit trail.
+              </p>
+            ) : null}
             <CertificateRowActions
               certificateId={cert.certificateId}
               status={cert.status}
@@ -847,7 +860,10 @@ function NotesTab({ dossier }: { dossier: MemberDossier }) {
                   <span className="pn-when">
                     {note.author} · {fmtGstDateTime(note.created_at)}
                   </span>
-                  <p className="pn-meta">{note.text}</p>
+                  {/* Notes are written in a textarea; keep their line breaks. */}
+                  <p className="pn-meta" style={{ whiteSpace: "pre-wrap" }}>
+                    {note.text}
+                  </p>
                 </div>
               ))}
             </div>
@@ -863,6 +879,7 @@ function NotesTab({ dossier }: { dossier: MemberDossier }) {
               className="pn-input pn-textarea"
               value={text}
               maxLength={2000}
+              placeholder="e.g. called about her certificate, resolved"
               onChange={(e) => setText(e.target.value)}
             />
           </label>

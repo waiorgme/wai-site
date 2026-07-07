@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { linkBtn, primaryBtn } from "../portal/ui";
 
@@ -23,6 +23,7 @@ export function ConfirmAction({
   onConfirm,
   children,
   disabled,
+  confirmDisabled,
 }: {
   // The trigger button copy (e.g. "Resend the guardian email").
   label: string;
@@ -36,22 +37,43 @@ export function ConfirmAction({
   // Optional extra inputs shown while proposing (e.g. a verification note).
   children?: ReactNode;
   disabled?: boolean;
+  // Keeps the confirm button off until required inputs are filled (the server
+  // check stays the backstop).
+  confirmDisabled?: boolean;
 }) {
   const [proposing, setProposing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Result | null>(null);
+  const proposeRef = useRef<HTMLDivElement | null>(null);
+  const okRef = useRef<HTMLParagraphElement | null>(null);
+  const failRef = useRef<HTMLDivElement | null>(null);
+
+  // Each step transition unmounts the focused element, dropping focus to
+  // <body>; move focus with the step so keyboard and screen-reader users keep
+  // their place in the row (same discipline as AdminConsole's view pane).
+  useEffect(() => {
+    if (outcome === null) {
+      if (proposing) {
+        proposeRef.current?.focus();
+      }
+    } else if (outcome.ok) {
+      okRef.current?.focus();
+    } else {
+      failRef.current?.focus();
+    }
+  }, [proposing, outcome]);
 
   if (outcome !== null) {
     if (outcome.ok) {
       return (
-        <p role="status" className="pn-ok">
+        <p role="status" className="pn-ok" tabIndex={-1} ref={okRef}>
           {outcome.message}
         </p>
       );
     }
     return (
-      <div className="pn-stack">
-        <p role="status" className="pn-error">
+      <div className="pn-stack" tabIndex={-1} ref={failRef}>
+        <p role="alert" className="pn-error">
           {outcome.message}
         </p>
         <button
@@ -79,14 +101,14 @@ export function ConfirmAction({
   }
 
   return (
-    <div className="pn-propose">
+    <div className="pn-propose" tabIndex={-1} ref={proposeRef}>
       <p className="pn-meta">{summary}</p>
       {children}
       <div className="pn-confirm-row">
         <button
           type="button"
           className={primaryBtn}
-          disabled={busy}
+          disabled={busy || confirmDisabled}
           onClick={async () => {
             setBusy(true);
             try {

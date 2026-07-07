@@ -4,6 +4,7 @@ import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { convex } from "./convex";
 import { sendLinkErrorMessage } from "./errors";
 import { Dashboard } from "./Dashboard";
+import { ErrorBoundary } from "./ErrorBoundary";
 import {
   card,
   errorText,
@@ -31,7 +32,31 @@ export function PortalApp() {
         <SignIn />
       </Unauthenticated>
       <Authenticated>
-        <Dashboard />
+        <ErrorBoundary
+          fallback={
+            <div className="pn-center">
+              <Brand />
+              <div className={card}>
+                <p className="pn-eyebrow on-paper">Member portal</p>
+                <h1 className={h1}>Something went wrong</h1>
+                <p className={muted}>
+                  Something went wrong on our side. Reload the page, or email{" "}
+                  <a href="mailto:support@waiorg.me">support@waiorg.me</a> and we
+                  will sort it out together.
+                </p>
+                <button
+                  type="button"
+                  className={linkBtn}
+                  onClick={() => window.location.reload()}
+                >
+                  Reload the page
+                </button>
+              </div>
+            </div>
+          }
+        >
+          <Dashboard />
+        </ErrorBoundary>
       </Authenticated>
     </ConvexAuthProvider>
   );
@@ -108,6 +133,7 @@ function SignIn() {
             type="email"
             required
             autoComplete="email"
+            aria-label="Email address"
             placeholder="you@example.com"
             className={input}
           />

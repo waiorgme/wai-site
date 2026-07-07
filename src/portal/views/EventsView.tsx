@@ -37,14 +37,27 @@ export function EventsView({
           lane === "youth"
             ? "Sessions for members under 18. RSVP with one tap - if a session is full, you join the waitlist automatically."
             : restricted
-              ? "Adult sessions open once we confirm your date of birth; sessions for members under 18 appear here. Write to support@waiorg.me and we will sort it out together."
+              ? (
+                  <>
+                    Adult sessions open once we confirm your date of birth;
+                    sessions for members under 18 appear here. Write to{" "}
+                    <a href="mailto:support@waiorg.me">support@waiorg.me</a> and
+                    we will sort it out together.
+                  </>
+                )
               : "Workshops and sessions run by the community. RSVP with one tap - if a session is full, you join the waitlist automatically."
         }
       />
 
       <PanelCard
         title="Upcoming"
-        count={rows === undefined ? undefined : `· ${upcoming.length}`}
+        // No count while loading, and none on the inactive-membership lock:
+        // "· 0" beside a locked list reads as an empty one.
+        count={
+          rows === undefined || rows === null
+            ? undefined
+            : `· ${upcoming.length}`
+        }
         tight
       >
         {rows === undefined ? (

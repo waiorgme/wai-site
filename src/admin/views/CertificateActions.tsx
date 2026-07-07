@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -32,9 +32,20 @@ export function CertificateRowActions({
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null);
 
-  if (outcome !== null) {
+  // On success the modal unmounts and its opener is gone, so hand focus to
+  // the outcome line; keyboard users keep their place in the table.
+  const okRef = useRef<HTMLParagraphElement | null>(null);
+  useEffect(() => {
+    if (outcome !== null && outcome.ok) {
+      okRef.current?.focus();
+    }
+  }, [outcome]);
+
+  // Success is terminal: the certificate's state has changed and the row's
+  // actions no longer apply. A failure keeps the action links below.
+  if (outcome !== null && outcome.ok) {
     return (
-      <p role="status" className={outcome.ok ? "pn-ok" : "pn-error"}>
+      <p role="status" tabIndex={-1} ref={okRef} className="pn-ok">
         {outcome.message}
       </p>
     );
@@ -90,7 +101,7 @@ export function CertificateRowActions({
             res.error === "ineligible"
               ? "Only the live certificate in a chain can be corrected."
               : res.error === "validation"
-                ? "The corrected name cannot be empty."
+                ? "The corrected name is required and can be up to 120 characters."
                 : "That did not go through. Please try again.",
         });
         setOpen(null);
@@ -105,12 +116,31 @@ export function CertificateRowActions({
 
   return (
     <span className="pn-btn-row">
-      <button type="button" className="pn-link" onClick={() => setOpen("revoke")}>
+      <button
+        type="button"
+        className="pn-link"
+        onClick={() => {
+          setOutcome(null);
+          setOpen("revoke");
+        }}
+      >
         Revoke
       </button>
-      <button type="button" className="pn-link" onClick={() => setOpen("reissue")}>
+      <button
+        type="button"
+        className="pn-link"
+        onClick={() => {
+          setOutcome(null);
+          setOpen("reissue");
+        }}
+      >
         Re-issue correction
       </button>
+      {outcome !== null ? (
+        <span role="status" className="pn-error">
+          {outcome.message}
+        </span>
+      ) : null}
       {open === "revoke" && (
         <Modal
           title="Revoke this certificate"
@@ -119,16 +149,24 @@ export function CertificateRowActions({
           onConfirm={() => void onRevoke()}
           confirmLabel={busy ? "Working…" : "Yes, revoke it"}
           confirmDisabled={busy || reason.trim() === ""}
-          footNote="Recorded in the audit log. The public verification page will answer 'revoked' for this certificate. Only a super admin can do this - the server checks."
+          footNote="Recorded in the audit log. The public verification page will answer 'revoked' for this certificate. Only you and Issam can do this."
         >
+          <p className="pn-meta">
+            Her membership and number are not changed by this - only the
+            certificate stops being valid. She is not sent anything
+            automatically; contact her yourself if she should know.
+          </p>
           <label className="pn-label">
             Reason (required, goes in the audit log)
             <textarea
               className="pn-input pn-textarea"
               value={reason}
+              maxLength={140}
+              placeholder="e.g. issued in error to the wrong person"
               onChange={(e) => setReason(e.target.value)}
             />
           </label>
+          <p className="pn-hint">Up to 140 characters.</p>
         </Modal>
       )}
       {open === "reissue" && (
@@ -139,13 +177,14 @@ export function CertificateRowActions({
           onConfirm={() => void onReissue()}
           confirmLabel={busy ? "Working…" : "Yes, issue the correction"}
           confirmDisabled={busy || correctedName.trim() === ""}
-          footNote="Recorded in the audit log. The member is told her corrected certificate is ready. Only a super admin can do this - the server checks."
+          footNote="Recorded in the audit log. The member is told her corrected certificate is ready. Only you and Issam can do this."
         >
           <label className="pn-label">
             Corrected name (exactly as it should appear)
             <input
               className="pn-input"
               value={correctedName}
+              maxLength={120}
               onChange={(e) => setCorrectedName(e.target.value)}
             />
           </label>

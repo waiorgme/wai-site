@@ -22,6 +22,7 @@ import type {
   MemberView,
   MembershipCertView,
 } from "./views/CertificateSection";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { initialsOf, standingWord } from "./format";
 import { HomeView } from "./views/HomeView";
 import { YouthHomeView } from "./views/YouthHomeView";
@@ -110,6 +111,17 @@ const VIEW_TO_HASH: Readonly<Record<PortalViewKey, string>> = {
   notifications: "#notifications",
 };
 
+// Detail views carry their id in the hash ("#events/<id>") so each detail is
+// a real history entry: Back returns to the list, refresh keeps the detail.
+const ID_VIEWS: ReadonlyArray<PortalViewKey> = ["events", "opportunities"];
+
+const hashForView = (view: PortalViewState): string => {
+  const base = VIEW_TO_HASH[view.v];
+  return view.id !== undefined && ID_VIEWS.includes(view.v)
+    ? `${base}/${encodeURIComponent(view.id)}`
+    : base;
+};
+
 // Notification hrefs are written server-side as "/portal", "/portal#events",
 // "/portal#opportunities": resolve them to an in-shell view; anything else
 // (a real page like /verify) is a plain navigation.
@@ -121,15 +133,26 @@ export const hrefToView = (href: string): PortalViewKey | null => {
   if (hashStart === -1) {
     return "home";
   }
-  return HASH_TO_VIEW[href.slice(hashStart)] ?? "home";
+  const base = href.slice(hashStart).split("/")[0] ?? "";
+  return HASH_TO_VIEW[base] ?? "home";
 };
 
 const viewFromLocation = (lane: PortalLane): PortalViewState => {
   if (typeof window === "undefined") {
     return { v: "home" };
   }
-  const v = HASH_TO_VIEW[window.location.hash] ?? "home";
-  return { v: laneAllows(lane, v) ? v : "home" };
+  const hash = window.location.hash;
+  const slash = hash.indexOf("/");
+  const base = slash === -1 ? hash : hash.slice(0, slash);
+  const v = HASH_TO_VIEW[base] ?? "home";
+  if (!laneAllows(lane, v)) {
+    // A blocked deep link renders Home; reconcile the address bar so a
+    // refresh or share doesn't keep a URL that disagrees with the screen.
+    history.replaceState(null, "", window.location.pathname);
+    return { v: "home" };
+  }
+  const id = slash === -1 ? "" : decodeURIComponent(hash.slice(slash + 1));
+  return id !== "" && ID_VIEWS.includes(v) ? { v, id } : { v };
 };
 
 export function PortalShell({
@@ -154,13 +177,15 @@ export function PortalShell({
   const go = useCallback<PortalGo>(
     (next) => {
       const v = laneAllows(lane, next.v) ? next.v : "home";
-      setView({ ...next, v });
+      const target: PortalViewState = { ...next, v };
+      setView(target);
       if (typeof window !== "undefined") {
-        const hash = VIEW_TO_HASH[v];
+        const hash = hashForView(target);
         const url = hash === "" ? window.location.pathname : hash;
         if (window.location.hash !== hash) {
-          // A real history entry per view, so the browser Back button steps
-          // back through the shell instead of leaving the portal.
+          // A real history entry per view (details included, via the id in
+          // the hash), so the browser Back button steps back through the
+          // shell instead of leaving the portal.
           history.pushState(null, "", url);
         }
       }
@@ -203,7 +228,7 @@ export function PortalShell({
           { items: [item("home", "Home", <IconHome />)] },
           { label: "Take part", items: [item("events", "Events", <IconCalendar />)] },
           {
-            label: "Your membership",
+            label: "Membership",
             items: [
               item("membership", "My membership", <IconAward />),
               item("yourdata", "Your data", <IconDatabase />),
@@ -223,7 +248,7 @@ export function PortalShell({
             ],
           },
           {
-            label: "Your membership",
+            label: "Membership",
             items: [
               item("membership", "My membership", <IconAward />),
               item("profile", "Profile", <IconUser />),
@@ -306,10 +331,12 @@ export function PortalShell({
           </span>
           <button
             type="button"
-            className="pn-bell"
+            className={view.v === "notifications" ? "pn-bell is-active" : "pn-bell"}
             aria-label={
               unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
             }
+            aria-current={view.v === "notifications" ? "true" : undefined}
+            title="Notifications"
             onClick={() => go({ v: "notifications" })}
           >
             <BellGlyph />
@@ -320,13 +347,19 @@ export function PortalShell({
       nav={<SideNav groups={groups} label="Portal sections" />}
       identity={
         <>
-          <span className="pn-initials">{initialsOf(me.name)}</span>
+          <span className="pn-initials" title={me.name}>{initialsOf(me.name)}</span>
           <span className="who">
             <span className="nm">{me.name}</span>
             {/* Standing plain word; its one-line explanation lives on Home and
-                My membership (a chrome chip has no room to explain). */}
+                My membership (a chrome chip has no room to explain). Loading
+                (undefined) stays quiet so an Ambassador never flashes
+                "Member"; only a genuinely unlinked row falls back to it. */}
             <span className="em">
-              {membership == null ? "Member" : standingWord(membership.standing)}
+              {membership === undefined
+                ? "…"
+                : membership === null
+                  ? "Member"
+                  : standingWord(membership.standing)}
             </span>
           </span>
           <button type="button" className="pn-side-out" onClick={onSignOut}>
@@ -336,7 +369,18 @@ export function PortalShell({
       }
     >
       <div className="pn-view" ref={paneRef} tabIndex={-1}>
-        {page}
+        {/* Keyed by view so navigating away clears a failed pane. */}
+        <ErrorBoundary
+          key={`${view.v}:${view.id ?? ""}`}
+          fallback={
+            <p className="pn-error">
+              We couldn't load this. Refresh the page to try again, or email{" "}
+              <a href="mailto:support@waiorg.me">support@waiorg.me</a>.
+            </p>
+          }
+        >
+          {page}
+        </ErrorBoundary>
       </div>
     </AppShell>
   );

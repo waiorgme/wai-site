@@ -47,7 +47,7 @@ export function DirectoryView() {
     <PageHeader
       eyebrow="Directory"
       title="Member directory"
-      sub="Members who chose to be listed. No contact details are shown - connection happens at events for now. Want to be found? Turn it on in Your choices."
+      sub="Members who chose to be listed. No contact details are shown - connection happens at events for now. Want to be found? Become an Active Member and turn it on in Your choices."
     />
   );
 
@@ -119,30 +119,64 @@ export function DirectoryView() {
       {rows.length === 0 ? (
         <EmptyState
           eyebrow="Directory"
-          message="No one is listed yet. Members appear here when they choose to be found - you could be the first."
+          message="No one is listed yet. Active Members who turn on the directory in Your choices appear here."
         />
       ) : visible.length === 0 ? (
         <EmptyState
           eyebrow="Directory"
           message="No members match this yet - try clearing a filter or shortening the search."
+          action={
+            <button
+              type="button"
+              className="pn-btn pn-btn--ghost pn-btn--sm"
+              onClick={() => {
+                setSearch("");
+                setCountry("");
+                setStage("");
+                setSector("");
+              }}
+            >
+              Clear filters
+            </button>
+          }
         />
       ) : (
-        <div className="pn-dir-grid">
-          {visible.map((row, i) => (
-            <MemberCard key={`${row.name}-${i}`} row={row} />
-          ))}
-        </div>
+        <>
+          <p className="pn-meta pn-mono">
+            {visible.length} of {rows.length} members
+          </p>
+          <div className="pn-dir-grid">
+            {visible.map((row, i) => (
+              <MemberCard key={`${row.name}-${i}`} row={row} />
+            ))}
+          </div>
+        </>
       )}
     </>
   );
 }
 
 function MemberCard({ row }: { row: DirectoryRow }) {
+  // A photo whose storage URL fails to load falls back to initials, same as
+  // no photo at all - never a broken-image glyph.
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const meta = [
+    row.country_of_residence,
+    row.career_stage_answer,
+    [row.function_area, row.role].filter(Boolean).join(" · "),
+  ]
+    .filter((part) => part !== null && part !== "")
+    .join(" · ");
   return (
     <article className="pn-dir-card">
       <div className="head">
-        {row.photo_url !== null ? (
-          <img className="pic" src={row.photo_url} alt="" />
+        {row.photo_url !== null && !photoFailed ? (
+          <img
+            className="pic"
+            src={row.photo_url}
+            alt=""
+            onError={() => setPhotoFailed(true)}
+          />
         ) : (
           <span className="pn-initials pn-initials--lg">
             {initialsOf(row.name)}
@@ -155,17 +189,10 @@ function MemberCard({ row }: { row: DirectoryRow }) {
           )}
         </div>
       </div>
-      <p className="pn-meta">
-        {[
-          row.country_of_residence,
-          row.career_stage_answer,
-          [row.function_area, row.role].filter(Boolean).join(" · "),
-        ]
-          .filter((part) => part !== null && part !== "")
-          .join(" · ")}
-      </p>
+      {meta !== "" && <p className="pn-meta">{meta}</p>}
       {row.sectors.length > 0 && (
         <div className="pn-chips">
+          <span className="sr-only">Sectors:</span>
           {row.sectors.map((s) => (
             <span className="pn-tag" key={s}>
               {s}
@@ -175,6 +202,7 @@ function MemberCard({ row }: { row: DirectoryRow }) {
       )}
       {row.looking_for.length > 0 && (
         <div className="pn-chips">
+          <span className="sr-only">Open to:</span>
           {row.looking_for.map((s) => (
             <span className="pn-tag pn-tag--info" key={s}>
               {s}

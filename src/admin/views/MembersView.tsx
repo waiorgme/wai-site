@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { MemberListRow } from "../../../convex/admin/members";
@@ -13,7 +13,7 @@ import {
   SearchInput,
 } from "../../panel/kit";
 import type { Go, Lifecycle } from "./shared";
-import { initials, LANE_WORDS, LIFECYCLE_WORDS, lifecycleTagClass, STANDING_WORDS } from "./shared";
+import { dateStringLabel, initials, LANE_WORDS, LIFECYCLE_WORDS, lifecycleTagClass, STANDING_WORDS } from "./shared";
 
 // Members list (panel-experience spec F13): a review surface, not a member
 // browser. Rows never carry an email (server contract); search matches email
@@ -45,7 +45,7 @@ const TRANSIENT_CHIPS: ReadonlyArray<Lifecycle> = [
 const COLUMNS: ReadonlyArray<Column> = [
   { key: "who", header: "Member" },
   { key: "lifecycle", header: "Status", width: "170px" },
-  { key: "lane", header: "Lane", width: "110px" },
+  { key: "lane", header: "Membership type", width: "150px" },
   { key: "standing", header: "Standing", width: "130px" },
   { key: "country", header: "Country", width: "140px" },
   { key: "joined", header: "Joined", width: "110px" },
@@ -55,13 +55,27 @@ const COLUMNS: ReadonlyArray<Column> = [
 export function MembersView({ go }: { go: Go }) {
   const [filter, setFilter] = useState<"all" | Lifecycle>("all");
   const [q, setQ] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const result = useQuery(api.admin.members.listMembers, {
+  // Debounce the server search: the input stays live, the query refires only
+  // after a typing pause, so the table does not flash on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(q), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const live = useQuery(api.admin.members.listMembers, {
     lifecycle: filter === "all" ? undefined : filter,
-    search: q.trim() === "" ? undefined : q.trim(),
+    search: search.trim() === "" ? undefined : search.trim(),
     page,
   });
+  // Keep the last loaded rows on screen while a refinement loads.
+  const [shown, setShown] = useState(live);
+  if (live !== undefined && live !== shown) {
+    setShown(live);
+  }
+  const result = live ?? shown;
 
   const chips: ChipOption[] = (() => {
     if (result === undefined) {
@@ -113,7 +127,7 @@ export function MembersView({ go }: { go: Go }) {
       case "country":
         return row.country_of_residence ?? "Not given";
       case "joined":
-        return <span className="pn-cell-date">{row.joined}</span>;
+        return <span className="pn-cell-date">{dateStringLabel(row.joined)}</span>;
       case "completeness":
         return (
           <span className="pn-cell-progress">
@@ -134,7 +148,7 @@ export function MembersView({ go }: { go: Go }) {
         sub="Every membership record. Contact details stay masked; revealing them is a recorded, one-at-a-time step on the member's page."
       />
       <PanelCard
-        title="All members"
+        title="Members"
         count={result === undefined ? undefined : `· ${result.total}`}
         tight
       >
@@ -172,9 +186,11 @@ export function MembersView({ go }: { go: Go }) {
                 <EmptyState
                   eyebrow="Members"
                   message={
-                    q.trim() === ""
-                      ? "No members in this status right now."
-                      : "No members match this search. Email search happens on the server, so an exact address works too."
+                    q.trim() !== ""
+                      ? "No members match this search. Email search happens on the server, so an exact address works too."
+                      : filter === "all"
+                        ? "No members yet. They appear here as women join through the site or claim their old-list record."
+                        : "No members in this status right now."
                   }
                 />
               }

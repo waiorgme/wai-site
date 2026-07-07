@@ -46,14 +46,12 @@ export function NotificationsView({ go }: { go: PortalGo }) {
     }
   };
 
-  const open = async (row: Row) => {
+  const open = (row: Row) => {
     // The read receipt is best-effort presentation state; opening the
-    // subject must never fail because of it.
-    try {
-      await markOne({ notificationId: row.id });
-    } catch {
+    // subject never waits for it and never fails because of it.
+    void markOne({ notificationId: row.id }).catch(() => {
       /* the row simply stays unread */
-    }
+    });
     if (row.href !== null) {
       const view = hrefToView(row.href);
       if (view !== null) {
@@ -82,7 +80,7 @@ export function NotificationsView({ go }: { go: PortalGo }) {
           <button
             type="button"
             className="pn-btn pn-btn--ghost pn-btn--sm"
-            disabled={busy || unread === 0}
+            disabled={busy || unread === undefined || unread === 0}
             onClick={() => void doMarkAll()}
           >
             {busy ? "Marking…" : "Mark all read"}
@@ -122,7 +120,7 @@ export function NotificationsView({ go }: { go: PortalGo }) {
               body={row.body}
               when={whenLabel(row.created_at)}
               unread={row.read_at === null}
-              onOpen={() => void open(row)}
+              onOpen={() => open(row)}
             />
           ))
         )}

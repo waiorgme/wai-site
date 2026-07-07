@@ -39,7 +39,7 @@ const COLUMNS: ReadonlyArray<Column> = [
   { key: "where", header: "Format", width: "130px" },
   { key: "audience", header: "Audience", width: "100px" },
   { key: "seats", header: "Booked", width: "130px" },
-  { key: "state", header: "State", width: "120px" },
+  { key: "state", header: "Status", width: "120px" },
 ];
 
 export function EventsView({ go }: { go: Go }) {
@@ -87,13 +87,17 @@ export function EventsView({ go }: { go: Go }) {
       case "audience":
         return row.audience_lane === "youth" ? "Under 18" : "Adults";
       case "seats":
+        // Check-in moves rows from registered to attended/no_show; the seats
+        // taken are the sum, or a closed event would read near "0 / 120".
         return (
           <span className="pn-cell-2l">
             <span className="t pn-mono">
-              {row.counts.registered}
+              {row.counts.registered + row.counts.attended + row.counts.no_show}
               {row.capacity !== null ? ` / ${row.capacity}` : ""}
             </span>
-            {row.counts.waitlisted > 0 ? (
+            {row.state === "attendance_finalized" ? (
+              <span className="s">{row.counts.attended} attended</span>
+            ) : row.counts.waitlisted > 0 ? (
               <span className="s">{row.counts.waitlisted} on the waiting list</span>
             ) : null}
           </span>
@@ -114,7 +118,7 @@ export function EventsView({ go }: { go: Go }) {
       <PageHeader
         eyebrow="Programmes"
         title="Events"
-        sub="Publish, run and close every session. Cancelling or moving a published event tells everyone holding a booking."
+        sub="Publish, run and close every session. Cancelling or moving a published event tells everyone registered or on the waiting list."
         actions={
           <button
             type="button"
@@ -153,7 +157,7 @@ export function EventsView({ go }: { go: Go }) {
                 message={
                   filter === "all"
                     ? "No events yet. Create the first one and publish it when it is ready."
-                    : "No events in this state right now."
+                    : "No events with this status right now."
                 }
                 action={
                   filter === "all" ? (

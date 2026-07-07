@@ -210,6 +210,22 @@ export const orUndef = (s: string): string | undefined => {
 export const plural = (n: number, one: string, many: string): string =>
   `${n} ${n === 1 ? one : many}`;
 
+export const fmtInt = (n: number): string => n.toLocaleString("en");
+
+// Server date strings are ISO ("2026-07-07") for records made here; legacy
+// rows may carry free text, which passes through as recorded.
+export const dateStringLabel = (s: string): string => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (m === null) {
+    return s;
+  }
+  const monthIndex = Number(m[2]) - 1;
+  if (monthIndex < 0 || monthIndex > 11) {
+    return s;
+  }
+  return `${Number(m[3])} ${MONTHS_SHORT[monthIndex]} ${m[1]}`;
+};
+
 /* ---------- plain-word maps ---------- */
 
 export type Lifecycle = MemberListRow["lifecycle_state"];
@@ -335,7 +351,7 @@ export type RegistrationState =
 
 export const REG_STATE_WORDS: Record<RegistrationState, string> = {
   registered: "Registered",
-  waitlisted: "On the waiting list",
+  waitlisted: "On the waitlist",
   cancelled: "Cancelled",
   attended: "Attended",
   no_show: "No show",

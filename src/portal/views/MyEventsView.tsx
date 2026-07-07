@@ -28,7 +28,10 @@ export function MyEventsView({ go }: { go: PortalGo }) {
   const [message, setMessage] = useState<string | null>(null);
 
   const upcoming = (rows ?? []).filter((r) => !r.is_past);
-  const past = (rows ?? []).filter((r) => r.is_past);
+  // The server sorts ascending; past reads most-recent-first, like EventsView.
+  const past = (rows ?? [])
+    .filter((r) => r.is_past)
+    .sort((a, b) => b.starts_at - a.starts_at);
 
   const doCancel = async (row: MyEventRow) => {
     setBusy(true);
@@ -64,11 +67,19 @@ export function MyEventsView({ go }: { go: PortalGo }) {
 
       <PanelCard
         title="Upcoming"
-        count={rows === undefined ? undefined : `· ${upcoming.length}`}
+        count={
+          rows === undefined || rows === null
+            ? undefined
+            : `· ${upcoming.length}`
+        }
         tight
       >
         {rows === undefined ? (
           <p className="pn-meta pn-loading">Loading…</p>
+        ) : rows === null ? (
+          <p className="pn-meta pn-loading">
+            Events open once your membership is active.
+          </p>
         ) : upcoming.length === 0 ? (
           <div className="pn-table-empty">
             <EmptyState
@@ -133,7 +144,7 @@ export function MyEventsView({ go }: { go: PortalGo }) {
                       disabled={busy}
                       onClick={() => setCancelling(row)}
                     >
-                      Cancel
+                      Cancel RSVP
                     </button>
                   )}
                 </div>
@@ -185,10 +196,20 @@ export function MyEventsView({ go }: { go: PortalGo }) {
           sub={`${cancelling.title} · ${gulfDate(cancelling.starts_at)}`}
           onClose={() => setCancelling(null)}
           onConfirm={() => void doCancel(cancelling)}
-          confirmLabel="Yes, cancel it"
+          confirmLabel={
+            cancelling.my_state === "waitlisted"
+              ? "Yes, leave it"
+              : "Yes, cancel it"
+          }
           cancelLabel="Keep it"
           confirmDisabled={busy}
-          footNote="If someone is waiting, your seat goes straight to the first person on the waitlist."
+          // A waitlisted member holds no seat, so the seat-passes-on note is
+          // only true for a registered one.
+          footNote={
+            cancelling.my_state === "registered"
+              ? "If someone is waiting, your seat goes straight to the first person on the waitlist."
+              : undefined
+          }
         />
       )}
     </>

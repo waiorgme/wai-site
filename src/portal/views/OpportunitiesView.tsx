@@ -7,6 +7,7 @@ import {
   gulfDate,
   gulfDeadlineLabel,
   opportunityTypeWord,
+  type ApplicationState,
 } from "../format";
 import type { PortalGo } from "../PortalShell";
 
@@ -69,50 +70,59 @@ export function OpportunitiesView({
         />
       ) : (
         <div className="pn-grid">
-          {rows.map((row) => (
-            <div className="pn-card" key={row.opportunityId}>
-              <div className="pn-row-head">
-                <span className="pn-tag pn-tag--info">
-                  {opportunityTypeWord(row.type)}
-                </span>
-                {row.my_application_state !== null && (
-                  <span
-                    className={
-                      row.my_application_state === "won"
-                        ? "pn-tag pn-tag--ok"
-                        : "pn-tag"
+          {rows.map((row) => {
+            // Mirror of the server's deadline rule: the close cron runs
+            // hourly, so a just-passed deadline can still arrive as "open".
+            const closed = row.deadline !== null && row.deadline < Date.now();
+            const cta =
+              row.type === "evergreen"
+                ? "How to claim it"
+                : row.my_application_state !== null &&
+                    row.my_application_state !== "withdrawn"
+                  ? "View my application"
+                  : closed
+                    ? "View"
+                    : "View & apply";
+            return (
+              <div className="pn-card" key={row.opportunityId}>
+                <div className="pn-row-head">
+                  <span className="pn-tag pn-tag--info">
+                    {opportunityTypeWord(row.type)}
+                  </span>
+                  {row.my_application_state !== null && (
+                    <span className={applicationStateTag(row.my_application_state)}>
+                      {applicationStateWord(row.my_application_state)}
+                    </span>
+                  )}
+                </div>
+                <h2 className="pn-sectitle">{row.title}</h2>
+                {row.partner_name !== null && (
+                  <p className="pn-meta">With {row.partner_name}</p>
+                )}
+                <p className="pn-meta">{excerpt(row.description, 160)}</p>
+                {row.deadline !== null && (
+                  <p className="pn-meta pn-mono">
+                    {closed ? "Closed" : "Closes"} {gulfDeadlineLabel(row.deadline)}
+                  </p>
+                )}
+                {row.eligibility_note !== null && (
+                  <p className="pn-meta">{row.eligibility_note}</p>
+                )}
+                <div className="pn-actions">
+                  <button
+                    type="button"
+                    className="pn-btn pn-btn--ghost pn-btn--sm"
+                    aria-label={`${cta} - ${row.title}`}
+                    onClick={() =>
+                      go({ v: "opportunities", id: row.opportunityId })
                     }
                   >
-                    {applicationStateWord(row.my_application_state)}
-                  </span>
-                )}
+                    {cta}
+                  </button>
+                </div>
               </div>
-              <h2 className="pn-sectitle">{row.title}</h2>
-              {row.partner_name !== null && (
-                <p className="pn-meta">With {row.partner_name}</p>
-              )}
-              <p className="pn-meta">{excerpt(row.description, 160)}</p>
-              {row.deadline !== null && (
-                <p className="pn-meta pn-mono">
-                  Closes {gulfDeadlineLabel(row.deadline)}
-                </p>
-              )}
-              {row.eligibility_note !== null && (
-                <p className="pn-meta">{row.eligibility_note}</p>
-              )}
-              <div className="pn-actions">
-                <button
-                  type="button"
-                  className="pn-btn pn-btn--ghost pn-btn--sm"
-                  onClick={() =>
-                    go({ v: "opportunities", id: row.opportunityId })
-                  }
-                >
-                  {row.type === "evergreen" ? "How to claim it" : "View & apply"}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -132,7 +142,12 @@ export function OpportunitiesView({
           </div>
         ) : (
           mine.map((row) => (
-            <div className="pn-notif" key={row.opportunityId}>
+            <button
+              type="button"
+              className="pn-notif"
+              key={row.opportunityId}
+              onClick={() => go({ v: "opportunities", id: row.opportunityId })}
+            >
               <span className="row1">
                 <span className="t">
                   {row.title}
@@ -141,13 +156,23 @@ export function OpportunitiesView({
                 <span className="when">{gulfDate(row.created_at)}</span>
               </span>
               <span className="b">{applicationStateLine(row)}</span>
-            </div>
+            </button>
           ))
         )}
       </PanelCard>
     </>
   );
 }
+
+// One tone per application state everywhere the chip appears (board and
+// detail): won earns the ok green, in-play states are sky, closed states
+// stay neutral.
+export const applicationStateTag = (state: ApplicationState): string =>
+  state === "won"
+    ? "pn-tag pn-tag--ok"
+    : state === "received" || state === "shortlisted"
+      ? "pn-tag pn-tag--info"
+      : "pn-tag";
 
 // The honest one-liner per application state (vault everyone-gets-an-answer
 // rule; "received" always promises the answer).
