@@ -364,3 +364,21 @@ describe("platform health (spec §C): super-admin only, honest pre-launch nulls"
     expect(health.review_at).toBeNull();
   });
 });
+
+describe("platform health is the super admin's dashboard (spec C10)", () => {
+  it("a plain ADMIN_EMAILS admin is denied with the neutral error", async () => {
+    const t = convexTest(schema, modules);
+    process.env.ADMIN_EMAILS = "plain-admin@example.com";
+    const asPlainAdmin = await signIn(t, "plain-admin@example.com");
+    // She runs the console (overview opens for her)...
+    const counts = await asPlainAdmin.query(
+      api.admin.overview.getAdminOverview,
+      {},
+    );
+    expect(counts.members_active).toBeGreaterThanOrEqual(1);
+    // ...but the kill criteria stay super-admin only.
+    await expect(
+      asPlainAdmin.query(api.admin.overview.getPlatformHealth, {}),
+    ).rejects.toThrow(/not_authorized/);
+  });
+});

@@ -32,8 +32,16 @@ export function ReportsView() {
   // individual record ever rides into the reports page.
   const counts = useQuery(api.admin.overview.getAdminOverview);
   const aggregates = useQuery(api.admin.overview.getReportAggregates);
-  const health = useQuery(api.admin.overview.getPlatformHealth);
   const stats = useQuery(api.admin.overview.getReportStats);
+  // The join funnel and kill-criteria panels are the super admin's strategic
+  // dashboard (activity-log spec C10, super-admin only); a plain admin's
+  // Reports page simply doesn't carry them, and the query is never made.
+  const role = useQuery(api.lib.adminAuth.myAdminRole);
+  const isSuper = role === "super_admin";
+  const health = useQuery(
+    api.admin.overview.getPlatformHealth,
+    isSuper ? {} : "skip",
+  );
 
   const delivered = stats?.events.delivered_this_year;
   const attendanceTotal = stats?.events.attendance_total;
@@ -94,6 +102,7 @@ export function ReportsView() {
             )}
           </PanelCard>
 
+          {isSuper ? (
           <PanelCard title="Join funnel">
             {health === undefined ? (
               <p className="pn-meta">Loading…</p>
@@ -135,6 +144,7 @@ export function ReportsView() {
               </>
             )}
           </PanelCard>
+          ) : null}
 
           <PanelCard title="Members by status">
             {stats === undefined ? (
@@ -217,13 +227,15 @@ export function ReportsView() {
             </div>
           </PanelCard>
 
-          <PanelCard title="Platform health check">
-            {health === undefined ? (
-              <p className="pn-meta">Loading…</p>
-            ) : (
-              <HealthCheck health={health} />
-            )}
-          </PanelCard>
+          {isSuper ? (
+            <PanelCard title="Platform health check">
+              {health === undefined ? (
+                <p className="pn-meta">Loading…</p>
+              ) : (
+                <HealthCheck health={health} />
+              )}
+            </PanelCard>
+          ) : null}
         </div>
       </div>
     </>

@@ -72,9 +72,11 @@ export type PortalViewState = {
 // through hrefToView below.
 export type PortalGo = (next: PortalViewState) => void;
 
+// "opportunities" is deliberately NOT youth-blocked: the view itself locks
+// the board for the youth lane and renders only her own application history
+// (dated ruling, Gate 4 round 7 - own history stays hers whatever her lane).
 const YOUTH_BLOCKED: ReadonlyArray<PortalViewKey> = [
   "myevents",
-  "opportunities",
   "directory",
   "profile",
   "choices",
@@ -170,6 +172,13 @@ export function PortalShell({
 }) {
   const [view, setView] = useState<PortalViewState>(() => viewFromLocation(lane));
   const unread = useQuery(api.notifications.unreadCount) ?? 0;
+  // Youth nav only: an application-history entry appears when she HAS
+  // history (an adult-turned-minor record keeps her results - dated ruling,
+  // Gate 4 round 7). Most youth members never applied; no row, no noise.
+  const myApplications = useQuery(
+    api.opportunities.myApplications,
+    lane === "youth" ? {} : "skip",
+  );
   const membership = useQuery(api.membership.getMyMembership);
   const paneRef = useRef<HTMLDivElement | null>(null);
   const mounted = useRef(false);
@@ -226,7 +235,15 @@ export function PortalShell({
     lane === "youth"
       ? [
           { items: [item("home", "Home", <IconHome />)] },
-          { label: "Take part", items: [item("events", "Events", <IconCalendar />)] },
+          {
+            label: "Take part",
+            items: [
+              item("events", "Events", <IconCalendar />),
+              ...(myApplications !== undefined && myApplications.length > 0
+                ? [item("opportunities", "My applications", <IconBriefcase />)]
+                : []),
+            ],
+          },
           {
             label: "Membership",
             items: [
@@ -292,7 +309,11 @@ export function PortalShell({
           // The full lane still carries restricted_unknown accounts: the
           // server already returns them an empty board, and the view words
           // the lock honestly instead of showing a dishonest "nothing open".
-          <OpportunitiesView restricted={isMinorLane} go={go} />
+          <OpportunitiesView
+            lane={lane}
+            restricted={me.member_lane === "restricted_unknown"}
+            go={go}
+          />
         );
       case "directory":
         return <DirectoryView />;

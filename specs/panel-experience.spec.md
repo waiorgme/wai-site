@@ -194,6 +194,13 @@ branch); PlacementLog; partner-facing portal.
   is owed). A member corrected to minor/restricted keeps her history; the board, detail
   pages and new applications stay lane-refused server-side. Hiding a member's own past
   actions from her would be dishonest and would break everyone-gets-an-answer.
+  *(Round 7: the portal now honours this end-to-end - locked lanes get a read-only
+  "My applications" surface with results and notes, never linking into the gated board;
+  the youth nav shows the entry only when history exists.)*
+- **Platform health (funnel + kill criteria) is the SUPER admin's dashboard** (round-7
+  required fix, honouring activity-log spec C10): `getPlatformHealth` is
+  requireSuperAdmin; a plain admin's Reports page carries the operational aggregates
+  only and never makes the query.
 - **Directory carries no bio** (round-2 required fix): migrated members' `legacy_bio` is
   years-old text never re-reviewed; the vault field-spec tier table reads differently and
   the conflict is flagged for Issam. If ruled back in, bio returns only for members who

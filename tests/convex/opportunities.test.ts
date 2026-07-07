@@ -1075,3 +1075,50 @@ describe("audience freezes once open (Gate 4 round 3)", () => {
     ).toEqual({ ok: true });
   });
 });
+
+describe("own application history survives a lane change (dated ruling, Gate 4 round 7)", () => {
+  it("a member corrected to minor or restricted_unknown still gets her rows, result and note", async () => {
+    const t = convexTest(schema, modules);
+    const oppId = await insertOpp(t, { audience: "open" as const });
+    const { session: applicant, memberId } = await signInComplete(
+      t,
+      "history@example.com",
+    );
+    await applicant.mutation(api.opportunities.apply, {
+      opportunityId: oppId,
+      statement: "Applying while eligible.",
+    });
+    const { session: asAdmin } = await signIn(t, ADMIN_EMAIL);
+    const apps = await t.run(async (ctx) =>
+      ctx.db.query("opportunityApplications").collect(),
+    );
+    await asAdmin.mutation(api.admin.opportunities.recordResult, {
+      applicationId: apps[0]._id,
+      result: "lost",
+      note: "A very close call - please apply again.",
+    });
+
+    for (const lane of ["minor", "restricted_unknown"] as const) {
+      await t.run(async (ctx) => {
+        await ctx.db.patch(memberId, {
+          member_lane: lane,
+          ...(lane === "minor"
+            ? { date_of_birth: "2011-03-10" }
+            : {
+                date_of_birth: undefined,
+                age_confidence: "unknown" as const,
+                date_of_birth_source: "unknown" as const,
+              }),
+        });
+      });
+      const mine = await applicant.query(api.opportunities.myApplications, {});
+      expect(mine).toHaveLength(1);
+      expect(mine![0].state).toBe("lost");
+      expect(mine![0].result_note).toBe("A very close call - please apply again.");
+      // The board itself stays locked for her.
+      expect(
+        await applicant.query(api.opportunities.listOpportunities, {}),
+      ).toEqual([]);
+    }
+  });
+});

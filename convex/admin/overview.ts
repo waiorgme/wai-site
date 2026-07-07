@@ -1,5 +1,5 @@
 import { query } from "../_generated/server";
-import { requireAdmin } from "../lib/adminAuth";
+import { requireAdmin, requireSuperAdmin } from "../lib/adminAuth";
 
 // Console overview (panel-design spec criterion 9): PII-FREE COUNTS ONLY, for
 // the admin console's Overview view. No names, no emails, no rows - just the
@@ -292,7 +292,10 @@ export type PlatformHealth = {
 export const getPlatformHealth = query({
   args: {},
   handler: async (ctx): Promise<PlatformHealth> => {
-    await requireAdmin(ctx);
+    // Super-admin only by the activity-log spec (C10): the kill criteria
+    // gate PLATFORM INVESTMENT - Issam's strategic dashboard, not the
+    // operational console (Gate 4 round 7).
+    await requireSuperAdmin(ctx);
     const now = Date.now();
 
     const activity = await ctx.db.query("activityLog").collect();
