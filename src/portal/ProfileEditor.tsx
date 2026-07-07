@@ -92,6 +92,9 @@ export function ProfileEditor({
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Photo problems surface next to the picker at the top of the form; the
+  // bottom error slot is for save errors only.
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -136,11 +139,11 @@ export function ProfileEditor({
     // Friendly early check; the server enforces the same rule (SEC-4).
     const allowed = ["image/jpeg", "image/png", "image/webp"];
     if (!allowed.includes(file.type) || file.size > 5 * 1024 * 1024) {
-      setError("Please choose a JPG, PNG or WebP photo under 5 MB.");
+      setPhotoError("Please choose a JPG, PNG or WebP photo under 5 MB.");
       return;
     }
     setUploading(true);
-    setError(null);
+    setPhotoError(null);
     try {
       const url = await generateUploadUrl();
       const res = await fetch(url, {
@@ -150,10 +153,15 @@ export function ProfileEditor({
       });
       const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
       setNewPhotoId(storageId);
-      setPhotoPreview(URL.createObjectURL(file));
+      setPhotoPreview((prev) => {
+        if (prev !== null && prev.startsWith("blob:")) {
+          URL.revokeObjectURL(prev);
+        }
+        return URL.createObjectURL(file);
+      });
       setSaved(false);
     } catch {
-      setError("That photo couldn't be uploaded. Please try again.");
+      setPhotoError("That photo couldn't be uploaded. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -192,6 +200,7 @@ export function ProfileEditor({
       <Photo
         preview={photoPreview}
         uploading={uploading}
+        error={photoError}
         onPick={onPickPhoto}
         fileRef={fileRef}
       />
@@ -329,6 +338,7 @@ export function ProfileEditor({
       <Field
         labelText="Sectors"
         tip="The kind of place you've worked - an airline, an airport, a training school, and so on. Tick all that apply."
+        group
       >
         <Chips
           options={SECTORS}
@@ -341,6 +351,7 @@ export function ProfileEditor({
       <Field
         labelText="Certifications & licences"
         tip="Official aviation qualifications or licences you hold. Don't have any yet? Leave it empty; many members start here."
+        group
       >
         <Chips
           options={CERTIFICATIONS}
@@ -391,6 +402,7 @@ export function ProfileEditor({
             ? "What would help you most right now? Tick anything - a scholarship, an event, or meeting other women in aviation."
             : "What would help you most right now? Tick anything - a job, a scholarship, a mentor, or just meeting other women in aviation."
         }
+        group
       >
         <Chips
           options={
@@ -403,7 +415,7 @@ export function ProfileEditor({
         />
       </Field>
 
-      {error !== null && <p className={errorText}>{error}</p>}
+      {error !== null && <p role="alert" className={errorText}>{error}</p>}
       <div className="pn-actions">
         <button type="button" className={primaryBtn} disabled={busy} onClick={onSave}>
           {busy ? "Saving…" : "Save profile"}
@@ -411,7 +423,7 @@ export function ProfileEditor({
         <button type="button" className={linkBtn} onClick={onClose}>
           Back
         </button>
-        {saved && <span className="pn-ok">Saved ✓</span>}
+        {saved && <span role="status" className="pn-ok">Saved</span>}
       </div>
     </div>
   );
@@ -424,19 +436,31 @@ function Section({ title }: { title: string }) {
 function Field({
   labelText,
   tip,
+  group = false,
   children,
 }: {
   labelText: string;
   tip?: string;
+  // Chip groups get role="group", not <label>: a label's implicit control is
+  // the first chip button, so clicking the caption would silently toggle it.
+  group?: boolean;
   children: React.ReactNode;
 }) {
-  return (
-    <label className={label}>
+  const content = (
+    <>
       {labelText}
       {tip && <span className={hint}>{tip}</span>}
       {children}
-    </label>
+    </>
   );
+  if (group) {
+    return (
+      <div className={label} role="group" aria-label={labelText}>
+        {content}
+      </div>
+    );
+  }
+  return <label className={label}>{content}</label>;
 }
 
 function Two({ children }: { children: React.ReactNode }) {
@@ -509,11 +533,13 @@ function Chips({
 function Photo({
   preview,
   uploading,
+  error,
   onPick,
   fileRef,
 }: {
   preview: string | null;
   uploading: boolean;
+  error: string | null;
   onPick: (file: File) => void;
   fileRef: React.RefObject<HTMLInputElement | null>;
 }) {
@@ -536,7 +562,7 @@ function Photo({
         {preview ? (
           <img
             src={preview}
-            alt="Profile"
+            alt="Your profile photo"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
@@ -555,16 +581,19 @@ function Photo({
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           style={{ display: "none" }}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
               void onPick(file);
             }
+            // Reset so re-picking the same file after a failure fires again.
+            e.target.value = "";
           }}
         />
-        <span className={hint}>A face for your profile. Shown in the members' directory if you join it.</span>
+        <span className={hint}>A face for your profile. Shown in the member directory if you join it.</span>
+        {error !== null && <p role="alert" className={errorText}>{error}</p>}
       </div>
     </div>
   );

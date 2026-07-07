@@ -12,6 +12,7 @@ import {
 } from "../../panel/kit";
 import type { Go, PartnerStatus } from "./shared";
 import {
+  dateStringLabel,
   PARTNER_STATUS_WORDS,
   partnerStatusTagClass,
   TIER_EXPLAIN,
@@ -97,7 +98,7 @@ export function PartnersView({ go }: { go: Go }) {
         return row.mou_signed_on === null ? (
           <span className="pn-meta">Not signed</span>
         ) : (
-          <span className="pn-cell-date">{row.mou_signed_on}</span>
+          <span className="pn-cell-date">{dateStringLabel(row.mou_signed_on)}</span>
         );
       case "deliverables":
         return row.deliverables_total === 0 ? (

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { checkboxRow, errorText, linkBtn, muted } from "./ui";
-import { YourData } from "./YourData";
 
 // "Your choices": the two opt-in toggles (field spec Group H). Labels and
 // tips follow the field spec's plain-language microcopy. Both default OFF;
@@ -14,6 +13,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const setPipeline = useMutation(api.members.setPipelineOptIn);
   const [confirmingPipeline, setConfirmingPipeline] = useState(false);
   const [attested, setAttested] = useState(false);
+  // Optimistic tick for the directory checkbox: it is server-controlled, so
+  // without this the tick visibly reverts while the mutation runs.
+  const [pendingDirectory, setPendingDirectory] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +28,14 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
   if (settings.locked) {
     // The directory/pipeline toggles open at 18; data rights do not wait for
-    // that (they apply to every member), so Your data still renders here.
+    // that (they apply to every member) and live on the Your data page.
     return (
       <div className="pn-stack">
         <p className={muted}>These options open when you turn 18.</p>
-        <YourData />
+        <p className={muted}>
+          To ask for a copy of your data, or ask us to delete it, see{" "}
+          <a href="#your-data">Your data</a>.
+        </p>
         <button type="button" className={linkBtn} onClick={onClose}>
           Back
         </button>
@@ -60,15 +65,30 @@ export function Settings({ onClose }: { onClose: () => void }) {
           <input
             type="checkbox"
             disabled={busy}
-            checked={settings.directory_visible}
-            onChange={(e) => void run(() => setDirectory({ value: e.target.checked }))}
+            checked={pendingDirectory ?? settings.directory_visible}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setPendingDirectory(next);
+              void run(async () => {
+                try {
+                  const res = await setDirectory({ value: next });
+                  if (!res.ok) {
+                    setPendingDirectory(null);
+                  }
+                  return res;
+                } catch (err) {
+                  setPendingDirectory(null);
+                  throw err;
+                }
+              });
+            }}
           />
           <span>
             <strong>
               Show my profile in the member directory
             </strong>
             <br />
-            Turn this on to appear in our members' directory, so other women in
+            Turn this on to appear in our member directory, so other women in
             aviation can find and connect with you. Off by default, it's your
             choice.
           </span>
@@ -169,9 +189,12 @@ export function Settings({ onClose }: { onClose: () => void }) {
       </section>
       )}
 
-      {error !== null && <p className={errorText}>{error}</p>}
+      {error !== null && <p role="alert" className={errorText}>{error}</p>}
 
-      <YourData />
+      <p className={muted}>
+        To ask for a copy of your data, or ask us to delete it, see{" "}
+        <a href="#your-data">Your data</a>.
+      </p>
 
       <button type="button" className={linkBtn} onClick={onClose}>
         Back

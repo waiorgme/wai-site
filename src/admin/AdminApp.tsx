@@ -585,7 +585,7 @@ function AdminSignIn() {
         <button type="submit" disabled={busy} className={primaryBtn}>
           {busy ? "Sending…" : "Send sign-in link"}
         </button>
-        {error !== null && <p className={errorText}>{error}</p>}
+        {error !== null && <p role="alert" className={errorText}>{error}</p>}
       </form>
     </div>
   );

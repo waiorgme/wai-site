@@ -1,3 +1,4 @@
+import { IconCheck } from "../../panel/icons";
 import { PageHeader, PanelCard, StatTile } from "../../panel/kit";
 import {
   gulfDate,
@@ -37,7 +38,7 @@ export function MyMembershipView({
 }) {
   const header = (
     <PageHeader
-      eyebrow="My membership"
+      eyebrow="Membership"
       title="My membership"
       sub="Where you stand, in plain words - and the honest next step."
     />
@@ -82,15 +83,21 @@ export function MyMembershipView({
         />
         <StatTile
           label="Member since"
-          value={memberSinceLabel(membership.member_since)}
+          value={
+            <span className="v--text">
+              {memberSinceLabel(membership.member_since)}
+            </span>
+          }
           sub="Your original join date, kept through the move to this portal."
         />
         <StatTile
           label="Membership number"
           value={
-            membership.certificate !== null
-              ? `WAIME-${membership.certificate.number}`
-              : "On its way"
+            <span className="v--text">
+              {membership.certificate !== null
+                ? `WAIME-${membership.certificate.number}`
+                : "On its way"}
+            </span>
           }
           sub={
             membership.certificate === null
@@ -161,7 +168,7 @@ export function MyMembershipView({
             <li>
               {progress.profile_complete ? (
                 <span className="ok-mark" aria-hidden="true">
-                  ✓
+                  <IconCheck />
                 </span>
               ) : (
                 <span className="todo-mark" aria-hidden="true" />
@@ -188,7 +195,7 @@ export function MyMembershipView({
             <li>
               {tookPart ? (
                 <span className="ok-mark" aria-hidden="true">
-                  ✓
+                  <IconCheck />
                 </span>
               ) : (
                 <span className="todo-mark" aria-hidden="true" />
@@ -238,7 +245,7 @@ export function MyMembershipView({
       {membership.standing_history.length > 0 && (
         <PanelCard title="How you got here" tight>
           {membership.standing_history.map((entry, i) => (
-            <div className="pn-notif" key={i}>
+            <div className="pn-notif pn-notif--plain" key={i}>
               <span className="row1">
                 <span className="t">
                   {plainStanding(entry.from_standing)} to{" "}

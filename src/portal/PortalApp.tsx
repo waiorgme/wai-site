@@ -140,7 +140,7 @@ function SignIn() {
           <button type="submit" disabled={busy} className={primaryBtn}>
             {busy ? "Sending…" : "Send sign-in link"}
           </button>
-          {error !== null && <p className={errorText}>{error}</p>}
+          {error !== null && <p role="alert" className={errorText}>{error}</p>}
         </form>
         <p className={hint}>
           New to WAI-ME? <a href="/join">Join here</a>.

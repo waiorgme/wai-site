@@ -72,7 +72,7 @@ const formFromDetail = (detail: AdminOpportunityDetail): FormState => ({
   deadline: detail.deadline === null ? "" : gstInputValue(detail.deadline),
 });
 
-const checkForm = (form: FormState): string | null => {
+const checkForm = (form: FormState, live: boolean): string | null => {
   if (form.title.trim() === "") {
     return "The listing needs a title.";
   }
@@ -83,8 +83,16 @@ const checkForm = (form: FormState): string | null => {
     if (form.how_to_claim.trim() === "") {
       return "An ongoing benefit needs a 'how to claim' path.";
     }
-  } else if (msFromGstInput(form.deadline) === null) {
-    return "This type needs a closing deadline.";
+  } else {
+    const deadlineMs = msFromGstInput(form.deadline);
+    if (deadlineMs === null) {
+      return "This type needs a closing deadline.";
+    }
+    // The cron auto-closes open listings past their deadline, so saving a
+    // past deadline onto a live listing would silently kill it.
+    if (live && deadlineMs <= Date.now()) {
+      return "That deadline has already passed - it would close this live listing within the hour.";
+    }
   }
   return null;
 };
@@ -139,7 +147,14 @@ export function OpportunityEditor({
     detail !== undefined &&
     detail !== null &&
     (detail.state === "closed" || detail.state === "decided");
-  const typeLocked = detail !== undefined && detail !== null && detail.state === "open";
+  const isLive = detail !== undefined && detail !== null && detail.state === "open";
+  const typeLocked = isLive;
+  // Unsaved edits matter at publish time: "Open it" publishes the SAVED
+  // record, so the publish modal warns when the form differs from it.
+  const dirty =
+    detail !== undefined &&
+    detail !== null &&
+    JSON.stringify(form) !== JSON.stringify(formFromDetail(detail));
   const unresolved =
     applications === undefined
       ? 0
@@ -152,7 +167,7 @@ export function OpportunityEditor({
 
   // Propose step: validate first so she never confirms a doomed save.
   const proposeSave = () => {
-    const problem = checkForm(form);
+    const problem = checkForm(form, isLive);
     if (problem !== null) {
       setOutcome({ ok: false, message: problem });
       return;
@@ -162,7 +177,7 @@ export function OpportunityEditor({
   };
 
   const onSave = async () => {
-    const problem = checkForm(form);
+    const problem = checkForm(form, isLive);
     if (problem !== null) {
       setOutcome({ ok: false, message: problem });
       return;
@@ -235,10 +250,12 @@ export function OpportunityEditor({
                 ok: false,
                 message:
                   res.error === "validation"
-                    ? form.type === "evergreen"
-                      ? "It needs a 'how to claim' path and no deadline before it can open."
+                    ? // The server validates the SAVED record, so the hint
+                      // keys off detail.type, not the possibly-unsaved select.
+                      detail?.type === "evergreen"
+                      ? "It needs a 'how to claim' path before it can open."
                       : "Set a deadline in the future before opening it."
-                    : "Only a draft can be opened. Save your changes first.",
+                    : "Only a draft can be opened.",
               },
         );
       } else if (kind === "close") {
@@ -252,7 +269,9 @@ export function OpportunityEditor({
                 ok: true,
                 message: res.already === true
                   ? "Already closed."
-                  : "Closed. Members can no longer apply. Next: record a result for every application, then publish the results.",
+                  : detail?.type === "evergreen"
+                    ? "Closed. It is no longer shown to members."
+                    : "Closed. Members can no longer apply. Next: record a result for every application, then publish the results.",
               }
             : {
                 ok: false,
@@ -291,7 +310,9 @@ export function OpportunityEditor({
     }
   };
 
-  if (effectiveId !== undefined && detail === undefined) {
+  // After a first save the form already holds the data, so skip the
+  // loading unmount (savedId set) rather than flash "Loading…" mid-save.
+  if (effectiveId !== undefined && detail === undefined && savedId === null) {
     return <p className="pn-meta">Loading…</p>;
   }
   if (effectiveId !== undefined && detail === null) {
@@ -320,7 +341,7 @@ export function OpportunityEditor({
           effectiveId === undefined
             ? "It starts as a draft. Members only see it once you open it."
             : detail !== undefined && detail !== null
-              ? `${OPP_STATE_WORDS[detail.state]} · ${OPP_TYPE_WORDS[detail.type]}${detail.deadline !== null ? ` · closes ${fmtGstDeadline(detail.deadline)}` : ""}`
+              ? `${OPP_STATE_WORDS[detail.state]} · ${OPP_TYPE_WORDS[detail.type]}${detail.deadline !== null ? ` · ${isSettled ? "closed" : "closes"} ${fmtGstDeadline(detail.deadline)}` : ""}`
               : undefined
         }
       />
@@ -380,6 +401,7 @@ export function OpportunityEditor({
               <textarea
                 className="pn-input pn-textarea"
                 value={form.description}
+                maxLength={5000}
                 disabled={isSettled}
                 onChange={(e) => set("description", e.target.value)}
               />
@@ -390,6 +412,7 @@ export function OpportunityEditor({
                 <textarea
                   className="pn-input pn-textarea"
                   value={form.how_to_claim}
+                  maxLength={5000}
                   disabled={isSettled}
                   onChange={(e) => set("how_to_claim", e.target.value)}
                 />
@@ -415,6 +438,7 @@ export function OpportunityEditor({
                   <textarea
                     className="pn-input pn-textarea"
                     value={form.what_to_submit}
+                    maxLength={5000}
                     disabled={isSettled}
                     onChange={(e) => set("what_to_submit", e.target.value)}
                   />
@@ -426,6 +450,7 @@ export function OpportunityEditor({
               <textarea
                 className="pn-input pn-textarea"
                 value={form.eligibility_note}
+                maxLength={5000}
                 disabled={isSettled}
                 onChange={(e) => set("eligibility_note", e.target.value)}
               />
@@ -502,7 +527,9 @@ export function OpportunityEditor({
                   : detail.state === "open"
                     ? "Live on the members' board."
                     : detail.state === "closed"
-                      ? "No longer taking applications. Record every result, then publish them."
+                      ? detail.type === "evergreen"
+                        ? "No longer shown to members. An ongoing benefit stays closed."
+                        : "No longer taking applications. Record every result, then publish them."
                       : "Finished. Every applicant has an answer."}
               </p>
               <div className="pn-btn-row">
@@ -589,13 +616,24 @@ export function OpportunityEditor({
           confirmLabel={busy ? "Working…" : "Yes, open it"}
           confirmDisabled={busy}
           footNote="Eligible members can see and apply the moment you confirm. Recorded in the audit log."
-        />
+        >
+          {dirty ? (
+            <p className="pn-meta">
+              You have unsaved edits - what goes live is the last saved
+              version. Save first to include them.
+            </p>
+          ) : null}
+        </Modal>
       ) : null}
 
       {confirming === "close" && detail !== undefined && detail !== null ? (
         <Modal
           title="Close this opportunity early"
-          sub={`${detail.title} · ${detail.application_counts.active} live ${detail.application_counts.active === 1 ? "application" : "applications"}`}
+          sub={
+            detail.type === "evergreen"
+              ? detail.title
+              : `${detail.title} · ${detail.application_counts.active} live ${detail.application_counts.active === 1 ? "application" : "applications"}`
+          }
           onClose={() => {
             setConfirming(null);
             setCloseReason("");
@@ -657,7 +695,7 @@ function ApplicationsPanel({
     switch (col.key) {
       case "who":
         return (
-          <span className="pn-cell-2l">
+          <div className="pn-cell-2l">
             <span className="t">{row.applicant_name}</span>
             <span className="s">
               {row.standing === "active_member"
@@ -671,10 +709,12 @@ function ApplicationsPanel({
             {row.statement !== null && row.statement.trim() !== "" ? (
               <details>
                 <summary className="pn-link">Read her statement</summary>
-                <span className="s">{row.statement}</span>
+                <span className="s" style={{ whiteSpace: "pre-wrap" }}>
+                  {row.statement}
+                </span>
               </details>
             ) : null}
-          </span>
+          </div>
         );
       case "state":
         return (
@@ -822,11 +862,13 @@ function ApplicationActions({ row }: { row: AdminApplicationRow }) {
   };
 
   return (
-    <span className="pn-btn-row">
+    <div className="pn-btn-row">
       {proposingShortlist ? (
         <>
           <span className="pn-meta">
-            {toggleTo ? "Shortlist her?" : "Take her off the shortlist?"}
+            {toggleTo
+              ? "Shortlist her? She is not told - this only marks her for your decision. Recorded in the audit log."
+              : "Take her off the shortlist? She is not told."}
           </span>
           <button
             type="button"
@@ -917,6 +959,6 @@ function ApplicationActions({ row }: { row: AdminApplicationRow }) {
           </label>
         </Modal>
       ) : null}
-    </span>
+    </div>
   );
 }

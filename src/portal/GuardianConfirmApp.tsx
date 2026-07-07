@@ -176,9 +176,9 @@ function GuardianConfirm() {
             {lookup?.applicantFirstName}
           </strong>
           's parent or guardian and that you consent to her WAI-ME membership.
-          Members under 18 join a protected youth lane: no adult features, no
-          contact from partners, and nothing shared without you. Details are on
-          our{" "}
+          Members under 18 get a protected youth membership: no adult features,
+          no contact from partners, and nothing shared without you. Details are
+          on our{" "}
           <a href="/safeguarding">
             safeguarding page
           </a>
@@ -203,9 +203,7 @@ function GuardianConfirm() {
             }
           }}
         >
-          {busy
-            ? "Confirming…"
-            : `Yes, I confirm I'm ${lookup?.applicantFirstName}'s parent or guardian and consent to this membership`}
+          {busy ? "Confirming…" : "Yes, I confirm and consent"}
         </button>
         {error !== null ? (
           <p role="status" className={errorText}>

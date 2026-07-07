@@ -200,6 +200,16 @@ export function IconBarChart() {
   );
 }
 
+// Small confirmation mark for checklist/status rows: replaces literal "✓"
+// text glyphs, which are not part of the icon system and read poorly in RTL.
+export function IconCheck() {
+  return (
+    <Glyph>
+      <path d="M20 6 9 17l-5-5" />
+    </Glyph>
+  );
+}
+
 export function IconScrollText() {
   return (
     <Glyph>

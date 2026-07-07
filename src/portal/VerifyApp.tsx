@@ -116,7 +116,7 @@ function Verify() {
           </p>
           <h1 className={h1}>{headline}</h1>
           <p className={muted}>
-            This was issued to {cert.recipient_name} (Membership Number WAIME-
+            This was issued to {cert.recipient_name} (Membership number WAIME-
             {cert.membership_number}). It is no longer the current record.
           </p>
         </div>
@@ -128,14 +128,14 @@ function Verify() {
   return (
     <div style={{ display: "grid", gap: 18, width: "min(1040px, 100%)" }}>
       <div className="pn-card pn-queue" style={{ textAlign: "center" }}>
-        <p className="pn-eyebrow" style={{ justifySelf: "center" }}>
+        <p className="pn-eyebrow on-paper" style={{ justifySelf: "center" }}>
           Verified genuine
         </p>
         <h1 className={h1}>
           {cert.recipient_name} is a member of Women in Aviation Middle East
         </h1>
         <p className={muted}>
-          Membership Number WAIME-{cert.membership_number}. Issued{" "}
+          Membership number WAIME-{cert.membership_number}. Issued{" "}
           {cert.issued_date_label}
           {cert.is_founding ? ". Founding Member" : ""}.
         </p>

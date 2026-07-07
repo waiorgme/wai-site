@@ -6,6 +6,7 @@ import type { PartnerDetail as PartnerRecord } from "../../../convex/admin/partn
 import { Modal, PageHeader, PanelCard } from "../../panel/kit";
 import type { DeliverableStatus, Go, PartnerStatus, PartnerTier } from "./shared";
 import {
+  dateStringLabel,
   DELIVERABLE_WORDS,
   PARTNER_STATUS_WORDS,
   partnerStatusTagClass,
@@ -22,7 +23,12 @@ import {
 // status - and the logo link step (Gate 4 round 1: uploading stages the
 // image, but nothing becomes the partner's logo without a confirm).
 
-type Deliverable = { label: string; status: DeliverableStatus };
+// Each staged deliverable carries a stable client key, so removing a row can
+// never hand an open status-confirm to a different deliverable (index keys
+// re-assign component state when the list shifts).
+type Deliverable = { key: string; label: string; status: DeliverableStatus };
+
+const newDeliverableKey = (): string => crypto.randomUUID();
 
 type FormState = {
   name: string;
@@ -64,7 +70,10 @@ const formFromDetail = (detail: PartnerRecord): FormState => ({
   mou_signed_on: detail.mou_signed_on ?? "",
   term_months: String(detail.term_months),
   committed_value: detail.committed_value ?? "",
-  deliverables: detail.deliverables.map((d) => ({ ...d })),
+  deliverables: detail.deliverables.map((d) => ({
+    key: newDeliverableKey(),
+    ...d,
+  })),
   show_publicly: detail.show_publicly,
   notes: detail.notes ?? "",
 });
@@ -72,6 +81,91 @@ const formFromDetail = (detail: PartnerRecord): FormState => ({
 const STATUS_KEYS = Object.keys(PARTNER_STATUS_WORDS) as PartnerStatus[];
 const TIER_KEYS = Object.keys(TIER_WORDS) as PartnerTier[];
 const DELIVERABLE_KEYS = Object.keys(DELIVERABLE_WORDS) as DeliverableStatus[];
+
+// Client checks run BEFORE the confirm modal opens, so she never confirms a
+// save that was never going to happen. The https rule mirrors the server.
+const checkForm = (form: FormState): string | null => {
+  if (form.name.trim() === "") {
+    return "The partner needs a name.";
+  }
+  const term = Number(form.term_months);
+  if (!Number.isInteger(term) || term < 1 || term > 120) {
+    return "The term is in whole months, between 1 and 120.";
+  }
+  const website = form.website.trim();
+  if (website !== "" && !website.startsWith("https://")) {
+    return "The website link needs to start with https://.";
+  }
+  if (form.deliverables.some((d) => d.label.trim() === "")) {
+    return "Every deliverable needs a label, or remove the empty row.";
+  }
+  return null;
+};
+
+// The save confirm shows WHAT changes, in plain words, by diffing the form
+// against the live server record. Deliverables are summarised by position.
+const valueWord = (s: string): string => {
+  const t = s.trim();
+  return t === "" ? "not set" : `"${t}"`;
+};
+
+const changeLines = (detail: PartnerRecord, form: FormState): string[] => {
+  const lines: string[] = [];
+  const field = (label: string, before: string, after: string) => {
+    if (before.trim() !== after.trim()) {
+      lines.push(`${label}: ${valueWord(before)} becomes ${valueWord(after)}`);
+    }
+  };
+  field("Name", detail.name, form.name);
+  if (detail.tier !== form.tier) {
+    lines.push(`Tier: ${TIER_WORDS[detail.tier]} becomes ${TIER_WORDS[form.tier]}`);
+  }
+  if (detail.status !== form.status) {
+    lines.push(
+      `Status: ${PARTNER_STATUS_WORDS[detail.status]} becomes ${PARTNER_STATUS_WORDS[form.status]}`,
+    );
+  }
+  field("Contact name", detail.contact_name ?? "", form.contact_name);
+  field("Contact email", detail.contact_email ?? "", form.contact_email);
+  field("Website", detail.website ?? "", form.website);
+  field(
+    "MOU signed on",
+    dateStringLabel(detail.mou_signed_on ?? ""),
+    dateStringLabel(form.mou_signed_on),
+  );
+  field("Term in months", String(detail.term_months), form.term_months);
+  field("Committed value", detail.committed_value ?? "", form.committed_value);
+  if (detail.show_publicly !== form.show_publicly) {
+    lines.push(
+      form.show_publicly
+        ? "Marked ready to be shown publicly"
+        : "No longer marked ready to be shown publicly",
+    );
+  }
+  if ((detail.notes ?? "").trim() !== form.notes.trim()) {
+    lines.push("Internal notes changed");
+  }
+  const parts: string[] = [];
+  if (form.deliverables.length > detail.deliverables.length) {
+    parts.push(`${form.deliverables.length - detail.deliverables.length} added`);
+  }
+  if (detail.deliverables.length > form.deliverables.length) {
+    parts.push(`${detail.deliverables.length - form.deliverables.length} removed`);
+  }
+  const changed = form.deliverables.filter(
+    (d, i) =>
+      i < detail.deliverables.length &&
+      (d.label.trim() !== detail.deliverables[i].label ||
+        d.status !== detail.deliverables[i].status),
+  ).length;
+  if (changed > 0) {
+    parts.push(`${changed} changed`);
+  }
+  if (parts.length > 0) {
+    lines.push(`Deliverables: ${parts.join(", ")}`);
+  }
+  return lines;
+};
 
 export function PartnerDetail({
   partnerId,
@@ -119,26 +213,41 @@ export function PartnerDetail({
       deliverables: f.deliverables.map((d, i) => (i === index ? next : d)),
     }));
 
+  // The audited-status shortcut in a row is only safe while the staged list
+  // matches the server list one-for-one; otherwise indexes have shifted and
+  // the change must go through Save instead.
+  const listInSync =
+    detail !== undefined &&
+    detail !== null &&
+    form.deliverables.length === detail.deliverables.length &&
+    form.deliverables.every((d, i) => d.label === detail.deliverables[i].label);
+
+  const changes =
+    detail !== undefined && detail !== null && effectiveId !== undefined
+      ? changeLines(detail, form)
+      : null;
+
+  // Propose step: validate first so she never confirms a doomed save.
+  const proposeSave = () => {
+    const problem = checkForm(form);
+    if (problem !== null) {
+      setOutcome({ ok: false, message: problem });
+      return;
+    }
+    setOutcome(null);
+    setSaveConfirm(true);
+  };
+
   const onSave = async () => {
-    if (form.name.trim() === "") {
-      setOutcome({ ok: false, message: "The partner needs a name." });
+    if (busy) {
+      return;
+    }
+    const problem = checkForm(form);
+    if (problem !== null) {
+      setOutcome({ ok: false, message: problem });
       return;
     }
     const term = Number(form.term_months);
-    if (!Number.isInteger(term) || term < 1 || term > 120) {
-      setOutcome({
-        ok: false,
-        message: "The term is in whole months, between 1 and 120.",
-      });
-      return;
-    }
-    if (form.deliverables.some((d) => d.label.trim() === "")) {
-      setOutcome({
-        ok: false,
-        message: "Every deliverable needs a label, or remove the empty row.",
-      });
-      return;
-    }
     setBusy(true);
     setOutcome(null);
     try {
@@ -172,7 +281,7 @@ export function PartnerDetail({
           ok: false,
           message:
             res.error === "validation"
-              ? "Some details were refused by the server. Check the name, email and term."
+              ? "Some details were refused by the server. Check the name, email, website and term."
               : "That did not go through. Please try again.",
         });
       }
@@ -209,7 +318,9 @@ export function PartnerDetail({
     }
   };
 
-  if (effectiveId !== undefined && detail === undefined) {
+  // After the first save the form already holds the data, so skip the
+  // loading unmount (savedId set) rather than flash "Loading…" mid-save.
+  if (effectiveId !== undefined && detail === undefined && savedId === null) {
     return <p className="pn-meta">Loading…</p>;
   }
   if (effectiveId !== undefined && detail === null) {
@@ -299,6 +410,7 @@ export function PartnerDetail({
                 <input
                   className="pn-input"
                   value={form.contact_name}
+                  maxLength={160}
                   onChange={(e) => set("contact_name", e.target.value)}
                 />
               </label>
@@ -318,6 +430,7 @@ export function PartnerDetail({
                 <input
                   className="pn-input"
                   value={form.website}
+                  maxLength={500}
                   onChange={(e) => set("website", e.target.value)}
                   placeholder="https://…"
                 />
@@ -349,6 +462,7 @@ export function PartnerDetail({
                 <input
                   className="pn-input"
                   value={form.committed_value}
+                  maxLength={160}
                   onChange={(e) => set("committed_value", e.target.value)}
                   placeholder="e.g. two scholarship seats and a venue for one workshop"
                 />
@@ -387,7 +501,7 @@ export function PartnerDetail({
                 onClick={() =>
                   set("deliverables", [
                     ...form.deliverables,
-                    { label: "", status: "committed" },
+                    { key: newDeliverableKey(), label: "", status: "committed" },
                   ])
                 }
               >
@@ -404,11 +518,12 @@ export function PartnerDetail({
             ) : (
               form.deliverables.map((deliverable, index) => (
                 <DeliverableRow
-                  key={index}
+                  key={deliverable.key}
                   index={index}
                   deliverable={deliverable}
                   detail={detail ?? null}
                   partnerId={effectiveId}
+                  inSync={listInSync}
                   onChange={(next) => setDeliverable(index, next)}
                   onRemove={() =>
                     set(
@@ -420,45 +535,64 @@ export function PartnerDetail({
                 />
               ))
             )}
-            <div className="pn-btn-row">
-              <button
-                type="button"
-                className="pn-btn"
-                disabled={busy}
-                onClick={() => setSaveConfirm(true)}
-              >
-                {busy
-                  ? "Working…"
-                  : effectiveId === undefined
-                    ? "Create partner record"
-                    : "Save changes"}
-              </button>
-            </div>
-            {saveConfirm && (
-              <Modal
-                title={
-                  effectiveId === undefined
-                    ? "Create this partner record?"
-                    : "Save these changes?"
-                }
-                sub={`${form.name.trim() || "Unnamed partner"} · ${TIER_WORDS[form.tier]} · ${form.deliverables.length} deliverable${form.deliverables.length === 1 ? "" : "s"}`}
-                onClose={() => setSaveConfirm(false)}
-                onConfirm={() => {
-                  setSaveConfirm(false);
-                  void onSave();
-                }}
-                confirmLabel={
-                  effectiveId === undefined ? "Yes, create it" : "Yes, save it"
-                }
-                footNote="This change is recorded."
-              >
+          </PanelCard>
+
+          {/* The save belongs to the whole form (both cards), so it lives
+              after them rather than inside the Deliverables card. */}
+          <div className="pn-btn-row">
+            <button
+              type="button"
+              className="pn-btn"
+              disabled={busy}
+              onClick={proposeSave}
+            >
+              {busy
+                ? "Working…"
+                : effectiveId === undefined
+                  ? "Create partner record"
+                  : "Save changes"}
+            </button>
+            {detail !== undefined && detail !== null && !listInSync ? (
+              <p className="pn-meta">
+                Deliverable changes are written when you save.
+              </p>
+            ) : null}
+          </div>
+          {saveConfirm && (
+            <Modal
+              title={
+                effectiveId === undefined
+                  ? "Create this partner record?"
+                  : "Save these changes?"
+              }
+              sub={`${form.name.trim() || "Unnamed partner"} · ${TIER_WORDS[form.tier]} · ${form.deliverables.length} deliverable${form.deliverables.length === 1 ? "" : "s"}`}
+              onClose={() => setSaveConfirm(false)}
+              onConfirm={() => {
+                setSaveConfirm(false);
+                void onSave();
+              }}
+              confirmLabel={
+                effectiveId === undefined ? "Yes, create it" : "Yes, save it"
+              }
+              confirmDisabled={busy || (changes !== null && changes.length === 0)}
+              footNote="This change is recorded."
+            >
+              {changes === null ? (
                 <p className="pn-meta">
                   This writes the whole record: relationship details, MOU
                   facts, and every deliverable row as it stands above.
                 </p>
-              </Modal>
-            )}
-          </PanelCard>
+              ) : changes.length === 0 ? (
+                <p className="pn-meta">No changes yet.</p>
+              ) : (
+                changes.map((line) => (
+                  <p key={line} className="pn-meta">
+                    {line}
+                  </p>
+                ))
+              )}
+            </Modal>
+          )}
         </div>
 
         <div className="rail">
@@ -537,14 +671,17 @@ export function PartnerDetail({
 
 /* ---------- one deliverable row ---------- */
 
-// A saved row (matching the server's array by index and label) changes status
-// through the dedicated audited action, with an inline confirm. A new or
-// re-labelled row just edits the form; Save writes it with the record.
+// A saved row changes status through the dedicated audited action, with an
+// inline confirm - but only while the whole staged list matches the server
+// list one-for-one (inSync), so the audited write can never hit a shifted
+// index. A new, re-labelled or shifted row just edits the form; Save writes
+// it with the record.
 function DeliverableRow({
   index,
   deliverable,
   detail,
   partnerId,
+  inSync,
   onChange,
   onRemove,
   onOutcome,
@@ -553,6 +690,7 @@ function DeliverableRow({
   deliverable: Deliverable;
   detail: PartnerRecord | null;
   partnerId: Id<"partners"> | undefined;
+  inSync: boolean;
   onChange: (next: Deliverable) => void;
   onRemove: () => void;
   onOutcome: (outcome: { ok: boolean; message: string }) => void;
@@ -567,6 +705,7 @@ function DeliverableRow({
       : null;
   const isSavedRow =
     partnerId !== undefined &&
+    inSync &&
     serverRow !== null &&
     serverRow.label === deliverable.label;
 
@@ -793,7 +932,7 @@ function LogoPanel({
           sub="It appears wherever this partner is shown."
           onClose={closePending}
           onConfirm={() => void confirmLogo()}
-          confirmLabel={linking ? "Saving…" : "Set logo"}
+          confirmLabel={linking ? "Saving…" : "Yes, set it"}
           confirmDisabled={linking}
           footNote="This change is recorded in the audit log."
         >

@@ -19,6 +19,9 @@ export function YourData({ compact = false }: { compact?: boolean }) {
   const submit = useMutation(api.admin.dataRequests.submitMyDataRequest);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Erasure is propose-then-confirm: a stray tap must never file a deletion
+  // request the member cannot retract here. Export stays one tap.
+  const [confirmingErasure, setConfirmingErasure] = useState(false);
 
   const request = async (kind: "export" | "erasure") => {
     setBusy(true);
@@ -64,15 +67,49 @@ export function YourData({ compact = false }: { compact?: boolean }) {
         >
           Ask for a copy of my data
         </button>
-        <button
-          type="button"
-          className={linkBtn}
-          disabled={busy}
-          onClick={() => void request("erasure")}
-        >
-          Ask us to delete my data
-        </button>
+        {!confirmingErasure && (
+          <button
+            type="button"
+            className={linkBtn}
+            disabled={busy}
+            onClick={() => {
+              setMessage(null);
+              setConfirmingErasure(true);
+            }}
+          >
+            Ask us to delete my data
+          </button>
+        )}
       </div>
+      {confirmingErasure && (
+        <div className="pn-propose">
+          <p className={muted}>
+            This asks us to delete your whole account and data. A person
+            reviews the request before anything happens.
+          </p>
+          <div className="pn-confirm-row">
+            <button
+              type="button"
+              className="pn-btn"
+              disabled={busy}
+              onClick={() => {
+                setConfirmingErasure(false);
+                void request("erasure");
+              }}
+            >
+              Yes, ask us to delete it
+            </button>
+            <button
+              type="button"
+              className={linkBtn}
+              disabled={busy}
+              onClick={() => setConfirmingErasure(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       {message !== null && (
         <p role="status" className={muted}>
           {message}

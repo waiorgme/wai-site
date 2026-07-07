@@ -8,6 +8,7 @@ import {
   ProgressBar,
 } from "../../panel/kit";
 import { muted } from "../ui";
+import { IconCheck } from "../../panel/icons";
 import {
   gulfDate,
   gulfMonthDay,
@@ -219,7 +220,7 @@ function CompletenessCard({
               <li key={step.key}>
                 {step.done ? (
                   <span className="ok-mark" aria-hidden="true">
-                    ✓
+                    <IconCheck />
                   </span>
                 ) : (
                   <span className="todo-mark" aria-hidden="true" />

@@ -106,13 +106,25 @@ function JoinForm() {
   const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) =>
     setValues((v) => ({ ...v, [key]: value }));
 
+  // Stage switches swap the whole card, so move focus to the fresh heading
+  // (the shell's view-switch focus discipline). Skipped on first mount.
+  const stageHeading = useRef<HTMLHeadingElement | null>(null);
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    stageHeading.current?.focus();
+  }, [stage]);
+
   const gate = values.dob === "" ? null : dobGate(values.dob, Date.now());
   const isMinor = gate === "minor";
 
   if (stage === "sent") {
     return (
       <div className={card}>
-        <h1 className={h1}>Almost there. Check your email</h1>
+        <h1 className={h1} tabIndex={-1} ref={stageHeading}>Almost there. Check your email</h1>
         <p className={muted}>
           Welcome to WAI-ME. We sent a confirmation link to{" "}
           <strong>{values.email}</strong>.{" "}
@@ -127,7 +139,7 @@ function JoinForm() {
   if (stage === "welcome_back") {
     return (
       <div className={card}>
-        <h1 className={h1}>Welcome back</h1>
+        <h1 className={h1} tabIndex={-1} ref={stageHeading}>Welcome back</h1>
         <p className={muted}>
           You already have a WAI-ME account with{" "}
           <strong>{values.email}</strong>.
@@ -143,7 +155,7 @@ function JoinForm() {
   if (stage === "under_13") {
     return (
       <div className={card}>
-        <h1 className={h1}>Not just yet</h1>
+        <h1 className={h1} tabIndex={-1} ref={stageHeading}>Not just yet</h1>
         <p className={muted}>
           Thank you for wanting to join. WAI-ME membership starts at age{" "}
           {MIN_JOIN_AGE}, so we can't sign you up as a member today. We would
@@ -165,11 +177,11 @@ function JoinForm() {
     const certName = fullName(values.firstName, values.lastName);
     return (
       <div className={card}>
-        <h1 className={h1}>One last look</h1>
+        <h1 className={h1} tabIndex={-1} ref={stageHeading}>One last look</h1>
         <p className={muted}>
           Your certificate will read:{" "}
-          <strong className="pn-cert-name">{certName}</strong>,
-          is that correct?
+          <strong className="pn-cert-name">{certName}</strong>.
+          Is that correct?
         </p>
         <div className="pn-actions">
           <button
@@ -211,11 +223,15 @@ function JoinForm() {
                     setError(
                       "We received several sign-ups from this email today, so we have paused new attempts. Please try again tomorrow.",
                     );
+                    // The submit consumed the verification token; clear it so
+                    // the client gate holds until the fresh widget issues one.
+                    setToken(null);
                     setStage("form");
                   } else {
                     setError(
                       "Some details didn't look right to us. Please check them and try again.",
                     );
+                    setToken(null);
                     setStage("form");
                   }
                   return;
@@ -231,6 +247,7 @@ function JoinForm() {
                 setStage("sent");
               } catch (err) {
                 setError(joinErrorMessage(err));
+                setToken(null);
                 setStage("form");
               } finally {
                 setBusy(false);
@@ -239,18 +256,18 @@ function JoinForm() {
           >
             {busy ? "Creating your account…" : "Yes, join WAI-ME"}
           </button>
-          <button type="button" className={linkBtn} onClick={() => setStage("form")}>
+          <button type="button" disabled={busy} className={linkBtn} onClick={() => setStage("form")}>
             Edit my name
           </button>
         </div>
-        {error !== null && <p className={errorText}>{error}</p>}
+        {error !== null && <p role="alert" className={errorText}>{error}</p>}
       </div>
     );
   }
 
   return (
     <div className={card}>
-      <h1 className={h1}>Join WAI-ME</h1>
+      <h1 className={h1} tabIndex={-1} ref={stageHeading}>Join WAI-ME</h1>
       <p className={muted}>
         Membership is free, and it is open to women at any stage, from the
         student with the dream to the captain with the legacy.
@@ -268,8 +285,12 @@ function JoinForm() {
             setStage("under_13");
             return;
           }
-          if (gate === "invalid" || gate === null) {
+          if (gate === null) {
             setError("Please enter your date of birth.");
+            return;
+          }
+          if (gate === "invalid") {
+            setError("That date of birth doesn't look right - please check it.");
             return;
           }
           setStage("confirm");
@@ -345,6 +366,7 @@ function JoinForm() {
             name="dob"
             type="date"
             required
+            max={new Date().toISOString().slice(0, 10)}
             value={values.dob}
             onChange={(e) => set("dob", e.target.value)}
             className={input}
@@ -385,7 +407,9 @@ function JoinForm() {
         )}
 
         <fieldset className={label} style={{ border: "none", padding: 0, margin: 0 }}>
-          <span>Gender</span>
+          {/* The rendered legend sits outside the label's grid, so restore
+              the 6px gap it no longer gets from the grid. */}
+          <legend style={{ padding: 0, marginBlockEnd: 6 }}>Gender</legend>
           <div style={{ display: "flex", gap: 18 }}>
             <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input
@@ -436,7 +460,7 @@ function JoinForm() {
         </label>
 
         <fieldset className={label} style={{ border: "none", padding: 0, margin: 0 }}>
-          <span>What are you hoping we help you with? (pick any)</span>
+          <legend style={{ padding: 0, marginBlockEnd: 6 }}>What are you hoping we help you with? (pick any)</legend>
           <div style={{ display: "grid", gap: 6 }}>
             {/* Safeguarding: mentorship is not available to members under 18,
                 so those options are never offered to them. */}
@@ -540,7 +564,7 @@ function JoinForm() {
         <button type="submit" disabled={busy} className={primaryBtn}>
           Continue
         </button>
-        {error !== null && <p className={errorText}>{error}</p>}
+        {error !== null && <p role="alert" className={errorText}>{error}</p>}
       </form>
       <p className="pn-meta">
         Already a member?{" "}
@@ -573,6 +597,7 @@ function Turnstile({ onToken }: { onToken: (token: string) => void }) {
           // Clear a stale token client-side so the member re-verifies instead
           // of hitting a confusing server rejection.
           "expired-callback": () => onToken(""),
+          "error-callback": () => onToken(""),
         });
       }
     };
