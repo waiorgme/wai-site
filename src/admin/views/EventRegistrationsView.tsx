@@ -60,7 +60,13 @@ export function EventRegistrationsView({
   }
 
   const finalized = detail.state === "attendance_finalized";
-  const canMark = detail.state === "published" || detail.state === "postponed";
+  const isLiveState = detail.state === "published" || detail.state === "postponed";
+  // The desk opens when the event starts; attendance is finalized after it
+  // ends (Gate 4 round 13). Marking a session that has not happened yet
+  // would grant standing credit early, so the UI gates on time too.
+  const hasStarted = Date.now() >= detail.starts_at;
+  const hasEnded = Date.now() >= detail.ends_at;
+  const canMark = isLiveState && hasStarted;
   const needle = q.trim().toLowerCase();
   const filtered =
     needle === ""
@@ -84,7 +90,9 @@ export function EventRegistrationsView({
               message:
                 res.error === "invalid_state"
                   ? "Only a published or postponed event can be closed out."
-                  : "That did not go through. Please try again.",
+                  : res.error === "not_ended"
+                    ? "You can finalize attendance once the event has ended."
+                    : "That did not go through. Please try again.",
             },
       );
     } catch {
@@ -116,9 +124,11 @@ export function EventRegistrationsView({
                     ? "That member is on the waiting list - a seat has to open before she can be checked in."
                     : res.error === "not_eligible"
                       ? "Her account is no longer active for this event, so she can't be marked attended. Mark a no-show, or check her status under Members."
-                      : res.error === "invalid_state"
-                        ? "This event is not open for check-in."
-                        : "That did not go through. Please try again.",
+                      : res.error === "not_started"
+                        ? "Check-in opens when the event starts."
+                        : res.error === "invalid_state"
+                          ? "This event is not open for check-in."
+                          : "That did not go through. Please try again.",
             },
       );
       if (res.ok) {
@@ -170,7 +180,11 @@ export function EventRegistrationsView({
         if (!canMark) {
           return (
             <span className="pn-meta">
-              {finalized ? "Attendance is final" : "Not open for check-in"}
+              {finalized
+                ? "Attendance is final"
+                : isLiveState && !hasStarted
+                  ? "Check-in opens when the event starts"
+                  : "Not open for check-in"}
             </span>
           );
         }
@@ -207,7 +221,13 @@ export function EventRegistrationsView({
             <button
               type="button"
               className="pn-btn pn-btn--sm"
-              disabled={busy || !canMark}
+              // Only closeable once the event has ended.
+              disabled={busy || !isLiveState || !hasEnded}
+              title={
+                isLiveState && !hasEnded
+                  ? "Attendance can be finalized after the event ends."
+                  : undefined
+              }
               onClick={() => setFinalizing(true)}
             >
               Finalize attendance
@@ -336,9 +356,11 @@ function MarkCell({ row, eventId }: { row: AdminRegistrationRow; eventId: Id<"ev
               ? "She's on the waiting list - a seat has to open first."
               : res.error === "not_eligible"
                 ? "Her account is no longer active for this event - mark a no-show, or check Members."
-                : res.error === "invalid_state"
-                  ? "This event is not open for check-in."
-                  : "That did not go through. Please try again.",
+                : res.error === "not_started"
+                  ? "Check-in opens when the event starts."
+                  : res.error === "invalid_state"
+                    ? "This event is not open for check-in."
+                    : "That did not go through. Please try again.",
         });
       }
     } catch {

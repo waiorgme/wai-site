@@ -108,6 +108,17 @@ const regsForEvent = async (t: Tester, eventId: Id<"events">) =>
       .collect(),
   );
 
+// Move an event's times into the past so its check-in desk is open: members
+// RSVP while it is upcoming, then it "happens". Attendance can only be marked
+// after the event starts and finalized after it ends (Gate 4 round 13).
+const runEvent = async (t: Tester, eventId: Id<"events">) =>
+  t.run(async (ctx) => {
+    await ctx.db.patch(eventId, {
+      starts_at: Date.now() - 2 * HOUR,
+      ends_at: Date.now() - HOUR,
+    });
+  });
+
 const notificationsFor = async (t: Tester, memberId: Id<"members">) =>
   t.run(async (ctx) =>
     ctx.db
@@ -828,6 +839,7 @@ describe("admin check-in and finalize", () => {
     await asA.mutation(api.events.rsvp, { eventId });
     const regs = await regsForEvent(t, eventId);
     const code = regs[0].checkin_code;
+    await runEvent(t, eventId);
 
     // Exactly one lookup key is required.
     expect(
@@ -887,6 +899,7 @@ describe("admin check-in and finalize", () => {
     });
     await asA.mutation(api.events.rsvp, { eventId });
     const regs = await regsForEvent(t, eventId);
+    await runEvent(t, eventId);
     await asAdmin.mutation(api.admin.events.checkIn, { eventId,
       checkinCode: regs[0].checkin_code,
       outcome: "attended",
@@ -914,6 +927,7 @@ describe("admin check-in and finalize", () => {
     const asA = await signIn(t, "incomplete@example.com");
     await asA.mutation(api.events.rsvp, { eventId });
     const regs = await regsForEvent(t, eventId);
+    await runEvent(t, eventId);
     await asAdmin.mutation(api.admin.events.checkIn, { eventId,
       checkinCode: regs[0].checkin_code,
       outcome: "attended",
@@ -929,6 +943,7 @@ describe("admin check-in and finalize", () => {
     const asA = await signIn(t, "a@example.com");
     await asA.mutation(api.events.rsvp, { eventId });
     const regs = await regsForEvent(t, eventId);
+    await runEvent(t, eventId);
 
     expect(
       await asAdmin.mutation(api.admin.events.finalizeAttendance, { eventId }),
@@ -1369,6 +1384,7 @@ describe("check-in is seat-holders only (Gate 4 round 8)", () => {
     const regs = await regsForEvent(t, eventId);
     const promoted = regs.find((r) => r.state === "registered")!;
     expect(promoted.promoted_from_waitlist_at).not.toBeNull();
+    await runEvent(t, eventId);
     expect(
       await asAdmin.mutation(api.admin.events.checkIn, {
         eventId,
@@ -1533,6 +1549,7 @@ describe("check-in re-checks the registrant's current eligibility (Gate 4 round 
     await t.run(async (ctx) => {
       await ctx.db.patch(member!._id, { lifecycle_state: "suspended" as const });
     });
+    await runEvent(t, eventId);
 
     // Attended is refused; her registration is untouched and she gets no
     // attendance activity.
@@ -1579,6 +1596,7 @@ describe("check-in re-checks the registrant's current eligibility (Gate 4 round 
         date_of_birth_source: "unknown" as const,
       });
     });
+    await runEvent(t, eventId);
     expect(
       await asAdmin.mutation(api.admin.events.checkIn, {
         eventId,
@@ -1586,5 +1604,73 @@ describe("check-in re-checks the registrant's current eligibility (Gate 4 round 
         outcome: "attended",
       }),
     ).toEqual({ ok: false, error: "not_eligible" });
+  });
+});
+
+describe("member-facing links are fully URL-validated (Gate 4 round 13)", () => {
+  it("upsertEvent rejects a meeting link carrying CRLF or control characters", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    for (const bad of [
+      "https://meet.example.com/\r\nATTENDEE:mailto:x@y.z",
+      "https://meet.example.com/\tpath",
+      "http://meet.example.com/plain",
+      "https://meet.example.com/a b",
+    ]) {
+      expect(
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ meeting_link: bad }),
+        ),
+      ).toEqual({ ok: false, error: "validation" });
+    }
+    // A clean link passes.
+    expect(
+      (
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ meeting_link: "https://meet.example.com/session" }),
+        )
+      ).ok,
+    ).toBe(true);
+  });
+});
+
+describe("attendance can't be recorded before the event (Gate 4 round 13)", () => {
+  it("checkIn refuses attended before the event starts; finalize refuses before it ends", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    // A published event a week out, with a registered member.
+    const created = await asAdmin.mutation(api.admin.events.upsertEvent, upsertArgs());
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+    await asAdmin.mutation(api.admin.events.publishEvent, { eventId });
+    const asMember = await signIn(t, "early@example.com");
+    await asMember.mutation(api.events.rsvp, { eventId });
+    const reg = (await regsForEvent(t, eventId))[0];
+
+    // Before it starts: no attendance, no finalize.
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        registrationId: reg._id,
+        outcome: "attended",
+      }),
+    ).toEqual({ ok: false, error: "not_started" });
+    expect(
+      await asAdmin.mutation(api.admin.events.finalizeAttendance, { eventId }),
+    ).toEqual({ ok: false, error: "not_ended" });
+
+    // Once it has run, both work.
+    await runEvent(t, eventId);
+    expect(
+      await asAdmin.mutation(api.admin.events.checkIn, {
+        eventId,
+        registrationId: reg._id,
+        outcome: "attended",
+      }),
+    ).toEqual({ ok: true, state: "attended" });
+    expect(
+      await asAdmin.mutation(api.admin.events.finalizeAttendance, { eventId }),
+    ).toEqual({ ok: true });
   });
 });

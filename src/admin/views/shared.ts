@@ -291,7 +291,7 @@ export const LANE_WORDS: Record<Lane, string> = {
 export const LANE_EXPLAIN: Record<Lane, string> = {
   standard: "A woman in aviation - the standard membership.",
   minor: "Under 18 - guardian consent applies and adult surfaces stay switched off.",
-  ally: "A man who supports the mission - no directory listing and no women-only opportunities.",
+  ally: "A man who supports the mission - excluded from women-only opportunities and the talent pipeline.",
   restricted_unknown: "Her details could not be confirmed, so sensitive surfaces stay switched off.",
 };
 

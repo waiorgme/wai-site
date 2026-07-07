@@ -4,6 +4,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { requireAdmin } from "../lib/adminAuth";
 import { writeAudit } from "../lib/audit";
 import { isValidJoinEmail, normalizeEmail } from "../lib/joinValidation";
+import { isSafeHttpsUrl } from "../lib/url";
 
 // Partners admin (panel-experience spec §G16; Corporate Membership handoff,
 // Money Mechanism, Stage 0 §4.6). Partners are admin-managed RELATIONSHIP
@@ -209,7 +210,7 @@ export const upsertPartner = mutation({
     // bounded, the same rule as event meeting/recording links. The remaining
     // free-text fields get honest caps - refused, never silently truncated.
     const website = args.website?.trim() || undefined;
-    if (website !== undefined && !(website.startsWith("https://") && website.length <= 500)) {
+    if (website !== undefined && !isSafeHttpsUrl(website)) {
       return { ok: false, error: "validation" };
     }
     if (

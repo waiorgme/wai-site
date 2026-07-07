@@ -199,6 +199,18 @@ export const downloadIcs = (event: {
       .replace(/;/g, "\\;")
       .replace(/,/g, "\\,")
       .replace(/\r?\n/g, "\\n");
+  // The URL rides in its own line and inside the description. The server
+  // already rejects control chars in stored links, but strip any here too so
+  // a value can never fold into an extra calendar property (defence in depth,
+  // Gate 4 round 13).
+  const stripControl = (str: string): string =>
+    Array.from(str)
+      .filter((ch) => {
+        const c = ch.charCodeAt(0);
+        return c > 0x20 && c !== 0x7f;
+      })
+      .join("");
+  const cleanUrl = event.url === undefined ? undefined : stripControl(event.url);
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -210,12 +222,12 @@ export const downloadIcs = (event: {
     `DTEND:${stamp(event.endsAt)}`,
     `SUMMARY:${esc(event.title)}`,
     event.location ? `LOCATION:${esc(event.location)}` : null,
-    event.url ? `URL:${event.url}` : null,
+    cleanUrl ? `URL:${cleanUrl}` : null,
     // The join link rides in the description too: some calendar apps never
     // surface the URL property.
-    event.description || event.url
+    event.description || cleanUrl
       ? `DESCRIPTION:${esc(
-          [event.description, event.url ? `Join online: ${event.url}` : null]
+          [event.description, cleanUrl ? `Join online: ${cleanUrl}` : null]
             .filter((part): part is string => Boolean(part))
             .join("\n"),
         )}`

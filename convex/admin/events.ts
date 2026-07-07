@@ -4,6 +4,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx, MutationCtx } from "../_generated/server";
 import { requireAdmin } from "../lib/adminAuth";
 import { isValidJoinEmail } from "../lib/joinValidation";
+import { isSafeHttpsUrl } from "../lib/url";
 import { writeAudit } from "../lib/audit";
 import { logActivityOnce } from "../lib/activity";
 import { notify } from "../lib/notify";
@@ -269,12 +270,14 @@ export const upsertEvent = mutation({
       return { ok: false, error: "validation" };
     }
 
-    // The meeting link becomes a member-facing href once she registers:
-    // https only, bounded length, same rule as recording/materials
-    // (Gate 4 blocker, 2026-07-07).
+    // The meeting link becomes a member-facing href AND rides into her .ics
+    // download, so it is fully URL-validated: https scheme, real hostname, no
+    // control characters or whitespace (a CRLF would inject calendar
+    // properties - Gate 4 round 13).
     if (
       args.meeting_link !== undefined &&
-      !(args.meeting_link.startsWith("https://") && args.meeting_link.length <= 500)
+      args.meeting_link !== "" &&
+      !isSafeHttpsUrl(args.meeting_link)
     ) {
       return { ok: false, error: "validation" };
     }
@@ -418,7 +421,8 @@ type StateChangeResult =
         | "validation"
         | "invalid_state"
         | "missing_logistics"
-        | "youth_not_launched";
+        | "youth_not_launched"
+        | "not_ended";
     };
 
 // Draft to published: the one move that puts an event on the member board.
@@ -651,12 +655,11 @@ export const setEventLinks = mutation({
     if (args.recording_url === undefined && args.materials_url === undefined) {
       return { ok: false, error: "validation" };
     }
-    const isHttps = (url: string): boolean =>
-      url.startsWith("https://") && url.length <= 500;
-    if (args.recording_url !== undefined && !isHttps(args.recording_url)) {
+    // Members-only links, fully URL-validated (Gate 4 round 13).
+    if (args.recording_url !== undefined && !isSafeHttpsUrl(args.recording_url)) {
       return { ok: false, error: "validation" };
     }
-    if (args.materials_url !== undefined && !isHttps(args.materials_url)) {
+    if (args.materials_url !== undefined && !isSafeHttpsUrl(args.materials_url)) {
       return { ok: false, error: "validation" };
     }
     const event = await ctx.db.get(args.eventId);
@@ -731,7 +734,8 @@ type CheckInResult =
         | "validation"
         | "invalid_state"
         | "not_seated"
-        | "not_eligible";
+        | "not_eligible"
+        | "not_started";
     };
 
 // Producer-marked check-in (MVP attendance rule: never auto-detected).
@@ -791,6 +795,12 @@ export const checkIn = mutation({
     // cancelled events have no check-in desk.
     if (event.state !== "published" && event.state !== "postponed") {
       return { ok: false, error: "invalid_state" };
+    }
+    // The desk opens when the event STARTS: attendance can't be recorded
+    // (and standing credit granted) for a session that hasn't happened yet
+    // (Gate 4 round 13). An already-correct row is idempotent regardless.
+    if (reg.state !== args.outcome && Date.now() < event.starts_at) {
+      return { ok: false, error: "not_started" };
     }
     if (reg.state === args.outcome) {
       return { ok: true, already: true, state: args.outcome };
@@ -855,6 +865,12 @@ export const finalizeAttendance = mutation({
     }
     if (event.state !== "published" && event.state !== "postponed") {
       return { ok: false, error: "invalid_state" };
+    }
+    // Attendance can only be CLOSED after the event has ended - finalizing
+    // early would lock in attendance for a session still to happen (Gate 4
+    // round 13).
+    if (Date.now() < event.ends_at) {
+      return { ok: false, error: "not_ended" };
     }
     const before = event.state;
     await ctx.db.patch(event._id, { state: "attendance_finalized" });

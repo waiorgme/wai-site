@@ -240,6 +240,14 @@ describe("engagement events (spec §B): deduped per referenced thing", () => {
       const regs = await ctx.db.query("eventRegistrations").collect();
       return regs[0]._id;
     });
+    // The event happens: check-in only opens once it has started
+    // (Gate 4 round 13).
+    await t.run(async (ctx) => {
+      await ctx.db.patch(eventId, {
+        starts_at: Date.now() - 2 * HOUR,
+        ends_at: Date.now() - HOUR,
+      });
+    });
 
     await asAdmin.mutation(api.admin.events.checkIn, {
       eventId,

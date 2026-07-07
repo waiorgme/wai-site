@@ -203,6 +203,15 @@ branch); PlacementLog; partner-facing portal.
   and opportunity-close reasons live on their own records (`revoke_reason`,
   `close_reason`); the audit summary carries only `reason_present`. `cancelEvent` already
   did this (the reason is member-facing on the event).
+- **Member-facing URLs are fully validated at the boundary** (round-13 required fix):
+  `isSafeHttpsUrl` (https scheme + hostname, no control chars/whitespace) gates every
+  stored member-facing link (event meeting/recording/materials, partner website) - a
+  `startsWith("https://")` link carrying CRLF could inject properties into a member's
+  downloaded .ics; the ICS writer also strips control chars defensively.
+- **Attendance can't be recorded before the event happens** (round-13 required fix):
+  check-in only marks attended once the event has STARTED (no early standing credit) and
+  finalize only closes attendance once it has ENDED; the desk shows the honest waiting
+  state.
 - **Certificate-issued notification lives in the shared issuer** (round-4 required fix):
   every issuance path - activation, migrated claim, guardian confirmation, the fallback
   mutation - notifies exactly once, past the idempotency return.
