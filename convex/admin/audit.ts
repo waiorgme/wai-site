@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 
 // Audit visibility, read-only (spec criterion 8): a paginated view of recent
 // auditLog rows filtered to source = "admin_fallback", so a super admin can see
@@ -26,7 +26,7 @@ export const listAdminAuditLog = query({
     ctx,
     args,
   ): Promise<{ rows: AdminAuditRow[]; nextCursor: string | null }> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const limit = Math.min(args.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
     // Paginate source=admin_fallback DIRECTLY via the by_source_time index, so a
     // page is always admin rows (never a page of member/system rows that hides

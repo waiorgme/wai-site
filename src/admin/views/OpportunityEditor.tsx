@@ -848,7 +848,9 @@ function ApplicationActions({ row }: { row: AdminApplicationRow }) {
               text:
                 res.error === "conflict"
                   ? "This application already has a result or was withdrawn."
-                  : "That did not go through. Please try again.",
+                  : res.error === "winner_exists"
+                    ? "This listing already has its winner - a single-winner opportunity takes exactly one. To change the winner, start a new listing."
+                    : "That did not go through. Please try again.",
             },
       );
     } catch {

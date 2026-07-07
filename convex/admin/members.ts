@@ -1,13 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { maskName } from "../lib/adminMask";
 import { writeAudit } from "../lib/audit";
 import { currentStanding } from "../lib/standing";
 
 // Members admin (panel-experience spec §F13-14). Every function is gated by
-// requireSuperAdmin (deny-by-default, Stage 0 §3); every write returns the
+// requireAdmin (deny-by-default, Stage 0 §3); every write returns the
 // §7.1 envelope and appends the mandatory §8 audit row with PII-free
 // summaries. The list is a review surface, not a member-data browser: rows
 // never carry an email; contact is masked on the dossier and only leaves the
@@ -140,7 +140,7 @@ export const listMembers = query({
     page: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<MemberListResult> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     // Full scan is deliberate: the filter chips need counts across every
     // lifecycle state whatever filter is active, and the member base is ~1.3k
     // at launch. Revisit with .paginate() if that assumption breaks.
@@ -296,7 +296,7 @@ export type MemberDossier = {
 export const getMemberAdmin = query({
   args: { memberId: v.id("members") },
   handler: async (ctx, args): Promise<MemberDossier | null> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const member = await ctx.db.get(args.memberId);
     if (member === null) {
       return null;
@@ -495,7 +495,7 @@ export const revealMemberContact = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -559,7 +559,7 @@ export const changeMemberStatus = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -609,7 +609,7 @@ export const addMemberNote = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -652,7 +652,7 @@ export const listMemberNotes = query({
       created_at: number;
     }>
   > => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const rows = await ctx.db
       .query("adminNotes")
       .withIndex("by_member_time", (q) => q.eq("member_id", args.memberId))

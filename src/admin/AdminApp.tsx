@@ -113,13 +113,15 @@ function Centered({ children }: { children: ReactNode }) {
   );
 }
 
-// Signed in, but only the two super admins see the console. Everyone else gets
-// a neutral "not available" state (the server refuses their queries regardless).
+// Signed in, but only the named admins see the console (Stage 0 §3: admin =
+// Mervat + backup, super_admin = Issam with certificate/config extras).
+// Everyone else gets a neutral "not available" state (the server refuses
+// their queries regardless).
 function AdminGate() {
-  const isAdmin = useQuery(api.lib.adminAuth.amISuperAdmin);
+  const role = useQuery(api.lib.adminAuth.myAdminRole);
   const { signOut } = useAuthActions();
 
-  if (isAdmin === undefined) {
+  if (role === undefined) {
     return (
       <Centered>
         <div className={card}>
@@ -129,7 +131,7 @@ function AdminGate() {
       </Centered>
     );
   }
-  if (!isAdmin) {
+  if (role === null) {
     return (
       <Centered>
         <div className={card}>
@@ -146,7 +148,7 @@ function AdminGate() {
       </Centered>
     );
   }
-  return <AdminConsole onSignOut={() => void signOut()} />;
+  return <AdminConsole role={role} onSignOut={() => void signOut()} />;
 }
 
 type QueueView = "conflicts" | "pipeline" | "guardians" | "dataRequests";
@@ -259,7 +261,16 @@ function QueuePage({
   );
 }
 
-function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
+function AdminConsole({
+  role,
+  onSignOut,
+}: {
+  role: "super_admin" | "admin";
+  onSignOut: () => void;
+}) {
+  // Certificates are super-admin only (spec F15); a plain admin's console
+  // simply does not offer the view. The server refuses regardless.
+  const isSuper = role === "super_admin";
   const [view, setView] = useState<AdminViewState>(() => viewFromLocation());
   const counts = useQuery(api.admin.overview.getAdminOverview);
   // The admin is herself a member (the allowlist resolves through the members
@@ -341,7 +352,9 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
       label: "Membership",
       items: [
         item("members", "Members", <IconUsers />),
-        item("certificates", "Certificates", <IconAward />),
+        ...(isSuper
+          ? [item("certificates", "Certificates", <IconAward />)]
+          : []),
       ],
     },
     {
@@ -383,7 +396,18 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
           <MemberDetail key={view.id} memberId={view.id as Id<"members">} go={go} />
         );
       case "certificates":
-        return <CertificatesView go={go} />;
+        // Deep links included: a plain admin gets the honest words, not an
+        // error state (the server refuses her queries regardless).
+        return isSuper ? (
+          <CertificatesView go={go} />
+        ) : (
+          <QueuePage
+            title="Certificates"
+            sub="Certificate revoke and re-issue are super-admin actions. Ask Issam - member records themselves live under Members."
+          >
+            <></>
+          </QueuePage>
+        );
       case "events":
         return <EventsView go={go} />;
       case "eventEditor":

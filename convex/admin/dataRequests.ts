@@ -3,7 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { action, internalMutation, mutation, query } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { verifyTurnstile } from "../lib/turnstile";
 import { writeAudit } from "../lib/audit";
 import { maskName } from "../lib/adminMask";
@@ -198,7 +198,7 @@ export type DataRequestRow = {
 export const listDataRequests = query({
   args: {},
   handler: async (ctx): Promise<DataRequestRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const now = Date.now();
     const submitted = await ctx.db
       .query("dataRequests")
@@ -250,7 +250,7 @@ export const approveDataRequest = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       // Neutral error (criterion 10): a non-admin caller cannot tell why.
       return { ok: false, error: "not_authorized" };

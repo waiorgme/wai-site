@@ -873,3 +873,111 @@ describe("deadline cron", () => {
     expect(await auditRows(t, "autoCloseOpportunity")).toHaveLength(1);
   });
 });
+
+describe("single_winner integrity (Gate 4, 2026-07-07): exactly one winner", () => {
+  it("a second 'won' on a single_winner listing is refused; 'lost' still flows; decide succeeds", async () => {
+    const t = convexTest(schema, modules);
+    const oppId = await insertOpp(t, {
+      title: "Type Rating Sponsorship",
+      type: "single_winner" as const,
+    });
+    const { session: a } = await signInComplete(t, "a@example.com");
+    const { session: b } = await signInComplete(t, "b@example.com");
+    await a.mutation(api.opportunities.apply, {
+      opportunityId: oppId,
+      statement: "I would like to apply.",
+    });
+    await b.mutation(api.opportunities.apply, {
+      opportunityId: oppId,
+      statement: "Me too, please consider me.",
+    });
+    const { session: asAdmin } = await signIn(t, ADMIN_EMAIL);
+    const apps = await t.run(async (ctx) =>
+      ctx.db.query("opportunityApplications").collect(),
+    );
+
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.recordResult, {
+        applicationId: apps[0]._id,
+        result: "won",
+      }),
+    ).toEqual({ ok: true });
+    // The second winner is refused, and the refused application is untouched.
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.recordResult, {
+        applicationId: apps[1]._id,
+        result: "won",
+      }),
+    ).toEqual({ ok: false, error: "winner_exists" });
+    const untouched = await t.run(async (ctx) => ctx.db.get(apps[1]._id));
+    expect(untouched!.state).toBe("received");
+
+    // Everyone still gets an answer: lost flows normally, then decide works.
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.recordResult, {
+        applicationId: apps[1]._id,
+        result: "lost",
+      }),
+    ).toEqual({ ok: true });
+    await t.run(async (ctx) => ctx.db.patch(oppId, { state: "closed" }));
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.decideOpportunity, {
+        opportunityId: oppId,
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it("decideOpportunity refuses a single_winner cycle that somehow carries two winners", async () => {
+    const t = convexTest(schema, modules);
+    const oppId = await insertOpp(t, {
+      type: "single_winner" as const,
+      state: "closed" as const,
+    });
+    const { memberId: m1 } = await signIn(t, "w1@example.com");
+    const { memberId: m2 } = await signIn(t, "w2@example.com");
+    await t.run(async (ctx) => {
+      for (const member_id of [m1, m2]) {
+        await ctx.db.insert("opportunityApplications", {
+          opportunity_id: oppId,
+          member_id,
+          statement: "Test application.",
+          state: "won",
+          created_at: Date.now(),
+        });
+      }
+    });
+    const { session: asAdmin } = await signIn(t, ADMIN_EMAIL);
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.decideOpportunity, {
+        opportunityId: oppId,
+      }),
+    ).toEqual({ ok: false, error: "multiple_winners" });
+  });
+
+  it("competitive listings still allow several winners", async () => {
+    const t = convexTest(schema, modules);
+    const oppId = await insertOpp(t); // competitive by default
+    const { session: a } = await signInComplete(t, "c1@example.com");
+    const { session: b } = await signInComplete(t, "c2@example.com");
+    await a.mutation(api.opportunities.apply, {
+      opportunityId: oppId,
+      statement: "Applying for a seat.",
+    });
+    await b.mutation(api.opportunities.apply, {
+      opportunityId: oppId,
+      statement: "Applying as well.",
+    });
+    const { session: asAdmin } = await signIn(t, ADMIN_EMAIL);
+    const apps = await t.run(async (ctx) =>
+      ctx.db.query("opportunityApplications").collect(),
+    );
+    for (const app of apps) {
+      expect(
+        await asAdmin.mutation(api.admin.opportunities.recordResult, {
+          applicationId: app._id,
+          result: "won",
+        }),
+      ).toEqual({ ok: true });
+    }
+  });
+});

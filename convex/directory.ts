@@ -26,13 +26,17 @@ const memberForAuthedUser = async (ctx: QueryCtx) => {
     .unique();
 };
 
-// Directory-tier fields ONLY (Member Profile Field Spec). Gender, date of
-// birth, email and mobile are Private tier and never leave the server here.
+// Directory-tier fields ONLY (spec D11 list). Gender, date of birth, email
+// and mobile are Private tier and never leave the server here. Bio is
+// EXCLUDED by decision (Gate 4, 2026-07-07): migrated members carry
+// legacy_bio text written years ago for another context, and the directory
+// must never surface words she has not reviewed since claiming. If Issam
+// rules bio in (the vault field spec's tier table reads differently), it
+// returns only for members who edited it post-claim.
 export type DirectoryRow = {
   name: string;
   photo_url: string | null;
   headline: string | null;
-  bio: string | null;
   country_of_residence: string | null;
   career_stage_answer: string | null;
   function_area: string | null;
@@ -138,7 +142,6 @@ export const listDirectory = query({
           ? await ctx.storage.getUrl(m.photo_storage_id)
           : null,
         headline: m.headline ?? null,
-        bio: m.bio ?? null,
         country_of_residence: m.country_of_residence ?? null,
         career_stage_answer: m.career_stage_answer ?? null,
         function_area: m.function_area ?? null,

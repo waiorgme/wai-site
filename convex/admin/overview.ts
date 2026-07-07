@@ -1,10 +1,10 @@
 import { query } from "../_generated/server";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 
 // Console overview (panel-design spec criterion 9): PII-FREE COUNTS ONLY, for
 // the admin console's Overview view. No names, no emails, no rows - just the
 // numbers an operator needs to see what is waiting. Super-admin gated like
-// every sibling admin query (requireSuperAdmin, deny-by-default: queries throw
+// every sibling admin query (requireAdmin, deny-by-default: queries throw
 // the neutral not_authorized so a non-admin caller learns nothing).
 //
 // The vault integrity rule (Migration & Claim-Wave Plan): the imported legacy
@@ -40,7 +40,7 @@ export type AdminOverviewCounts = {
 export const getAdminOverview = query({
   args: {},
   handler: async (ctx): Promise<AdminOverviewCounts> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
 
     const members = await ctx.db.query("members").collect();
     const members_active = members.filter(
@@ -158,7 +158,7 @@ const topCounts = (
 export const getReportAggregates = query({
   args: {},
   handler: async (ctx): Promise<ReportAggregates> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const members = await ctx.db.query("members").collect();
     const active = members.filter((m) => m.lifecycle_state === "active");
     return {
@@ -219,7 +219,7 @@ export type PlatformHealth = {
 export const getPlatformHealth = query({
   args: {},
   handler: async (ctx): Promise<PlatformHealth> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const now = Date.now();
 
     const activity = await ctx.db.query("activityLog").collect();

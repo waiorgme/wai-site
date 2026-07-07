@@ -2,13 +2,13 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { internalMutation, mutation, query } from "../_generated/server";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { writeAudit } from "../lib/audit";
 import { notify } from "../lib/notify";
 import { currentStanding } from "../lib/standing";
 
 // Admin opportunities console (panel-experience spec B7). Every function is
-// super-admin gated (requireSuperAdmin, deny-by-default): queries throw the
+// super-admin gated (requireAdmin, deny-by-default): queries throw the
 // neutral not_authorized, mutations return the §7.1 result envelope. Every
 // write appends an immutable audit row. Lifecycle: draft -> open (publish) ->
 // closed (admin close or the deadline cron) -> decided (results published);
@@ -122,7 +122,7 @@ const toAdminRow = (
 export const adminListOpportunities = query({
   args: {},
   handler: async (ctx): Promise<AdminOpportunityRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const all = await ctx.db.query("opportunities").collect();
     all.sort((a, b) => b.created_at - a.created_at);
     const rows: AdminOpportunityRow[] = [];
@@ -143,7 +143,7 @@ export const adminListOpportunities = query({
 export const getOpportunityAdmin = query({
   args: { id: v.id("opportunities") },
   handler: async (ctx, args): Promise<AdminOpportunityDetail | null> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const opportunity = await ctx.db.get(args.id);
     if (opportunity === null) {
       return null;
@@ -165,7 +165,7 @@ export const getOpportunityAdmin = query({
 export const listApplications = query({
   args: { opportunityId: v.id("opportunities") },
   handler: async (ctx, args): Promise<AdminApplicationRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const applications = await ctx.db
       .query("opportunityApplications")
       .withIndex("by_opportunity_state", (q) =>
@@ -225,7 +225,7 @@ export const upsertOpportunity = mutation({
   handler: async (ctx, args): Promise<UpsertResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -336,7 +336,7 @@ export const publishOpportunity = mutation({
   handler: async (ctx, args): Promise<PublishResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -390,7 +390,7 @@ export const closeOpportunity = mutation({
   handler: async (ctx, args): Promise<CloseResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -431,7 +431,7 @@ export const setShortlisted = mutation({
   handler: async (ctx, args): Promise<ShortlistResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -463,7 +463,10 @@ export const setShortlisted = mutation({
 
 type ResultResult =
   | { ok: true; already?: true }
-  | { ok: false; error: "not_authorized" | "not_found" | "conflict" };
+  | {
+      ok: false;
+      error: "not_authorized" | "not_found" | "conflict" | "winner_exists";
+    };
 
 // Record a result (propose-then-confirm in the UI). Every applicant gets an
 // answer, win or lose (the vault's everyone-gets-an-answer rule): the write
@@ -478,7 +481,7 @@ export const recordResult = mutation({
   handler: async (ctx, args): Promise<ResultResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -499,6 +502,20 @@ export const recordResult = mutation({
     const opportunity = await ctx.db.get(application.opportunity_id);
     if (opportunity === null) {
       return { ok: false, error: "not_found" };
+    }
+    // single_winner means ONE winner (Scholarship & Opportunity Workflow):
+    // a second "won" on the same listing is refused, not silently stacked
+    // (Gate 4 blocker, 2026-07-07).
+    if (args.result === "won" && opportunity.type === "single_winner") {
+      const siblings = await ctx.db
+        .query("opportunityApplications")
+        .withIndex("by_opportunity_state", (q) =>
+          q.eq("opportunity_id", application.opportunity_id).eq("state", "won"),
+        )
+        .collect();
+      if (siblings.length > 0) {
+        return { ok: false, error: "winner_exists" };
+      }
     }
     const note = (args.note ?? "").trim().slice(0, NOTE_MAX);
     await ctx.db.patch(args.applicationId, {
@@ -547,7 +564,8 @@ type DecideResult =
         | "not_found"
         | "evergreen"
         | "not_closed"
-        | "unresolved_applications";
+        | "unresolved_applications"
+        | "multiple_winners";
     };
 
 // Publish the results: closed -> decided, ONLY once every non-withdrawn
@@ -559,7 +577,7 @@ export const decideOpportunity = mutation({
   handler: async (ctx, args): Promise<DecideResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -587,6 +605,14 @@ export const decideOpportunity = mutation({
     );
     if (unresolved) {
       return { ok: false, error: "unresolved_applications" };
+    }
+    // Belt to recordResult's braces: a single_winner cycle can never be
+    // declared finished with two winners on record.
+    if (
+      opportunity.type === "single_winner" &&
+      applications.filter((a) => a.state === "won").length > 1
+    ) {
+      return { ok: false, error: "multiple_winners" };
     }
     await ctx.db.patch(args.opportunityId, {
       state: "decided",

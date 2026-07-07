@@ -224,13 +224,16 @@ describe("directory: the canonical listing rule (spec D11)", () => {
     });
   });
 
-  it("rows carry directory-tier fields only: never email, gender, date_of_birth, mobile", async () => {
+  it("rows carry directory-tier fields only: never email, gender, date_of_birth, mobile, bio", async () => {
     const t = convexTest(schema, modules);
     const { as: viewer } = await signInMember(t, "viewer@example.com");
     await insertMember(t, "private@example.com", {
       ...listedExtra,
       name: "Private Fields",
       mobile: "+971501234567",
+      // Gate 4 (2026-07-07): bio never ships in a directory row - a migrated
+      // member's legacy_bio is years-old text she has not reviewed since.
+      bio: "Wrote this in 2019 for a different site entirely.",
     });
     const res = await viewer.query(api.directory.listDirectory, {});
     expect(res?.rows).toHaveLength(1);
@@ -240,11 +243,14 @@ describe("directory: the canonical listing rule (spec D11)", () => {
       expect(keys).not.toContain("gender");
       expect(keys).not.toContain("date_of_birth");
       expect(keys).not.toContain("mobile");
+      expect(keys).not.toContain("bio");
+      expect(keys).not.toContain("legacy_bio");
     }
     const serialized = JSON.stringify(res);
     expect(serialized).not.toContain("private@example.com");
     expect(serialized).not.toContain("+971501234567");
     expect(serialized).not.toContain("1985-03-10");
+    expect(serialized).not.toContain("Wrote this in 2019");
   });
 
   it("search matches name or headline; filters are exact", async () => {

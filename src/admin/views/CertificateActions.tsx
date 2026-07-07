@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Modal } from "../../panel/kit";
@@ -23,6 +23,10 @@ export function CertificateRowActions({
   numberLabel: string;
   recipientName: string;
 }) {
+  // Super-admin-only actions (spec F15): a plain admin sees the honest words
+  // instead of buttons the server would refuse. Guarded here, once, so every
+  // caller (Certificates view, member dossier) inherits the rule.
+  const role = useQuery(api.lib.adminAuth.myAdminRole);
   const revoke = useMutation(api.admin.certificates.revokeCertificate);
   const reissue = useMutation(api.admin.certificates.reissueCertificate);
 
@@ -54,6 +58,14 @@ export function CertificateRowActions({
   if (status !== "valid") {
     // Superseded and revoked rows are settled records; nothing to act on.
     return <span className="pn-meta">Settled record</span>;
+  }
+
+  if (role !== "super_admin") {
+    return (
+      <span className="pn-meta">
+        Revoke and re-issue are super-admin actions.
+      </span>
+    );
   }
 
   const close = () => {

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx, MutationCtx } from "../_generated/server";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { isValidJoinEmail } from "../lib/joinValidation";
 import { writeAudit } from "../lib/audit";
 import { logActivityOnce } from "../lib/activity";
@@ -11,7 +11,7 @@ import { maybePromoteToActive } from "../lib/standing";
 import { eventDateLabel } from "../events";
 
 // Admin events console (panel-experience spec §A.3). Every function here is
-// requireSuperAdmin, deny-by-default: queries throw the neutral not_authorized,
+// requireAdmin, deny-by-default: queries throw the neutral not_authorized,
 // mutations return the §7.1 envelope. Every write appends a PII-free audit row.
 // Events are never deleted: cancel and finalize are the closing moves, and a
 // cancelled/finalized event is read-only history.
@@ -83,7 +83,7 @@ export type AdminEventRow = {
 export const adminListEvents = query({
   args: {},
   handler: async (ctx): Promise<AdminEventRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const events = await ctx.db.query("events").collect();
     events.sort((a, b) => b.starts_at - a.starts_at);
     const rows: AdminEventRow[] = [];
@@ -139,7 +139,7 @@ export type AdminEventDetail = {
 export const getEventAdmin = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, args): Promise<AdminEventDetail | null> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const event = await ctx.db.get(args.eventId);
     if (event === null) {
       return null;
@@ -211,7 +211,7 @@ export const upsertEvent = mutation({
   handler: async (ctx, args): Promise<UpsertResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -352,7 +352,7 @@ export const publishEvent = mutation({
   handler: async (ctx, args): Promise<StateChangeResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -417,7 +417,7 @@ export const cancelEvent = mutation({
   handler: async (ctx, args): Promise<NotifyingChangeResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -472,7 +472,7 @@ export const postponeEvent = mutation({
   handler: async (ctx, args): Promise<NotifyingChangeResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -527,7 +527,7 @@ export const setEventLinks = mutation({
   handler: async (ctx, args): Promise<StateChangeResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -583,7 +583,7 @@ export type AdminRegistrationRow = {
 export const listRegistrations = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, args): Promise<AdminRegistrationRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const regs = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event_state", (q) => q.eq("event_id", args.eventId))
@@ -627,7 +627,7 @@ export const checkIn = mutation({
   handler: async (ctx, args): Promise<CheckInResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -690,7 +690,7 @@ export const finalizeAttendance = mutation({
   handler: async (ctx, args): Promise<StateChangeResult> => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }

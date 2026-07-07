@@ -76,11 +76,12 @@ const callerMemberEmail = async (
   return byEmail === null ? null : byEmail.email.toLowerCase();
 };
 
-// Called FIRST in every admin function this spec adds. Returns the admin's
-// email (the audit actor) on success; throws NOT_AUTHORIZED on any failure
-// without revealing which check failed. Queries and mutations both use this;
-// throwing (rather than returning an envelope) keeps the query contract per
-// Stage 0 §7.1.
+// Called FIRST in every SUPER-ADMIN-only function (certificates revoke/
+// re-issue, erasure execution, config - the Stage 0 §3 super_admin extras).
+// Returns the admin's email (the audit actor) on success; throws
+// NOT_AUTHORIZED on any failure without revealing which check failed.
+// Queries and mutations both use this; throwing (rather than returning an
+// envelope) keeps the query contract per Stage 0 §7.1.
 export const requireSuperAdmin = async (
   ctx: QueryCtx | MutationCtx,
 ): Promise<string> => {
@@ -92,31 +93,75 @@ export const requireSuperAdmin = async (
   return email as string;
 };
 
-// Actions have no `ctx.db`, so they cannot run the check directly. This internal
-// query does the same resolve-and-allowlist inside a query context; an action
-// gate (requireSuperAdminInAction below) calls it. Throws NOT_AUTHORIZED on
-// failure, returns the admin email on success.
+// Called FIRST in every ordinary admin-console function (queues, members,
+// events, opportunities, partners, overview/reports, audit view). Stage 0 §3
+// separates the roles: admin = Mervat + the named backup (ADMIN_EMAILS,
+// same env-var mechanics as SUPER_ADMIN_EMAILS), super_admin = Issam, and a
+// super admin can do everything an admin can. Deny-by-default holds: with
+// BOTH env vars unset, no one passes.
+export const requireAdmin = async (
+  ctx: QueryCtx | MutationCtx,
+): Promise<string> => {
+  const email = await callerMemberEmail(ctx);
+  if (
+    !isAllowedAdminEmail(process.env.ADMIN_EMAILS, email) &&
+    !isAllowedAdminEmail(process.env.SUPER_ADMIN_EMAILS, email)
+  ) {
+    throw new Error(NOT_AUTHORIZED);
+  }
+  return email as string;
+};
+
+// Actions have no `ctx.db`, so they cannot run the check directly. These
+// internal queries do the same resolve-and-allowlist inside a query context;
+// the action gates below call them. Throws NOT_AUTHORIZED on failure,
+// returns the admin email on success.
 export const resolveSuperAdmin = internalQuery({
   args: {},
   handler: async (ctx): Promise<string> => requireSuperAdmin(ctx),
 });
 
-// The action-side gate: same neutral throw for non-admins, same email on
-// success. Used by the panel's guardian-resend action.
+export const resolveAdmin = internalQuery({
+  args: {},
+  handler: async (ctx): Promise<string> => requireAdmin(ctx),
+});
+
+// The action-side gates: same neutral throw for non-admins, same email on
+// success. The guardian-resend action uses the admin tier.
 export const requireSuperAdminInAction = async (
   ctx: ActionCtx,
 ): Promise<string> =>
   ctx.runQuery(internal.lib.adminAuth.resolveSuperAdmin, {});
 
+export const requireAdminInAction = async (ctx: ActionCtx): Promise<string> =>
+  ctx.runQuery(internal.lib.adminAuth.resolveAdmin, {});
+
 // A non-throwing check the /admin page uses to decide between the queues and the
 // neutral "not available" state. This is a courtesy for the UI ONLY: every
-// admin query/mutation still calls requireSuperAdmin server-side (criterion 1,
-// deny-by-default). Returns false for a signed-out or non-allowlisted caller,
-// never revealing the allowlist.
+// admin query/mutation still calls requireAdmin/requireSuperAdmin server-side
+// (criterion 1, deny-by-default). Returns false for a signed-out or
+// non-allowlisted caller, never revealing the allowlist.
 export const amISuperAdmin = query({
   args: {},
   handler: async (ctx): Promise<boolean> => {
     const email = await callerMemberEmail(ctx);
     return isAllowedAdminEmail(process.env.SUPER_ADMIN_EMAILS, email);
+  },
+});
+
+// The UI-courtesy role probe: which console does this caller get? Every
+// server function still runs its own gate; this only shapes what the UI
+// offers (e.g. the Certificates view is super-admin only, spec F15).
+export const myAdminRole = query({
+  args: {},
+  handler: async (ctx): Promise<"super_admin" | "admin" | null> => {
+    const email = await callerMemberEmail(ctx);
+    if (isAllowedAdminEmail(process.env.SUPER_ADMIN_EMAILS, email)) {
+      return "super_admin";
+    }
+    if (isAllowedAdminEmail(process.env.ADMIN_EMAILS, email)) {
+      return "admin";
+    }
+    return null;
   },
 });

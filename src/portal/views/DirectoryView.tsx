@@ -37,8 +37,7 @@ export function DirectoryView() {
     (r) =>
       (q === "" ||
         r.name.toLowerCase().includes(q) ||
-        (r.headline ?? "").toLowerCase().includes(q) ||
-        (r.bio ?? "").toLowerCase().includes(q)) &&
+        (r.headline ?? "").toLowerCase().includes(q)) &&
       (country === "" || r.country_of_residence === country) &&
       (stage === "" || r.career_stage_answer === stage) &&
       (sector === "" || r.sectors.includes(sector)),
@@ -90,7 +89,7 @@ export function DirectoryView() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search by name, headline or bio"
+          placeholder="Search by name or headline"
           label="Search the directory"
         />
         <span className="sp" />
@@ -191,11 +190,6 @@ function MemberCard({ row }: { row: DirectoryRow }) {
         </div>
       </div>
       {meta !== "" && <p className="pn-meta">{meta}</p>}
-      {/* Bio is Directory-tier by the vault field spec - she wrote it to be
-          read, so the card shows it (clamped by CSS, never truncating data). */}
-      {row.bio !== null && row.bio !== "" && (
-        <p className="pn-meta pn-dir-bio">{row.bio}</p>
-      )}
       {row.sectors.length > 0 && (
         <div className="pn-chips">
           <span className="sr-only">Sectors:</span>

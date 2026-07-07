@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { requireSuperAdmin } from "../lib/adminAuth";
+import { requireAdmin } from "../lib/adminAuth";
 import { writeAudit } from "../lib/audit";
 import { isValidJoinEmail, normalizeEmail } from "../lib/joinValidation";
 
@@ -11,7 +11,7 @@ import { isValidJoinEmail, normalizeEmail } from "../lib/joinValidation";
 // granted on signing and revocable. No corporate login, no payments, no
 // binding contracts, no public exposure anywhere in this slice (the self-serve
 // Partner Portal is the vault's own Phase 4/5 item; these shapes stay
-// compatible). Every function is requireSuperAdmin (deny-by-default); every
+// compatible). Every function is requireAdmin (deny-by-default); every
 // write returns the §7.1 envelope and appends the §8 audit row. Partner names
 // in audit summaries are fine: org data, not member PII.
 
@@ -66,7 +66,7 @@ export type PartnerListRow = {
 export const listPartners = query({
   args: { status: v.optional(statusArg) },
   handler: async (ctx, args): Promise<PartnerListRow[]> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const rows =
       args.status === undefined
         ? await ctx.db.query("partners").collect()
@@ -120,7 +120,7 @@ export type PartnerDetail = {
 export const getPartner = query({
   args: { partnerId: v.id("partners") },
   handler: async (ctx, args): Promise<PartnerDetail | null> => {
-    await requireSuperAdmin(ctx);
+    await requireAdmin(ctx);
     const p = await ctx.db.get(args.partnerId);
     if (p === null) {
       return null;
@@ -178,7 +178,7 @@ export const upsertPartner = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -290,7 +290,7 @@ export const setDeliverableStatus = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -341,7 +341,7 @@ export const setSeal = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -377,7 +377,7 @@ export const generateLogoUploadUrl = mutation({
     { ok: true; url: string } | { ok: false; error: "not_authorized" }
   > => {
     try {
-      await requireSuperAdmin(ctx);
+      await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }
@@ -397,7 +397,7 @@ export const setPartnerLogo = mutation({
   > => {
     let adminEmail: string;
     try {
-      adminEmail = await requireSuperAdmin(ctx);
+      adminEmail = await requireAdmin(ctx);
     } catch {
       return { ok: false, error: "not_authorized" };
     }

@@ -1766,16 +1766,6 @@ button.pn-notif { cursor: pointer; transition: background .2s var(--ease-out); }
   object-fit: cover;
   flex: none;
 }
-/* the member-written bio: shown (it is Directory-tier by the field spec)
-   but clamped so one long story cannot swallow the grid */
-.pn-dir-card .pn-dir-bio {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-}
 
 /* small chip row (sectors, looking-for) */
 .pn-chips { display: flex; gap: 6px; flex-wrap: wrap; }
