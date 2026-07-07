@@ -3,7 +3,7 @@ import { api } from "../../../convex/_generated/api";
 import type { PlatformHealth } from "../../../convex/admin/overview";
 import { PageHeader, PanelCard, ProgressBar, StatTile } from "../../panel/kit";
 import type { Lifecycle } from "./shared";
-import { fmtGstDate, gstYear, LIFECYCLE_WORDS } from "./shared";
+import { fmtGstDate, LIFECYCLE_WORDS } from "./shared";
 
 // Reports (panel-experience spec H18): sanctioned aggregates ONLY, composed
 // from the queries this console already has plus getReportAggregates
@@ -27,45 +27,19 @@ const LIFECYCLE_ORDER: ReadonlyArray<Lifecycle> = [
 ];
 
 export function ReportsView() {
+  // Aggregate-only by contract (spec H18): every number arrives as a count
+  // from the server. This route never calls a row-listing query, so no
+  // individual record ever rides into the reports page.
   const counts = useQuery(api.admin.overview.getAdminOverview);
   const aggregates = useQuery(api.admin.overview.getReportAggregates);
   const health = useQuery(api.admin.overview.getPlatformHealth);
-  const events = useQuery(api.admin.events.adminListEvents);
-  const opportunities = useQuery(api.admin.opportunities.adminListOpportunities);
-  // Fetched for its lifecycle_counts aggregate only.
-  const members = useQuery(api.admin.members.listMembers, {});
+  const stats = useQuery(api.admin.overview.getReportStats);
 
-  const now = Date.now();
-  const thisYear = gstYear(now);
-  const delivered =
-    events === undefined
-      ? undefined
-      : events.filter(
-          (e) =>
-            gstYear(e.starts_at) === thisYear &&
-            (e.state === "attendance_finalized" ||
-              ((e.state === "published" || e.state === "postponed") &&
-                e.ends_at < now)),
-        ).length;
-  const attendanceTotal =
-    events === undefined
-      ? undefined
-      : events.reduce((sum, e) => sum + e.counts.attended, 0);
-  const posted =
-    opportunities === undefined
-      ? undefined
-      : opportunities.filter((o) => o.state !== "draft").length;
-  const applicationsTotal =
-    opportunities === undefined
-      ? undefined
-      : opportunities.reduce((sum, o) => sum + o.application_counts.active, 0);
-  const resultsRecorded =
-    opportunities === undefined
-      ? undefined
-      : opportunities.reduce(
-          (sum, o) => sum + o.application_counts.won + o.application_counts.lost,
-          0,
-        );
+  const delivered = stats?.events.delivered_this_year;
+  const attendanceTotal = stats?.events.attendance_total;
+  const posted = stats?.opportunities.posted;
+  const applicationsTotal = stats?.opportunities.applications_total;
+  const resultsRecorded = stats?.opportunities.results_recorded;
 
   return (
     <>
@@ -163,10 +137,10 @@ export function ReportsView() {
           </PanelCard>
 
           <PanelCard title="Members by status">
-            {members === undefined ? (
+            {stats === undefined ? (
               <p className="pn-meta">Loading…</p>
             ) : (
-              <MembersByStatus lifecycleCounts={members.lifecycle_counts} />
+              <MembersByStatus lifecycleCounts={stats.members.lifecycle_counts} />
             )}
           </PanelCard>
 

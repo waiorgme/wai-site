@@ -89,14 +89,14 @@ const memberForAuthedUser = async (
 // member in the standard or ally lane may see the board at all. minor and
 // restricted_unknown are switched off entirely (adult/contractual rule,
 // Under-18 Safeguards Part 2).
-const laneMaySeeBoard = (member: Doc<"members">): boolean =>
+export const laneMaySeeBoard = (member: Doc<"members">): boolean =>
   member.lifecycle_state === "active" &&
   (member.member_lane === "standard" || member.member_lane === "ally");
 
 // Per-row audience rule: women_only listings are hidden from the ally lane
 // (dated ruling, spec B5). Evergreen rows follow the same audience rule, so
 // they are visible to every lane that passes it.
-const audienceMaySeeRow = (
+export const audienceMaySeeRow = (
   member: Doc<"members">,
   opportunity: Doc<"opportunities">,
 ): boolean =>

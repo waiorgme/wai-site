@@ -981,3 +981,97 @@ describe("single_winner integrity (Gate 4, 2026-07-07): exactly one winner", () 
     }
   });
 });
+
+describe("audience freezes once open (Gate 4 round 3)", () => {
+  it("an open listing's audience cannot change; a draft's still can", async () => {
+    const t = convexTest(schema, modules);
+    const { session: asAdmin } = await signIn(t, ADMIN_EMAIL);
+    const created = await asAdmin.mutation(
+      api.admin.opportunities.upsertOpportunity,
+      {
+        title: "Open Briefing",
+        type: "competitive",
+        description: "A funded seat.",
+        audience: "open",
+        deadline: Date.now() + 7 * DAY,
+      },
+    );
+    const id = (created as { ok: true; id: Id<"opportunities"> }).id;
+
+    // Draft: audience is still a free choice.
+    expect(
+      (
+        await asAdmin.mutation(api.admin.opportunities.upsertOpportunity, {
+          id,
+          title: "Open Briefing",
+          type: "competitive",
+          description: "A funded seat.",
+          audience: "women_only",
+          deadline: Date.now() + 7 * DAY,
+        })
+      ).ok,
+    ).toBe(true);
+    await asAdmin.mutation(api.admin.opportunities.upsertOpportunity, {
+      id,
+      title: "Open Briefing",
+      type: "competitive",
+      description: "A funded seat.",
+      audience: "open",
+      deadline: Date.now() + 7 * DAY,
+    });
+    await asAdmin.mutation(api.admin.opportunities.publishOpportunity, { id });
+
+    // Open: an ally may hold an application; narrowing is refused.
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.upsertOpportunity, {
+        id,
+        title: "Open Briefing",
+        type: "competitive",
+        description: "A funded seat.",
+        audience: "women_only",
+        deadline: Date.now() + 7 * DAY,
+      }),
+    ).toEqual({ ok: false, error: "audience_locked" });
+    const row = await t.run(async (ctx) => ctx.db.get(id));
+    expect(row!.audience).toBe("open");
+  });
+
+  it("a win is refused for an applicant who no longer passes the rules; lost still flows", async () => {
+    const t = convexTest(schema, modules);
+    const oppId = await insertOpp(t, { audience: "open" as const });
+    const { session: applicant, memberId } = await signInComplete(
+      t,
+      "since-restricted@example.com",
+    );
+    await applicant.mutation(api.opportunities.apply, {
+      opportunityId: oppId,
+      statement: "Applying while eligible.",
+    });
+    // Her record is later corrected: unknown age = restricted lane.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(memberId, {
+        member_lane: "restricted_unknown" as const,
+        date_of_birth: undefined,
+        age_confidence: "unknown" as const,
+        date_of_birth_source: "unknown" as const,
+      });
+    });
+    const { session: asAdmin } = await signIn(t, ADMIN_EMAIL);
+    const apps = await t.run(async (ctx) =>
+      ctx.db.query("opportunityApplications").collect(),
+    );
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.recordResult, {
+        applicationId: apps[0]._id,
+        result: "won",
+      }),
+    ).toEqual({ ok: false, error: "not_eligible" });
+    // Everyone still gets an answer.
+    expect(
+      await asAdmin.mutation(api.admin.opportunities.recordResult, {
+        applicationId: apps[0]._id,
+        result: "lost",
+      }),
+    ).toEqual({ ok: true });
+  });
+});

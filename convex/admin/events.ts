@@ -179,7 +179,12 @@ type UpsertResult =
   | { ok: true; eventId: Id<"events"> }
   | {
       ok: false;
-      error: "not_authorized" | "not_found" | "validation" | "invalid_state";
+      error:
+        | "not_authorized"
+        | "not_found"
+        | "validation"
+        | "invalid_state"
+        | "lane_locked";
     };
 
 // Create (draft) or edit an event. Edits to published/postponed events are
@@ -324,6 +329,14 @@ export const upsertEvent = mutation({
     }
     if (event.state === "cancelled" || event.state === "attendance_finalized") {
       return { ok: false, error: "invalid_state" };
+    }
+    // The audience lane FREEZES once the event leaves draft (Gate 4 round 3):
+    // members RSVP under a lane promise, and flipping a youth session to
+    // adult (or back) would leave bookings the lane rule now forbids. Drafts
+    // cannot carry registrations (RSVP requires published), so draft edits
+    // stay free.
+    if (event.state !== "draft" && args.audience_lane !== event.audience_lane) {
+      return { ok: false, error: "lane_locked" };
     }
     await ctx.db.patch(event._id, fields);
     await writeAudit(ctx, {

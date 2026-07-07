@@ -175,6 +175,79 @@ export const getReportAggregates = query({
   },
 });
 
+// The rest of the Reports page's numbers, computed server-side so the
+// reports ROUTE never receives an individual row (spec H18, Gate 4 round 3:
+// even counts the UI derives itself must not ride in on row-level queries).
+export type ReportStats = {
+  events: {
+    delivered_this_year: number;
+    attendance_total: number;
+  };
+  opportunities: {
+    posted: number;
+    applications_total: number;
+    results_recorded: number;
+  };
+  members: {
+    lifecycle_counts: Record<string, number>;
+    total: number;
+  };
+};
+
+export const getReportStats = query({
+  args: {},
+  handler: async (ctx): Promise<ReportStats> => {
+    await requireAdmin(ctx);
+    const now = Date.now();
+    const gstYear = new Date(now + 4 * 60 * 60 * 1000).getUTCFullYear();
+    const eventYear = (ts: number) =>
+      new Date(ts + 4 * 60 * 60 * 1000).getUTCFullYear();
+
+    const events = await ctx.db.query("events").collect();
+    const delivered_this_year = events.filter(
+      (e) =>
+        eventYear(e.starts_at) === gstYear &&
+        (e.state === "attendance_finalized" ||
+          ((e.state === "published" || e.state === "postponed") &&
+            e.ends_at < now)),
+    ).length;
+    let attendance_total = 0;
+    const attendedRows = await ctx.db
+      .query("eventRegistrations")
+      .collect();
+    for (const reg of attendedRows) {
+      if (reg.state === "attended") {
+        attendance_total++;
+      }
+    }
+
+    const opportunities = await ctx.db.query("opportunities").collect();
+    const posted = opportunities.filter((o) => o.state !== "draft").length;
+    const applications = await ctx.db
+      .query("opportunityApplications")
+      .collect();
+    const applications_total = applications.filter(
+      (a) => a.state !== "withdrawn",
+    ).length;
+    const results_recorded = applications.filter(
+      (a) => a.state === "won" || a.state === "lost",
+    ).length;
+
+    const members = await ctx.db.query("members").collect();
+    const lifecycle_counts: Record<string, number> = {};
+    for (const m of members) {
+      lifecycle_counts[m.lifecycle_state] =
+        (lifecycle_counts[m.lifecycle_state] ?? 0) + 1;
+    }
+
+    return {
+      events: { delivered_this_year, attendance_total },
+      opportunities: { posted, applications_total, results_recorded },
+      members: { lifecycle_counts, total: members.length },
+    };
+  },
+});
+
 // Platform health (activity-log spec §C.10): the join funnel + the four
 // kill-criteria counters from PRD §13. Aggregate counts only, like every
 // sibling. Thresholds are the PRD's "figures tunable" defaults; the settled

@@ -218,9 +218,11 @@ export function OpportunityEditor({
           message:
             res.error === "closed"
               ? "A closed listing is a settled record. Corrections mean a new listing."
-              : res.error === "validation"
-                ? "Some details were refused by the server. Check the type, deadline and text lengths."
-                : "That did not go through. Please try again.",
+              : res.error === "audience_locked"
+                ? "The audience cannot change while the listing is open - members applied under it. Close this listing and create a new one instead."
+                : res.error === "validation"
+                  ? "Some details were refused by the server. Check the type, deadline and text lengths."
+                  : "That did not go through. Please try again.",
         });
       }
     } catch {
@@ -462,7 +464,7 @@ export function OpportunityEditor({
                   type="radio"
                   name="opp-audience"
                   checked={form.audience === "women_only"}
-                  disabled={isSettled}
+                  disabled={isSettled || isLive}
                   onChange={() => set("audience", "women_only")}
                 />
                 <span>
@@ -475,7 +477,7 @@ export function OpportunityEditor({
                   type="radio"
                   name="opp-audience"
                   checked={form.audience === "open"}
-                  disabled={isSettled}
+                  disabled={isSettled || isLive}
                   onChange={() => set("audience", "open")}
                 />
                 <span>
@@ -484,6 +486,13 @@ export function OpportunityEditor({
                   either way.
                 </span>
               </label>
+              {isLive ? (
+                <p className="pn-hint">
+                  The audience is locked while the listing is open - members
+                  applied under it. For a different audience, close this
+                  listing and create a new one.
+                </p>
+              ) : null}
             </fieldset>
             <div className="pn-btn-row">
               <button
@@ -850,7 +859,9 @@ function ApplicationActions({ row }: { row: AdminApplicationRow }) {
                   ? "This application already has a result or was withdrawn."
                   : res.error === "winner_exists"
                     ? "This listing already has its winner - a single-winner opportunity takes exactly one. To change the winner, start a new listing."
-                    : "That did not go through. Please try again.",
+                    : res.error === "not_eligible"
+                      ? "She no longer meets this listing's eligibility (her record changed since she applied), so a win can't be recorded. Recording 'lost' still tells her kindly."
+                      : "That did not go through. Please try again.",
             },
       );
     } catch {

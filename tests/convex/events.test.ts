@@ -1010,3 +1010,67 @@ describe("boundary validation follow-ups (Gate 4 round 2)", () => {
     expect(everything).toContain("Captain Host");
   });
 });
+
+describe("audience lane freezes once live (Gate 4 round 3)", () => {
+  it("a published event's lane cannot change; a draft's still can", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+
+    const created = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ audience_lane: "youth" as const }),
+    );
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+
+    // Draft: the lane is still a free choice.
+    expect(
+      (
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ eventId, audience_lane: "adult" as const }),
+        )
+      ).ok,
+    ).toBe(true);
+    expect(
+      (
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ eventId, audience_lane: "youth" as const }),
+        )
+      ).ok,
+    ).toBe(true);
+
+    await asAdmin.mutation(api.admin.events.publishEvent, { eventId });
+    const asMinor = await signIn(t, "younger@example.com", {
+      member_lane: "minor",
+      date_of_birth: "2011-05-01",
+      guardian_consent_state: "confirmed",
+    });
+    expect((await asMinor.mutation(api.events.rsvp, { eventId })).ok).toBe(true);
+
+    // Live with a minor booked: flipping to adult is refused, her booking
+    // and the lane promise stand.
+    expect(
+      await asAdmin.mutation(
+        api.admin.events.upsertEvent,
+        upsertArgs({ eventId, audience_lane: "adult" as const }),
+      ),
+    ).toEqual({ ok: false, error: "lane_locked" });
+    const row = await t.run(async (ctx) => ctx.db.get(eventId));
+    expect(row!.audience_lane).toBe("youth");
+
+    // Same-lane edits still flow (fixing a typo on a live event is normal).
+    expect(
+      (
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({
+            eventId,
+            audience_lane: "youth" as const,
+            title: "Girls in Aviation Day (updated)",
+          }),
+        )
+      ).ok,
+    ).toBe(true);
+  });
+});

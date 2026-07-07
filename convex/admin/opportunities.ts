@@ -6,9 +6,10 @@ import { requireAdmin } from "../lib/adminAuth";
 import { writeAudit } from "../lib/audit";
 import { notify } from "../lib/notify";
 import { currentStanding } from "../lib/standing";
+import { audienceMaySeeRow, laneMaySeeBoard } from "../opportunities";
 
 // Admin opportunities console (panel-experience spec B7). Every function is
-// super-admin gated (requireAdmin, deny-by-default): queries throw the
+// admin gated (requireAdmin, deny-by-default): queries throw the
 // neutral not_authorized, mutations return the §7.1 result envelope. Every
 // write appends an immutable audit row. Lifecycle: draft -> open (publish) ->
 // closed (admin close or the deadline cron) -> decided (results published);
@@ -196,7 +197,12 @@ type UpsertResult =
   | { ok: true; id: Id<"opportunities"> }
   | {
       ok: false;
-      error: "not_authorized" | "not_found" | "validation" | "closed";
+      error:
+        | "not_authorized"
+        | "not_found"
+        | "validation"
+        | "closed"
+        | "audience_locked";
     };
 
 // Intake/edit form (spec B7). Type-specific validation: an evergreen listing
@@ -286,6 +292,17 @@ export const upsertOpportunity = mutation({
       // or re-shaped listing.
       if (existing.state === "open" && existing.type !== args.type) {
         return { ok: false, error: "validation" };
+      }
+      // The audience FREEZES once the listing is open (Gate 4 round 3):
+      // members applied under an eligibility promise, and narrowing an open
+      // pool to women_only (or widening one minors can then see in history)
+      // would strand applications the rule now forbids. Draft edits stay
+      // free - drafts cannot take applications.
+      if (
+        existing.state === "open" &&
+        (args.audience ?? "women_only") !== existing.audience
+      ) {
+        return { ok: false, error: "audience_locked" };
       }
       await ctx.db.replace(args.id, {
         ...fields,
@@ -465,7 +482,12 @@ type ResultResult =
   | { ok: true; already?: true }
   | {
       ok: false;
-      error: "not_authorized" | "not_found" | "conflict" | "winner_exists";
+      error:
+        | "not_authorized"
+        | "not_found"
+        | "conflict"
+        | "winner_exists"
+        | "not_eligible";
     };
 
 // Record a result (propose-then-confirm in the UI). Every applicant gets an
@@ -502,6 +524,20 @@ export const recordResult = mutation({
     const opportunity = await ctx.db.get(application.opportunity_id);
     if (opportunity === null) {
       return { ok: false, error: "not_found" };
+    }
+    // Belt to the audience freeze: a win is only recordable for a member who
+    // STILL passes the listing's lane/audience rules (Gate 4 round 3 - e.g. a
+    // member since corrected to minor or restricted). "Lost" always flows:
+    // everyone gets an answer, whatever her lane became.
+    if (args.result === "won") {
+      const applicant = await ctx.db.get(application.member_id);
+      if (
+        applicant === null ||
+        !laneMaySeeBoard(applicant) ||
+        !audienceMaySeeRow(applicant, opportunity)
+      ) {
+        return { ok: false, error: "not_eligible" };
+      }
     }
     // single_winner means ONE winner (Scholarship & Opportunity Workflow):
     // a second "won" on the same listing is refused, not silently stacked

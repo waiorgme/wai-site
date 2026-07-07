@@ -315,3 +315,93 @@ describe("report aggregates (spec H18): sanctioned counts over active members on
     expect(raw).not.toContain("Test Member");
   });
 });
+
+describe("report stats (spec H18, Gate 4 round 3): the reports route gets counts only", () => {
+  it("denies a non-admin with the neutral error", async () => {
+    const t = convexTest(schema, modules);
+    const asMember = await signIn(t, NON_ADMIN);
+    await expect(
+      asMember.query(api.admin.overview.getReportStats, {}),
+    ).rejects.toThrow("not_authorized");
+  });
+
+  it("returns aggregate counts with no rows, names or emails", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const memberId = await ctx.db.insert(
+        "members",
+        memberRow("counted@example.com") as never,
+      );
+      const eventId = await ctx.db.insert("events", {
+        title: "Delivered Session",
+        category: "workshop",
+        short_description: "Ran and finalized.",
+        starts_at: now - 3 * 24 * 60 * 60 * 1000,
+        ends_at: now - 3 * 24 * 60 * 60 * 1000 + 3600000,
+        timezone: "GST",
+        format: "online",
+        audience_lane: "adult",
+        state: "attendance_finalized",
+        created_at: now - 10 * 24 * 60 * 60 * 1000,
+        published_at: now - 9 * 24 * 60 * 60 * 1000,
+      } as never);
+      await ctx.db.insert("eventRegistrations", {
+        event_id: eventId,
+        member_id: memberId,
+        state: "attended",
+        checkin_code: "code-stats-test",
+        created_at: now - 5 * 24 * 60 * 60 * 1000,
+      } as never);
+      const oppId = await ctx.db.insert("opportunities", {
+        title: "Posted Listing",
+        type: "competitive",
+        description: "Live listing.",
+        audience: "open",
+        deadline: now + 7 * 24 * 60 * 60 * 1000,
+        state: "open",
+        created_at: now,
+        published_at: now,
+      } as never);
+      await ctx.db.insert("opportunities", {
+        title: "Draft Listing",
+        type: "competitive",
+        description: "Not posted.",
+        audience: "open",
+        deadline: now + 7 * 24 * 60 * 60 * 1000,
+        state: "draft",
+        created_at: now,
+      } as never);
+      await ctx.db.insert("opportunityApplications", {
+        opportunity_id: oppId,
+        member_id: memberId,
+        statement: "Applying.",
+        state: "won",
+        created_at: now,
+      } as never);
+      await ctx.db.insert("opportunityApplications", {
+        opportunity_id: oppId,
+        member_id: memberId,
+        statement: "Withdrew.",
+        state: "withdrawn",
+        created_at: now,
+      } as never);
+    });
+
+    const stats = await asAdmin.query(api.admin.overview.getReportStats, {});
+    expect(stats.events.delivered_this_year).toBe(1);
+    expect(stats.events.attendance_total).toBe(1);
+    expect(stats.opportunities.posted).toBe(1);
+    expect(stats.opportunities.applications_total).toBe(1);
+    expect(stats.opportunities.results_recorded).toBe(1);
+    expect(stats.members.total).toBeGreaterThanOrEqual(2);
+    expect(stats.members.lifecycle_counts.active).toBeGreaterThanOrEqual(2);
+    // Counts only: nothing row-shaped, no names, no emails.
+    const raw = JSON.stringify(stats);
+    expect(raw).not.toContain("@example.com");
+    expect(raw).not.toContain("Test Member");
+    expect(raw).not.toContain("Delivered Session");
+    expect(raw).not.toContain("Posted Listing");
+  });
+});

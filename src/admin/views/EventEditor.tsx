@@ -282,9 +282,11 @@ export function EventEditor({
           message:
             res.error === "invalid_state"
               ? "This event is closed history and can no longer be edited."
-              : res.error === "validation"
-                ? "Some details could not be saved. Check the times, capacity, links, the host email and text lengths."
-                : "That did not go through. Please try again.",
+              : res.error === "lane_locked"
+                ? "The audience cannot change once the event is live - members booked under it. Cancel this event and create a new one for the other audience."
+                : res.error === "validation"
+                  ? "Some details could not be saved. Check the times, capacity, links, the host email and text lengths."
+                  : "That did not go through. Please try again.",
         });
       }
     } catch {
@@ -623,7 +625,7 @@ export function EventEditor({
                   type="radio"
                   name="audience"
                   checked={form.audience_lane === "adult"}
-                  disabled={isClosed}
+                  disabled={isClosed || isLive}
                   onChange={() => set("audience_lane", "adult")}
                 />
                 <span>
@@ -635,7 +637,7 @@ export function EventEditor({
                   type="radio"
                   name="audience"
                   checked={form.audience_lane === "youth"}
-                  disabled={isClosed}
+                  disabled={isClosed || isLive}
                   onChange={() => set("audience_lane", "youth")}
                 />
                 <span>
@@ -643,6 +645,13 @@ export function EventEditor({
                   adults never see it, and adult sessions never appear to them.
                 </span>
               </label>
+              {isLive ? (
+                <p className="pn-hint">
+                  The audience is locked while the event is live - members
+                  booked under it. For the other audience, cancel this event
+                  and create a new one.
+                </p>
+              ) : null}
             </fieldset>
           </PanelCard>
 

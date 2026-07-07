@@ -169,7 +169,31 @@ Host workspaces/guest hosts; email channel for notifications + scheduled reminde
 event-participation certificate batches; contribution ledger + Ambassador engine + Config
 rows (recognition slice); resources/contribution two-rail system; mentorship; volunteers;
 support tickets (email is the decided channel; Help page states it plainly); ActivityLog
-(§4.6, next recorded slice); PlacementLog; partner-facing portal.
+(§4.6, next recorded slice; DELIVERED 2026-07-07 as specs/activity-log.spec.md on this
+branch); PlacementLog; partner-facing portal.
+
+## Dated rulings (2026-07-07, Gate 4 rounds 2-3; flagged for Issam's ratification)
+- **Youth lane is TWO-WAY:** adult lanes neither see nor book `audience_lane=youth`
+  events. The editor copy promised it; the server now enforces it.
+- **Audience immutability:** an event's `audience_lane` freezes once it leaves draft,
+  and an opportunity's `audience` freezes once it opens - members book/apply under an
+  eligibility promise, so changing the pool means cancel/close and create anew. Same-value
+  edits stay free.
+- **Winner eligibility re-check:** recording "won" re-validates the applicant against the
+  listing's CURRENT lane/audience rules (covers records corrected to minor/restricted
+  after applying); "lost" always flows - everyone gets an answer.
+- **Own application history stays visible whatever the member's current lane:**
+  `myApplications` returns HER OWN applications (titles she already knows and results she
+  is owed). A member corrected to minor/restricted keeps her history; the board, detail
+  pages and new applications stay lane-refused server-side. Hiding a member's own past
+  actions from her would be dishonest and would break everyone-gets-an-answer.
+- **Directory carries no bio** (round-2 required fix): migrated members' `legacy_bio` is
+  years-old text never re-reviewed; the vault field-spec tier table reads differently and
+  the conflict is flagged for Issam. If ruled back in, bio returns only for members who
+  edited it after claiming.
+- **admin vs super_admin split** (round-2 required fix): `ADMIN_EMAILS` (Mervat + backup)
+  gates the console and queues; certificate revoke/re-issue stay `SUPER_ADMIN_EMAILS`
+  only. Owner action: set `ADMIN_EMAILS` on each deployment; empty means supers only.
 
 ## Sources
 Workshop System (Design) · Event Cadence (Decision) · Scholarship & Opportunity Workflow
