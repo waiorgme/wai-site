@@ -871,6 +871,92 @@
   white-space: nowrap;
 }
 
+/* nav item glyph + label (the label flexes so counts stay end-aligned) */
+.pn-app-nav-item .ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 18px;
+}
+.pn-app-nav-item .ic svg { inline-size: 17px; block-size: 17px; }
+.pn-app-nav-item .lb {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* sidebar collapse toggle: desktop-only (the mobile top bar never collapses) */
+.pn-side-collapse {
+  display: none;
+  flex: none;
+  inline-size: 30px;
+  block-size: 30px;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--mist-mut);
+  cursor: pointer;
+  transition: background .2s var(--ease-out), color .2s var(--ease-out);
+}
+.pn-side-collapse svg { inline-size: 16px; block-size: 16px; }
+@media (hover: hover) {
+  .pn-side-collapse:hover { background: rgba(255, 255, 255, .08); color: var(--white); }
+}
+
+@media (min-width: 960px) {
+  .pn-app { transition: grid-template-columns .25s var(--ease-out); }
+  .pn-side-collapse { display: grid; }
+  /* no bell between the lockup and the toggle (admin): push the toggle to
+     the end ourselves; the portal's bell already owns the auto margin */
+  .pn-side-brand .lk + .pn-side-collapse { margin-inline-start: auto; }
+
+  /* collapsed rail: brand icon, bell and toggle stack; nav goes icon-only
+     with native tooltips; identity reduces to the initials disc */
+  .pn-app.is-side-collapsed { grid-template-columns: 74px minmax(0, 1fr); }
+  .is-side-collapsed .pn-app-side { padding-inline: 11px; }
+  .is-side-collapsed .pn-side-brand {
+    flex-direction: column;
+    gap: 12px;
+    padding-inline: 0;
+  }
+  .is-side-collapsed .pn-side-brand .lk { display: none; }
+  .is-side-collapsed .pn-bell { margin-inline-start: 0; }
+  .is-side-collapsed .pn-side-brand .lk + .pn-side-collapse { margin-inline-start: 0; }
+  .is-side-collapsed .pn-side-label { display: none; }
+  .is-side-collapsed .pn-side-grp { justify-items: center; }
+  .is-side-collapsed .pn-app-nav-item {
+    position: relative;
+    inline-size: 44px;
+    block-size: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+  .is-side-collapsed .pn-app-nav-item .lb { display: none; }
+  /* only attention counts survive the collapse, as a mini badge on the icon */
+  .is-side-collapsed .pn-app-nav-item .n { display: none; }
+  .is-side-collapsed .pn-app-nav-item .n.live {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-end: 3px;
+    min-inline-size: 16px;
+    block-size: 16px;
+    padding-inline: 3px;
+    font-size: 9px;
+  }
+  .is-side-collapsed .pn-side-id {
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 6px;
+  }
+  .is-side-collapsed .pn-side-id .who,
+  .is-side-collapsed .pn-side-out { display: none; }
+}
+
 /* mobile: the sidebar becomes a top bar + horizontal scroll nav */
 @media (max-width: 959px) {
   .pn-app-side {
@@ -895,6 +981,9 @@
   .pn-side-grp { display: flex; gap: 6px; flex: 0 0 auto; }
   .pn-side-label { display: none; }
   .pn-app-nav-item { inline-size: auto; white-space: nowrap; padding: 8px 12px; }
+  /* the horizontal chip nav reads better as labels; glyphs would double the
+     scroll length for no wayfinding gain */
+  .pn-app-nav-item .ic { display: none; }
 }
 
 /* ---------- main column rhythm ---------- */

@@ -349,3 +349,43 @@ describe("logo upload", () => {
     expect(after?.logo_url).not.toBeNull();
   });
 });
+
+describe("partner website + free-text boundaries (Gate 4 round 2)", () => {
+  it("website must be https and bounded; oversized free text is refused, not truncated", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const base = {
+      name: "Boundary Org",
+      tier: "supporter" as const,
+      status: "prospect" as const,
+    };
+    for (const bad of [
+      { website: "http://partner.example" },
+      { website: "javascript:alert(1)" },
+      { website: `https://partner.example/${"x".repeat(500)}` },
+      { contact_name: "x".repeat(161) },
+      { committed_value: "x".repeat(161) },
+      { mou_signed_on: "x".repeat(41) },
+      { notes: "x".repeat(2001) },
+    ]) {
+      expect(
+        await asAdmin.mutation(api.admin.partners.upsertPartner, {
+          ...base,
+          ...bad,
+        }),
+      ).toEqual({ ok: false, error: "validation" });
+    }
+    const ok = await asAdmin.mutation(api.admin.partners.upsertPartner, {
+      ...base,
+      website: "https://partner.example",
+      notes: "Met at the aviation summit.",
+    });
+    expect(ok.ok).toBe(true);
+    const partnerId = (ok as { ok: true; partnerId: Id<"partners"> }).partnerId;
+    const partner = await asAdmin.query(api.admin.partners.getPartner, {
+      partnerId,
+    });
+    expect(partner?.website).toBe("https://partner.example");
+    expect(partner?.notes).toBe("Met at the aviation summit.");
+  });
+});

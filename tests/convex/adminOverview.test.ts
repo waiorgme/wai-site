@@ -254,3 +254,64 @@ describe("admin overview: counts", () => {
     expect(after.members_active).toBe(before.members_active + 1);
   });
 });
+
+describe("report aggregates (spec H18): sanctioned counts over active members only", () => {
+  it("denies a non-admin with the neutral error", async () => {
+    const t = convexTest(schema, modules);
+    const asMember = await signIn(t, NON_ADMIN);
+    await expect(
+      asMember.query(api.admin.overview.getReportAggregates, {}),
+    ).rejects.toThrow("not_authorized");
+  });
+
+  it("aggregates active members only and returns counts, never names or contact data", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert(
+        "members",
+        memberRow("a@example.com", {
+          country_of_residence: "United Arab Emirates",
+          pipeline_state: "on",
+        }),
+      );
+      await ctx.db.insert(
+        "members",
+        memberRow("b@example.com", { country_of_residence: "United Arab Emirates" }),
+      );
+      await ctx.db.insert(
+        "members",
+        memberRow("c@example.com", {
+          country_of_residence: "Saudi Arabia",
+          career_stage_answer: "Studying aviation",
+        }),
+      );
+      // Dormant: in no aggregate, including her pipeline flag and country.
+      await ctx.db.insert(
+        "members",
+        memberRow("d@example.com", {
+          country_of_residence: "United Arab Emirates",
+          lifecycle_state: "dormant" as const,
+          pipeline_state: "on",
+        }),
+      );
+    });
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+
+    const report = await asAdmin.query(api.admin.overview.getReportAggregates, {});
+    expect(report.pipeline_on).toBe(1);
+    expect(report.by_country).toEqual([
+      { label: "United Arab Emirates", count: 2 },
+      { label: "Saudi Arabia", count: 1 },
+    ]);
+    // The signed-in admin is herself an active member (career stage
+    // "Working in aviation", no country), so that bucket counts a, b + her.
+    expect(report.by_career_stage).toEqual([
+      { label: "Working in aviation", count: 3 },
+      { label: "Studying aviation", count: 1 },
+    ]);
+    // Aggregate discipline: the payload carries no emails and no names.
+    const raw = JSON.stringify(report);
+    expect(raw).not.toContain("@example.com");
+    expect(raw).not.toContain("Test Member");
+  });
+});

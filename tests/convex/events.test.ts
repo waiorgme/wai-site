@@ -914,3 +914,90 @@ describe("admin check-in and finalize", () => {
     expect(event?.state).toBe("attendance_finalized");
   });
 });
+
+describe("boundary validation follow-ups (Gate 4 round 2)", () => {
+  it("upsert refuses a bad meeting link on the UPDATE path too", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const created = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ meeting_link: "https://meet.example.com/session" }),
+    );
+    expect(created.ok).toBe(true);
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+
+    for (const bad of ["http://meet.example.com/x", "javascript:alert(1)"]) {
+      expect(
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ eventId, meeting_link: bad }),
+        ),
+      ).toEqual({ ok: false, error: "validation" });
+    }
+    // The stored link is untouched by the refused updates.
+    const row = await t.run(async (ctx) => ctx.db.get(eventId));
+    expect(row!.meeting_link).toBe("https://meet.example.com/session");
+
+    const updated = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ eventId, meeting_link: "https://meet.example.com/moved" }),
+    );
+    expect(updated.ok).toBe(true);
+  });
+
+  it("upsert validates host_email and caps the free-text fields", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    for (const bad of [
+      { host_email: "not-an-email" },
+      { host_email: "host@" },
+      { description: "x".repeat(5001) },
+      { venue: "x".repeat(201) },
+      { city: "x".repeat(101) },
+      { host_name: "x".repeat(121) },
+      { timezone: "x".repeat(65) },
+    ]) {
+      expect(
+        await asAdmin.mutation(api.admin.events.upsertEvent, upsertArgs(bad)),
+      ).toEqual({ ok: false, error: "validation" });
+    }
+    // A real address passes; an empty string clears the field, not an error.
+    const ok = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ host_email: "host@example.com", host_name: "Captain Host" }),
+    );
+    expect(ok.ok).toBe(true);
+    const cleared = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ host_email: "" }),
+    );
+    expect(cleared.ok).toBe(true);
+  });
+
+  it("host_email never reaches a member payload (schema promise: admin-only)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const created = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({
+        host_email: "host-private@example.com",
+        host_name: "Captain Host",
+        meeting_link: "https://meet.example.com/session",
+      }),
+    );
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+    await asAdmin.mutation(api.admin.events.publishEvent, { eventId });
+
+    const asMember = await signIn(t, "leak-check@example.com");
+    await asMember.mutation(api.events.rsvp, { eventId });
+    const list = await asMember.query(api.events.listEvents, {});
+    const detail = await asMember.query(api.events.getEvent, { eventId });
+    const mine = await asMember.query(api.events.myEvents, {});
+    const pass = await asMember.query(api.events.getMyEventPass, { eventId });
+
+    const everything = JSON.stringify({ list, detail, mine, pass });
+    expect(everything).not.toContain("host-private@example.com");
+    // The host is still shown by name - only the address is admin-only.
+    expect(everything).toContain("Captain Host");
+  });
+});

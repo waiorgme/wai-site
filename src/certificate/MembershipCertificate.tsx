@@ -73,7 +73,7 @@ export function MembershipCertificate(data: CertificateData) {
           <img
             src="/assets/cert/mervat-signature.png"
             alt=""
-            style={{ height: 56, objectFit: "contain" }}
+            style={{ height: 96, objectFit: "contain", marginBottom: -10 }}
           />
           <div style={sigLine} />
           <div style={who}>

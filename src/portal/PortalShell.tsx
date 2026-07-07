@@ -1,9 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactElement } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { AppShell, SideNav } from "../panel/kit";
 import type { NavGroup } from "../panel/kit";
+import {
+  IconAward,
+  IconCalendar,
+  IconCalendarCheck,
+  IconBriefcase,
+  IconDatabase,
+  IconHelp,
+  IconHome,
+  IconSliders,
+  IconUser,
+  IconUsers,
+} from "../panel/icons";
 import type {
   CertsView,
   MemberView,
@@ -176,9 +189,10 @@ export function PortalShell({
 
   const isMinorLane =
     me.member_lane === "minor" || me.member_lane === "restricted_unknown";
-  const item = (key: PortalViewKey, label: string) => ({
+  const item = (key: PortalViewKey, label: string, icon: ReactElement) => ({
     key,
     label,
+    icon,
     active: view.v === key,
     onSelect: () => go({ v: key }),
   });
@@ -186,35 +200,38 @@ export function PortalShell({
   const groups: NavGroup[] =
     lane === "youth"
       ? [
-          { items: [item("home", "Home")] },
-          { label: "Take part", items: [item("events", "Events")] },
+          { items: [item("home", "Home", <IconHome />)] },
+          { label: "Take part", items: [item("events", "Events", <IconCalendar />)] },
           {
             label: "Your membership",
-            items: [item("membership", "My membership"), item("yourdata", "Your data")],
+            items: [
+              item("membership", "My membership", <IconAward />),
+              item("yourdata", "Your data", <IconDatabase />),
+            ],
           },
-          { items: [item("help", "Help & support")] },
+          { items: [item("help", "Help & support", <IconHelp />)] },
         ]
       : [
-          { items: [item("home", "Home")] },
+          { items: [item("home", "Home", <IconHome />)] },
           {
             label: "Take part",
             items: [
-              item("events", "Events"),
-              item("myevents", "My events"),
-              item("opportunities", "Opportunities"),
-              item("directory", "Directory"),
+              item("events", "Events", <IconCalendar />),
+              item("myevents", "My events", <IconCalendarCheck />),
+              item("opportunities", "Opportunities", <IconBriefcase />),
+              item("directory", "Directory", <IconUsers />),
             ],
           },
           {
             label: "Your membership",
             items: [
-              item("membership", "My membership"),
-              item("profile", "Profile"),
-              item("choices", "Your choices"),
-              item("yourdata", "Your data"),
+              item("membership", "My membership", <IconAward />),
+              item("profile", "Profile", <IconUser />),
+              item("choices", "Your choices", <IconSliders />),
+              item("yourdata", "Your data", <IconDatabase />),
             ],
           },
-          { items: [item("help", "Help & support")] },
+          { items: [item("help", "Help & support", <IconHelp />)] },
         ];
 
   const page = (() => {
@@ -279,7 +296,10 @@ export function PortalShell({
     <AppShell
       brand={
         <>
-          <img src="/assets/wai-me-logo-on-dark.png" alt="" />
+          {/* The square icon, not the wide wordmark: the 875x200 lockup left
+              no room for the bell in a 244px rail (Issam, 2026-07-07), and
+              the icon doubles as the collapsed-rail mark. */}
+          <img src="/assets/wai-me-icon.png" alt="" />
           <span className="lk">
             <span className="nm">WAI-ME</span>
             <span className="sub">Member portal</span>

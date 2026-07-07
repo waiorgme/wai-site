@@ -3,6 +3,7 @@ import { mutation, query } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx, MutationCtx } from "../_generated/server";
 import { requireSuperAdmin } from "../lib/adminAuth";
+import { isValidJoinEmail } from "../lib/joinValidation";
 import { writeAudit } from "../lib/audit";
 import { notify } from "../lib/notify";
 import { maybePromoteToActive } from "../lib/standing";
@@ -256,6 +257,23 @@ export const upsertEvent = mutation({
       return { ok: false, error: "validation" };
     }
 
+    // Host contact and the remaining free text are admin-entered but stored,
+    // and description/venue/city/host_name are member-visible: same boundary
+    // discipline as everything else (audit sweep, 2026-07-07).
+    const hostEmail = args.host_email?.trim() || undefined;
+    if (hostEmail !== undefined && !isValidJoinEmail(hostEmail)) {
+      return { ok: false, error: "validation" };
+    }
+    if (
+      (args.description ?? "").length > 5000 ||
+      (args.venue ?? "").length > 200 ||
+      (args.city ?? "").length > 100 ||
+      (args.host_name ?? "").length > 120 ||
+      (args.timezone ?? "").length > 64
+    ) {
+      return { ok: false, error: "validation" };
+    }
+
     const timezone =
       args.timezone === undefined || args.timezone.trim() === ""
         ? "GST"
@@ -274,7 +292,7 @@ export const upsertEvent = mutation({
       venue: args.venue,
       city: args.city,
       host_name: args.host_name,
-      host_email: args.host_email,
+      host_email: hostEmail,
       audience_lane: args.audience_lane,
       capacity: args.capacity,
       registration_closes_at: args.registration_closes_at,

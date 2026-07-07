@@ -205,7 +205,22 @@ export const upsertPartner = mutation({
     ) {
       return { ok: false, error: "validation" };
     }
-    const notes = args.notes?.slice(0, TEXT_MAX);
+    // The website is a link the day any surface renders it: https only and
+    // bounded, the same rule as event meeting/recording links. The remaining
+    // free-text fields get honest caps - refused, never silently truncated.
+    const website = args.website?.trim() || undefined;
+    if (website !== undefined && !(website.startsWith("https://") && website.length <= 500)) {
+      return { ok: false, error: "validation" };
+    }
+    if (
+      (args.contact_name ?? "").length > NAME_MAX ||
+      (args.committed_value ?? "").length > NAME_MAX ||
+      (args.mou_signed_on ?? "").length > 40 ||
+      (args.notes ?? "").length > TEXT_MAX
+    ) {
+      return { ok: false, error: "validation" };
+    }
+    const notes = args.notes?.trim() || undefined;
 
     const fields = {
       name,
@@ -213,7 +228,7 @@ export const upsertPartner = mutation({
       status: args.status,
       contact_name: args.contact_name?.trim() || undefined,
       contact_email: contactEmail,
-      website: args.website?.trim() || undefined,
+      website,
       mou_signed_on: args.mou_signed_on?.trim() || undefined,
       term_months: termMonths,
       committed_value: args.committed_value?.trim() || undefined,

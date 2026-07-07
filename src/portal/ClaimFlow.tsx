@@ -85,6 +85,15 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
         className="pn-stack"
         onSubmit={async (event) => {
           event.preventDefault();
+          // The certificate prints this name verbatim, so a first name alone
+          // is not enough - match the server's full-name rule with a kinder
+          // message than the generic refusal.
+          if (name.trim().split(/\s+/).length < 2) {
+            setError(
+              "Please enter your full name (first and family name) - it appears on your certificate exactly as written here.",
+            );
+            return;
+          }
           setBusy(true);
           setError(null);
           try {
@@ -117,7 +126,7 @@ export function ClaimFlow({ candidateName, hasDobOnFile, genderOnFile }: {
         }}
       >
         <label className={label}>
-          Your name, as it will appear on your certificate
+          Your full name, as it will appear on your certificate
           <input
             type="text"
             required

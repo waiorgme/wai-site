@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import { convex } from "../portal/convex";
@@ -9,6 +9,20 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { card, errorText, h1, input, linkBtn, muted, primaryBtn } from "../portal/ui";
 import { AppShell, PageHeader, SideNav } from "../panel/kit";
 import type { NavGroup } from "../panel/kit";
+import {
+  IconAlertTriangle,
+  IconAward,
+  IconBarChart,
+  IconBriefcase,
+  IconBuilding,
+  IconCalendar,
+  IconDashboard,
+  IconInbox,
+  IconScrollText,
+  IconShieldCheck,
+  IconUserCheck,
+  IconUsers,
+} from "../panel/icons";
 import { ClaimConflictsQueue } from "./ClaimConflictsQueue";
 import { PipelineReviewsQueue } from "./PipelineReviewsQueue";
 import { PendingGuardiansQueue } from "./PendingGuardiansQueue";
@@ -188,25 +202,36 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
     opportunities: ["opportunities", "opportunityEditor"],
     partners: ["partners", "partnerEditor"],
   };
-  const item = (key: AdminViewName, label: string) => ({
+  const item = (key: AdminViewName, label: string, icon: ReactElement) => ({
     key,
     label,
+    icon,
     active: (activeFor[key] ?? [key]).includes(view.v),
     onSelect: () => go(key),
   });
 
+  const queueIcons: Record<QueueView, ReactElement> = {
+    conflicts: <IconAlertTriangle />,
+    pipeline: <IconUserCheck />,
+    guardians: <IconShieldCheck />,
+    dataRequests: <IconInbox />,
+  };
+
   const groups: NavGroup[] = [
-    { label: "Today", items: [item("overview", "Overview")] },
+    { label: "Today", items: [item("overview", "Overview", <IconDashboard />)] },
     {
       label: "Membership",
-      items: [item("members", "Members"), item("certificates", "Certificates")],
+      items: [
+        item("members", "Members", <IconUsers />),
+        item("certificates", "Certificates", <IconAward />),
+      ],
     },
     {
       label: "Programmes",
       items: [
-        item("events", "Events"),
-        item("opportunities", "Opportunities"),
-        item("partners", "Partners"),
+        item("events", "Events", <IconCalendar />),
+        item("opportunities", "Opportunities", <IconBriefcase />),
+        item("partners", "Partners", <IconBuilding />),
       ],
     },
     {
@@ -214,7 +239,7 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
       items: (Object.keys(QUEUE_LABELS) as QueueView[]).map((queue) => {
         const count = queueCount(queue);
         return {
-          ...item(queue, QUEUE_LABELS[queue]),
+          ...item(queue, QUEUE_LABELS[queue], queueIcons[queue]),
           count,
           live: count !== undefined && count > 0,
         };
@@ -222,7 +247,10 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
     },
     {
       label: "System",
-      items: [item("reports", "Reports"), item("audit", "Recent panel actions")],
+      items: [
+        item("reports", "Reports", <IconBarChart />),
+        item("audit", "Recent panel actions", <IconScrollText />),
+      ],
     },
   ];
 
@@ -330,7 +358,9 @@ function AdminConsole({ onSignOut }: { onSignOut: () => void }) {
     <AppShell
       brand={
         <>
-          <img src="/assets/wai-me-logo-on-dark.png" alt="" />
+          {/* Square icon, matching the portal shell: the wide wordmark
+              crowded the 244px rail and cannot live in the collapsed rail. */}
+          <img src="/assets/wai-me-icon.png" alt="" />
           <span className="lk">
             <span className="nm">WAI-ME</span>
             <span className="sub">Admin console</span>

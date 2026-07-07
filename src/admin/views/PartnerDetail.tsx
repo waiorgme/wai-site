@@ -17,8 +17,10 @@ import {
 // Partner create/edit (panel-experience spec G16). The form is the single
 // writer for the relationship record and the deliverables LIST; each
 // deliverable's status change on a saved row goes through the dedicated
-// audited action (before/after in the log). Seal grant/withdraw and the logo
-// upload are their own audited steps, mirroring the profile photo pattern.
+// audited action (before/after in the log). Every write here is
+// propose-then-confirm: the record save, seal grant/withdraw, deliverable
+// status - and the logo link step (Gate 4 round 1: uploading stages the
+// image, but nothing becomes the partner's logo without a confirm).
 
 type Deliverable = { label: string; status: DeliverableStatus };
 
@@ -666,7 +668,7 @@ function DeliverableRow({
   );
 }
 
-/* ---------- logo upload (mirrors the profile photo pattern) ---------- */
+/* ---------- logo upload (propose-then-confirm, like every partner write) ---------- */
 
 function LogoPanel({
   partnerId,
@@ -679,7 +681,15 @@ function LogoPanel({
   const setLogo = useMutation(api.admin.partners.setPartnerLogo);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  // Picking a file only STAGES it (the blob upload is not a partner change);
+  // setPartnerLogo - the audited write that makes it the logo - fires from
+  // the confirm modal alone (Gate 4 round 1 required fix).
+  const [pending, setPending] = useState<{
+    storageId: Id<"_storage">;
+    preview: string;
+  } | null>(null);
 
   const onPick = async (file: File) => {
     const allowed = ["image/jpeg", "image/png", "image/webp"];
@@ -704,7 +714,28 @@ function LogoPanel({
         body: file,
       });
       const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
-      const linked = await setLogo({ partnerId, storageId });
+      setPending({ storageId, preview: URL.createObjectURL(file) });
+    } catch {
+      setMessage({ ok: false, text: "That upload failed. Please try again." });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const closePending = () => {
+    if (pending !== null) {
+      URL.revokeObjectURL(pending.preview);
+    }
+    setPending(null);
+  };
+
+  const confirmLogo = async () => {
+    if (pending === null || linking) {
+      return;
+    }
+    setLinking(true);
+    try {
+      const linked = await setLogo({ partnerId, storageId: pending.storageId });
       setMessage(
         linked.ok
           ? { ok: true, text: "Logo saved. Recorded in the audit log." }
@@ -714,9 +745,10 @@ function LogoPanel({
             },
       );
     } catch {
-      setMessage({ ok: false, text: "That upload failed. Please try again." });
+      setMessage({ ok: false, text: "That did not go through. Please try again." });
     } finally {
-      setUploading(false);
+      setLinking(false);
+      closePending();
     }
   };
 
@@ -754,6 +786,19 @@ function LogoPanel({
         <p role="status" className={message.ok ? "pn-ok" : "pn-error"}>
           {message.text}
         </p>
+      ) : null}
+      {pending !== null ? (
+        <Modal
+          title={logoUrl !== null ? "Replace the logo with this image?" : "Use this image as the logo?"}
+          sub="It appears wherever this partner is shown."
+          onClose={closePending}
+          onConfirm={() => void confirmLogo()}
+          confirmLabel={linking ? "Saving…" : "Set logo"}
+          confirmDisabled={linking}
+          footNote="This change is recorded in the audit log."
+        >
+          <img src={pending.preview} alt="New logo preview" className="pn-logo-preview" />
+        </Modal>
       ) : null}
     </PanelCard>
   );

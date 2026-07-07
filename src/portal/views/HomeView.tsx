@@ -104,7 +104,11 @@ export function HomeView({
       />
 
       <div className="pn-grid">
-        <StandingCard membership={membership} go={go} />
+        <StandingCard
+          membership={membership}
+          restricted={me.member_lane === "restricted_unknown"}
+          go={go}
+        />
         <NotificationsPreview go={go} />
       </div>
     </>
@@ -341,9 +345,14 @@ function OpportunitiesTeaser({
 
 function StandingCard({
   membership,
+  restricted,
   go,
 }: {
   membership: MembershipView;
+  // restricted_unknown lane: the directory never opens until her date of
+  // birth is confirmed, so the next-step line must not promise it
+  // (MyMembershipView and the standing notification already word it this way).
+  restricted: boolean;
   go: PortalGo;
 }) {
   return (
@@ -379,8 +388,12 @@ function StandingCard({
           {membership.standing === "member" ? (
             <p className="pn-meta">
               {membership.qualifying_progress.profile_complete
-                ? "Next step: take part once - attend an event or apply for an opportunity - and you become an Active Member automatically. That unlocks the member directory and early event seats."
-                : "Next step: finish your profile basics, then take part once - attend an event or apply for an opportunity - and you become an Active Member automatically."}
+                ? restricted
+                  ? "Next step: take part once - attend an event - and you become an Active Member automatically. That unlocks early event seats."
+                  : "Next step: take part once - attend an event or apply for an opportunity - and you become an Active Member automatically. That unlocks the member directory and early event seats."
+                : restricted
+                  ? "Next step: finish your profile basics, then take part once - attend an event - and you become an Active Member automatically."
+                  : "Next step: finish your profile basics, then take part once - attend an event or apply for an opportunity - and you become an Active Member automatically."}
             </p>
           ) : null}
         </>

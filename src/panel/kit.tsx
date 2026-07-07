@@ -3,13 +3,22 @@
 // Presentation only - callers wire data, routing and mutations. Usage doc
 // and class-only recipes: the panel-kit.md handoff note (session scratchpad).
 
-import { useEffect, useId, useRef } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
 /* ---------- app shell ---------- */
 
+// Desktop sidebar collapse survives reloads; per browser, not per account
+// (a display preference, not member data).
+const COLLAPSE_KEY = "pn-side-collapsed";
+
+// Lets SideNav know the rail is collapsed so icon-only items grow native
+// title tooltips without the callers threading the state through.
+const SideCollapsedContext = createContext(false);
+
 // 100dvh two-column shell: dark navy sidebar | paper main. On mobile the
-// sidebar becomes a sticky top bar with a horizontal-scroll nav (CSS).
+// sidebar becomes a sticky top bar with a horizontal-scroll nav (CSS); the
+// collapse control only exists on desktop, where the sidebar is a column.
 export function AppShell({
   brand,
   nav,
@@ -24,11 +33,40 @@ export function AppShell({
   identity?: ReactNode;
   children: ReactNode;
 }) {
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(COLLAPSE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggle = () =>
+    setCollapsed((cur) => {
+      const next = !cur;
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      } catch {
+        /* storage unavailable (private mode): the toggle still works for the session */
+      }
+      return next;
+    });
   return (
-    <div className="pn-app">
+    <div className={collapsed ? "pn-app is-side-collapsed" : "pn-app"}>
       <aside className="pn-app-side">
-        <div className="pn-side-brand">{brand}</div>
-        {nav}
+        <div className="pn-side-brand">
+          {brand}
+          <button
+            type="button"
+            className="pn-side-collapse"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+            title={collapsed ? "Expand navigation" : "Collapse navigation"}
+            onClick={toggle}
+          >
+            <PanelGlyph />
+          </button>
+        </div>
+        <SideCollapsedContext.Provider value={collapsed}>{nav}</SideCollapsedContext.Provider>
         {identity ? <div className="pn-side-id">{identity}</div> : null}
       </aside>
       {/* A div, not <main>: the astro shells already provide main#main, and
@@ -38,9 +76,29 @@ export function AppShell({
   );
 }
 
+function PanelGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M9 3v18" />
+    </svg>
+  );
+}
+
 export type NavItem = {
   key: string;
   label: string;
+  // Lucide outline glyph (src/panel/icons.tsx). Required for the collapsed
+  // rail to make sense; decorative next to the label when expanded.
+  icon?: ReactNode;
   count?: number;
   // Attention count: sky pill with dark ink (the lang-toggle AA precedent).
   live?: boolean;
@@ -64,6 +122,9 @@ export function SideNav({
   // Accessible name for the <nav> landmark.
   label?: string;
 }) {
+  // Collapsed rail: labels hide visually, so the accessible name moves to
+  // aria-label and a native title tooltip carries the sighted answer.
+  const collapsed = useContext(SideCollapsedContext);
   return (
     <nav className="pn-side-nav" aria-label={label ?? "Sections"}>
       {groups.map((group, i) => (
@@ -75,9 +136,16 @@ export function SideNav({
               type="button"
               className={item.soon ? "pn-app-nav-item is-soon" : "pn-app-nav-item"}
               aria-current={item.active ? "true" : undefined}
+              aria-label={item.label}
+              title={collapsed ? item.label : undefined}
               onClick={item.onSelect}
             >
-              <span>{item.label}</span>
+              {item.icon ? (
+                <span className="ic" aria-hidden="true">
+                  {item.icon}
+                </span>
+              ) : null}
+              <span className="lb">{item.label}</span>
               {item.soon ? (
                 <span className="n">Soon</span>
               ) : typeof item.count === "number" ? (

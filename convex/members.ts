@@ -698,10 +698,14 @@ export const matchClaim = mutation({
     }
     const now = Date.now();
     const confirmed = args.nameConfirmed.trim();
+    // The confirmed name is printed on the certificate verbatim, so it must
+    // be a full name: first + family name at minimum (Issam, 2026-07-07).
+    const nameParts = confirmed.split(/\s+/);
     if (
       confirmed.length < 2 ||
       confirmed.length > 90 ||
-      confirmed.split(/\s+/).length > 6 ||
+      nameParts.length < 2 ||
+      nameParts.length > 6 ||
       !isValidDob(args.dobAnswer, now)
     ) {
       return { ok: false, error: "validation" };

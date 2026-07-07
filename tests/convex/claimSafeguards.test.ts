@@ -190,3 +190,40 @@ describe("claim-path pipeline lane guard (women-only, same rule as join)", () =>
     expect(refusal[0].after_summary).toContain("lane=ally");
   });
 });
+
+describe("certificate name integrity (full name required at claim)", () => {
+  it("a single-word confirmed name is refused - the certificate must carry a full name", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("importedMembers", importedRow("amal@example.com"));
+    });
+    const asClaimant = await signedInAs(t, "amal@example.com");
+    const result = await asClaimant.mutation(
+      api.members.matchClaim,
+      claimArgs({ nameConfirmed: "Amal" }),
+    );
+    expect(result).toEqual({ ok: false, error: "validation" });
+
+    const members = await t.run(async (ctx) => ctx.db.query("members").collect());
+    expect(members).toHaveLength(0);
+    const certs = await t.run(async (ctx) => ctx.db.query("certificates").collect());
+    expect(certs).toHaveLength(0);
+  });
+
+  it("a full name claims normally and the certificate carries it verbatim", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("importedMembers", importedRow("amal@example.com"));
+    });
+    const asClaimant = await signedInAs(t, "amal@example.com");
+    const result = await asClaimant.mutation(
+      api.members.matchClaim,
+      claimArgs({ nameConfirmed: "Amal Haddad" }),
+    );
+    expect(result).toEqual({ ok: true });
+
+    const certs = await t.run(async (ctx) => ctx.db.query("certificates").collect());
+    expect(certs).toHaveLength(1);
+    expect(certs[0].recipient_name).toBe("Amal Haddad");
+  });
+});
