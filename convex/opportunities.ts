@@ -4,6 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
+import { logActivityOnce } from "./lib/activity";
 import { notify } from "./lib/notify";
 import { maybePromoteToActive } from "./lib/standing";
 import { isProfileComplete } from "./lib/profile";
@@ -303,6 +304,14 @@ export const apply = mutation({
       after_summary: `application received opportunity=${args.opportunityId}${existing !== null ? " reopened_after_withdrawal=true" : ""}`,
       source: "member",
     });
+    // Engagement KPI (activity-log spec §B.8): once per opportunity, a
+    // withdrawal-and-reapply is still one application.
+    await logActivityOnce(
+      ctx,
+      member._id,
+      "application_submitted",
+      args.opportunityId,
+    );
     // The automatic acknowledgement (everyone-gets-an-answer rule, half one).
     await notify(
       ctx,

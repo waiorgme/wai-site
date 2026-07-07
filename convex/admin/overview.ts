@@ -174,3 +174,148 @@ export const getReportAggregates = query({
     };
   },
 });
+
+// Platform health (activity-log spec §C.10): the join funnel + the four
+// kill-criteria counters from PRD §13. Aggregate counts only, like every
+// sibling. Thresholds are the PRD's "figures tunable" defaults; the settled
+// rule is "pause heavy build and rethink if 2 or more are missed" at the
+// fixed 6-month review. `missed` is null wherever the measure is not
+// meaningful yet (no imported list, no claims) - the UI words that honestly.
+const CLAIM_RATE_THRESHOLD_PCT = 25;
+const MONTHLY_ACTIVE_THRESHOLD_PCT = 15;
+const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+
+export type PlatformHealth = {
+  funnel: {
+    join_submitted: number;
+    email_confirmed: number;
+    onboarding_started: number;
+  };
+  kill_criteria: {
+    claim_rate: {
+      claimed: number;
+      registered: number;
+      pct: number | null;
+      threshold_pct: number;
+      missed: boolean | null;
+    };
+    event_floor: {
+      months_checked: number;
+      months_missed: number;
+      missed: boolean;
+    };
+    corporate_partners: { active_count: number; missed: boolean };
+    monthly_active: {
+      active_30d: number;
+      claimed: number;
+      pct: number | null;
+      threshold_pct: number;
+      missed: boolean | null;
+    };
+  };
+  review_at: number | null;
+};
+
+export const getPlatformHealth = query({
+  args: {},
+  handler: async (ctx): Promise<PlatformHealth> => {
+    await requireSuperAdmin(ctx);
+    const now = Date.now();
+
+    const activity = await ctx.db.query("activityLog").collect();
+    const countType = (type: string) =>
+      activity.filter((a) => a.type === type).length;
+
+    // Distinct members with any first-party activity in the trailing 30 days.
+    const activeMembers30d = new Set(
+      activity
+        .filter((a) => a.at >= now - THIRTY_DAYS && a.member_id !== undefined)
+        .map((a) => a.member_id as string),
+    ).size;
+
+    // Claim rate: the same registered/claimed definitions as the Overview
+    // (integrity rule: registered is the list as imported, never "active").
+    const imported = await ctx.db.query("importedMembers").collect();
+    const registered = imported.length;
+    const claimed = imported.filter((r) => r.claim_state === "claimed").length;
+    const claimPct =
+      registered === 0 ? null : Math.round((claimed / registered) * 1000) / 10;
+
+    // Event floor: one held event per calendar month (the guaranteed 12/12
+    // floor). Checked over the six most recent COMPLETED months - the
+    // running month can't have "missed" anything yet. An event counts as
+    // held for the month it started in once it actually took place.
+    const events = await ctx.db.query("events").collect();
+    const held = events.filter(
+      (e) =>
+        e.state === "attendance_finalized" ||
+        ((e.state === "published" || e.state === "postponed") &&
+          e.ends_at <= now),
+    );
+    const monthKey = (ts: number) => {
+      const d = new Date(ts);
+      return `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+    };
+    const heldMonths = new Set(held.map((e) => monthKey(e.starts_at)));
+    const current = new Date(now);
+    let monthsMissed = 0;
+    for (let back = 1; back <= 6; back++) {
+      const m = new Date(
+        Date.UTC(current.getUTCFullYear(), current.getUTCMonth() - back, 1),
+      );
+      if (!heldMonths.has(monthKey(m.getTime()))) {
+        monthsMissed++;
+      }
+    }
+
+    const partners = await ctx.db.query("partners").collect();
+    const activePartners = partners.filter((p) => p.status === "active").length;
+
+    const monthlyActivePct =
+      claimed === 0
+        ? null
+        : Math.round((activeMembers30d / claimed) * 1000) / 10;
+
+    const reviewRow = await ctx.db
+      .query("counters")
+      .withIndex("by_name", (q) => q.eq("name", "platform_review_at"))
+      .unique();
+
+    return {
+      funnel: {
+        join_submitted: countType("join_submitted"),
+        email_confirmed: countType("email_confirmed"),
+        onboarding_started: countType("onboarding_started"),
+      },
+      kill_criteria: {
+        claim_rate: {
+          claimed,
+          registered,
+          pct: claimPct,
+          threshold_pct: CLAIM_RATE_THRESHOLD_PCT,
+          missed: claimPct === null ? null : claimPct < CLAIM_RATE_THRESHOLD_PCT,
+        },
+        event_floor: {
+          months_checked: 6,
+          months_missed: monthsMissed,
+          missed: monthsMissed >= 2,
+        },
+        corporate_partners: {
+          active_count: activePartners,
+          missed: activePartners === 0,
+        },
+        monthly_active: {
+          active_30d: activeMembers30d,
+          claimed,
+          pct: monthlyActivePct,
+          threshold_pct: MONTHLY_ACTIVE_THRESHOLD_PCT,
+          missed:
+            monthlyActivePct === null
+              ? null
+              : monthlyActivePct < MONTHLY_ACTIVE_THRESHOLD_PCT,
+        },
+      },
+      review_at: reviewRow?.value ?? null,
+    };
+  },
+});

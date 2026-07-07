@@ -284,6 +284,33 @@ export default defineSchema({
     value: v.number(),
   }).index("by_name", ["name"]),
 
+  // §4.6 ActivityLog: append-only first-party events for KPIs + the join
+  // funnel, SPLIT from auditLog (security/ops). Lean by decision: one row
+  // per KPI signal, no payloads, no free text. Funnel rows are written for
+  // EVERYONE including minors; minors are excluded only from partner/impact
+  // surfaces, never from operational counting (PRD Phase 2 §6.2).
+  activityLog: defineTable({
+    member_id: v.optional(v.id("members")),
+    type: v.union(
+      v.literal("join_submitted"),
+      v.literal("email_confirmed"),
+      v.literal("onboarding_started"),
+      v.literal("claim_completed"),
+      v.literal("rsvp_confirmed"),
+      v.literal("event_checked_in"),
+      v.literal("application_submitted"),
+      v.literal("pipeline_opted_in"),
+    ),
+    // Dedup key where one real-world act could write twice (the event id for
+    // RSVPs/check-ins, so a cancel-and-rebook or a corrected attendance mark
+    // never double-counts). A Convex id string, never free text.
+    ref: v.optional(v.string()),
+    at: v.number(),
+  })
+    .index("by_type_time", ["type", "at"])
+    .index("by_member_type", ["member_id", "type"])
+    .index("by_time", ["at"]),
+
   // Fixed-window rate-limit buckets (security-hardening slice). One row per
   // key (e.g. "signin:<email>" or "signin:global"); windows roll forward in
   // place, so the table stays as small as the number of distinct keys.

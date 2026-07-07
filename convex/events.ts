@@ -4,6 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
+import { logActivityOnce } from "./lib/activity";
 import { notify } from "./lib/notify";
 import { currentStanding } from "./lib/standing";
 
@@ -342,6 +343,11 @@ export const rsvp = mutation({
       after_summary: `event=${event._id} state=${state}`,
       source: "member",
     });
+
+    // Engagement KPI (activity-log spec §B.7): registered or waitlisted,
+    // she raised her hand either way. Once per event, however often she
+    // cancels and rebooks.
+    await logActivityOnce(ctx, member._id, "rsvp_confirmed", event._id);
 
     const dateLabel = eventDateLabel(event.starts_at);
     if (state === "registered") {

@@ -27,6 +27,8 @@ import type * as events from "../events.js";
 import type * as guardians from "../guardians.js";
 import type * as http from "../http.js";
 import type * as importedMembers from "../importedMembers.js";
+import type * as lib_activation from "../lib/activation.js";
+import type * as lib_activity from "../lib/activity.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_adminMask from "../lib/adminMask.js";
 import type * as lib_age from "../lib/age.js";
@@ -82,6 +84,8 @@ declare const fullApi: ApiFromModules<{
   guardians: typeof guardians;
   http: typeof http;
   importedMembers: typeof importedMembers;
+  "lib/activation": typeof lib_activation;
+  "lib/activity": typeof lib_activity;
   "lib/adminAuth": typeof lib_adminAuth;
   "lib/adminMask": typeof lib_adminMask;
   "lib/age": typeof lib_age;

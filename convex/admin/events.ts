@@ -5,6 +5,7 @@ import type { QueryCtx, MutationCtx } from "../_generated/server";
 import { requireSuperAdmin } from "../lib/adminAuth";
 import { isValidJoinEmail } from "../lib/joinValidation";
 import { writeAudit } from "../lib/audit";
+import { logActivityOnce } from "../lib/activity";
 import { notify } from "../lib/notify";
 import { maybePromoteToActive } from "../lib/standing";
 import { eventDateLabel } from "../events";
@@ -673,6 +674,10 @@ export const checkIn = mutation({
       source: "admin_fallback",
     });
     if (args.outcome === "attended") {
+      // Engagement KPI (activity-log spec §B.7): attended only, never
+      // no-show. Once per member per EVENT, so a no_show correction marked
+      // back to attended never double-counts, while her next event does.
+      await logActivityOnce(ctx, reg.member_id, "event_checked_in", event._id);
       await maybePromoteToActive(ctx, reg.member_id, "attended an event");
     }
     return { ok: true, state: args.outcome };
