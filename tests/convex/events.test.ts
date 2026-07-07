@@ -116,13 +116,17 @@ const notificationsFor = async (t: Tester, memberId: Id<"members">) =>
       .collect(),
   );
 
-// Full argument set for upsertEvent (mutation args are exact).
+// Full argument set for upsertEvent (mutation args are exact). Times are
+// computed ONCE at module load so every upsertArgs() call shares identical
+// values: live-event edits lock their times server-side, and per-call
+// Date.now() could cross a minute boundary and trip that lock spuriously.
+const UPSERT_STARTS = Date.now() + 10 * DAY;
 const upsertArgs = (extra: Record<string, unknown> = {}) => ({
   title: "Skills Clinic: CVs That Land",
   category: "skills_clinic" as const,
   short_description: "Bring your CV, leave with a sharper one.",
-  starts_at: Date.now() + 10 * DAY,
-  ends_at: Date.now() + 10 * DAY + 2 * HOUR,
+  starts_at: UPSERT_STARTS,
+  ends_at: UPSERT_STARTS + 2 * HOUR,
   format: "online" as const,
   audience_lane: "adult" as const,
   ...extra,
@@ -658,9 +662,17 @@ describe("admin events: create, publish, cancel, postpone, links", () => {
     const t = convexTest(schema, modules);
     const asAdmin = await signIn(t, ADMIN_EMAIL);
     const eventId = await insertEvent(t);
+    // A live edit keeps the event's own times (they are locked to the
+    // Postpone path); the rename itself is normal operator work.
+    const live = await t.run(async (ctx) => ctx.db.get(eventId));
     const edit = await asAdmin.mutation(
       api.admin.events.upsertEvent,
-      upsertArgs({ eventId, title: "Renamed Session" }),
+      upsertArgs({
+        eventId,
+        title: "Renamed Session",
+        starts_at: live!.starts_at,
+        ends_at: live!.ends_at,
+      }),
     );
     expect(edit).toEqual({ ok: true, eventId });
     const event = await t.run(async (ctx) => ctx.db.get(eventId));
@@ -1196,5 +1208,79 @@ describe("waitlist promotion integrity (Gate 4 round 5)", () => {
     expect(
       after.find((r) => r.member_id === activeMember!._id)?.state,
     ).toBe("registered");
+  });
+});
+
+describe("live events cannot move through a plain save (Gate 4 round 6)", () => {
+  it("upsertEvent refuses time changes on a published event; postpone remains the notifying path", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const base = upsertArgs();
+    const created = await asAdmin.mutation(api.admin.events.upsertEvent, base);
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+
+    // Draft times are still free to change.
+    expect(
+      (
+        await asAdmin.mutation(api.admin.events.upsertEvent, {
+          ...base,
+          eventId,
+          starts_at: base.starts_at + HOUR,
+          ends_at: base.ends_at + HOUR,
+        })
+      ).ok,
+    ).toBe(true);
+
+    await asAdmin.mutation(api.admin.events.publishEvent, { eventId });
+
+    // Live: a shifted start is refused and nothing moves.
+    expect(
+      await asAdmin.mutation(api.admin.events.upsertEvent, {
+        ...base,
+        eventId,
+        starts_at: base.starts_at + 2 * HOUR,
+        ends_at: base.ends_at + 2 * HOUR,
+      }),
+    ).toEqual({ ok: false, error: "times_locked" });
+    const row = await t.run(async (ctx) => ctx.db.get(eventId));
+    expect(row!.starts_at).toBe(base.starts_at + HOUR);
+
+    // Same-times edits (a typo fix) still flow.
+    expect(
+      (
+        await asAdmin.mutation(api.admin.events.upsertEvent, {
+          ...base,
+          eventId,
+          title: "Skills Clinic: CVs That Land (updated)",
+          starts_at: base.starts_at + HOUR,
+          ends_at: base.ends_at + HOUR,
+        })
+      ).ok,
+    ).toBe(true);
+  });
+});
+
+describe("dossier audit actors never leak the member's email (Gate 4 round 6)", () => {
+  it("her own actions read 'the member'; the raw address stays behind the audited reveal", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t);
+    const asMember = await signIn(t, "dossier-leak@example.com");
+    // A real member action that writes her email as the audit actor.
+    await asMember.mutation(api.events.rsvp, { eventId });
+
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const member = await memberByEmail(t, "dossier-leak@example.com");
+    const dossier = await asAdmin.query(api.admin.members.getMemberAdmin, {
+      memberId: member!._id,
+    });
+    const raw = JSON.stringify(dossier);
+    expect(raw).not.toContain("dossier-leak@example.com");
+    expect(
+      dossier!.recent_audit.some((r) => r.actor === "the member"),
+    ).toBe(true);
+    // System actors pass through untouched; the immutable audit row keeps
+    // the raw actor for the record.
+    const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+    expect(audits.some((a) => a.actor === "dossier-leak@example.com")).toBe(true);
   });
 });

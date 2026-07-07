@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { requireAdmin } from "../lib/adminAuth";
+import { isAllowedAdminEmail, requireAdmin } from "../lib/adminAuth";
 import { maskName } from "../lib/adminMask";
 import { writeAudit } from "../lib/audit";
 import { currentStanding } from "../lib/standing";
@@ -277,7 +277,10 @@ export type MemberDossier = {
     created_at: number;
   }>;
   // Spec F14: recent audit rows for this member. Summaries are PII-free by
-  // the §8 server contract, so nothing extra is masked here.
+  // the §8 server contract; the ACTOR is additionally masked here, because
+  // member-owned actions write her email as actor and the dossier must never
+  // hand it over outside the audited reveal (Gate 4 round 6). The immutable
+  // auditLog row keeps the raw actor; only this read surface masks.
   recent_audit: Array<{
     action: string;
     actor: string;
@@ -472,13 +475,31 @@ export const getMemberAdmin = query({
       guardian,
       recent_audit: auditRows.map((row) => ({
         action: row.action,
-        actor: row.actor,
+        actor: maskAuditActor(row.actor, member.email),
         timestamp: row.timestamp,
         after_summary: row.after_summary ?? null,
       })),
     };
   },
 });
+
+// The dossier's audit actors, made PII-safe: the member's own actions read
+// "the member" (her address stays behind the audited reveal), operator
+// emails pass through (admins know each other and their actions must stay
+// attributable), anything else email-shaped is masked, and plain labels
+// like "system" pass untouched.
+const maskAuditActor = (actor: string, memberEmail: string): string => {
+  if (actor.toLowerCase() === memberEmail.toLowerCase()) {
+    return "the member";
+  }
+  if (
+    isAllowedAdminEmail(process.env.SUPER_ADMIN_EMAILS, actor) ||
+    isAllowedAdminEmail(process.env.ADMIN_EMAILS, actor)
+  ) {
+    return actor;
+  }
+  return actor.includes("@") ? maskEmail(actor) : actor;
+};
 
 // The ONE audited, per-member, deliberate reveal of contact details (mirrors
 // admin/claims.ts revealContactEmail): the "deliberate, separate approval" the

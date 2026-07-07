@@ -185,7 +185,8 @@ type UpsertResult =
         | "validation"
         | "invalid_state"
         | "lane_locked"
-        | "capacity_below_registered";
+        | "capacity_below_registered"
+        | "times_locked";
     };
 
 // Create (draft) or edit an event. Edits to published/postponed events are
@@ -338,6 +339,23 @@ export const upsertEvent = mutation({
     // stay free.
     if (event.state !== "draft" && args.audience_lane !== event.audience_lane) {
       return { ok: false, error: "lane_locked" };
+    }
+    // Live events cannot MOVE through a plain save (Gate 4 round 6): time
+    // changes must ride postponeEvent, which notifies every booking holder.
+    // The UI already locks the fields; this is the server-side teeth, so a
+    // direct Convex call cannot move an event silently either. Compared at
+    // minute precision (the editor's datetime inputs round-trip at minutes),
+    // and the stored values are kept verbatim so precision never drifts.
+    if (event.state !== "draft") {
+      const minute = (ms: number) => Math.floor(ms / 60000);
+      if (
+        minute(args.starts_at) !== minute(event.starts_at) ||
+        minute(args.ends_at) !== minute(event.ends_at)
+      ) {
+        return { ok: false, error: "times_locked" };
+      }
+      fields.starts_at = event.starts_at;
+      fields.ends_at = event.ends_at;
     }
     // A live room cannot shrink below the seats already confirmed (Gate 4
     // round 5): registered members hold real seats, and the waitlist

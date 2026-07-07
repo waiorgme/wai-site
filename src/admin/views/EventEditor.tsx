@@ -286,7 +286,9 @@ export function EventEditor({
                 ? "The audience cannot change once the event is live - members booked under it. Cancel this event and create a new one for the other audience."
                 : res.error === "capacity_below_registered"
                   ? "Capacity can't go below the number of members already registered - they hold confirmed seats. If the session must shrink, cancel it and create a smaller one."
-                  : res.error === "validation"
+                  : res.error === "times_locked"
+                    ? "To change the date or time of a live event, use Postpone below - it tells everyone holding a booking."
+                    : res.error === "validation"
                   ? "Some details could not be saved. Check the times, capacity, links, the host email and text lengths."
                   : "That did not go through. Please try again.",
         });
