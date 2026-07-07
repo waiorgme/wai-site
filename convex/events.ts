@@ -34,14 +34,19 @@ export const eventDateLabel = (ts: number): string => {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 
-// The lane rule in one place: youth-restricted lanes see ONLY youth events.
+// The lane rule in one place, TWO-WAY: youth-restricted lanes see ONLY youth
+// events, and adult lanes see ONLY adult events. An under-18 session must not
+// take bookings from adult members - the admin editor promises exactly that,
+// and the operational safeguards (vetted volunteers, two-adult rule) are for
+// staff, not walk-in attendees (design sweep blocker, 2026-07-07; flagged for
+// Issam's ratification in the consolidated-branch report).
 export const laneSeesEvent = (
   lane: Doc<"members">["member_lane"],
   audience: "adult" | "youth",
 ): boolean =>
   lane === "minor" || lane === "restricted_unknown"
     ? audience === "youth"
-    : true;
+    : audience === "adult";
 
 const memberForAuthedUser = async (
   ctx: QueryCtx | MutationCtx,

@@ -129,10 +129,13 @@ const upsertArgs = (extra: Record<string, unknown> = {}) => ({
 });
 
 describe("lane gating (switched off, not supervised)", () => {
-  it("minor and restricted_unknown lanes see ONLY youth events; standard sees all", async () => {
+  it("minor and restricted_unknown lanes see ONLY youth events; adult lanes see ONLY adult events", async () => {
     const t = convexTest(schema, modules);
     await insertEvent(t, { title: "Adult Workshop" });
-    await insertEvent(t, { title: "Girls in Aviation Day", audience_lane: "youth" });
+    const youthEventId = await insertEvent(t, {
+      title: "Girls in Aviation Day",
+      audience_lane: "youth",
+    });
 
     const asMinor = await signIn(t, "minor@example.com", {
       member_lane: "minor",
@@ -152,12 +155,18 @@ describe("lane gating (switched off, not supervised)", () => {
     const unknownList = await asUnknown.query(api.events.listEvents, {});
     expect(unknownList!.map((e) => e.title)).toEqual(["Girls in Aviation Day"]);
 
+    // Two-way rule (2026-07-07): an under-18 session takes no bookings from
+    // adult members - the youth board is hers alone, and vice versa.
     const asStandard = await signIn(t, "standard@example.com");
     const standardList = await asStandard.query(api.events.listEvents, {});
-    expect(standardList!.map((e) => e.title).sort()).toEqual([
-      "Adult Workshop",
-      "Girls in Aviation Day",
-    ]);
+    expect(standardList!.map((e) => e.title)).toEqual(["Adult Workshop"]);
+
+    // The direct RSVP write is refused too, and leaves nothing behind.
+    const res = await asStandard.mutation(api.events.rsvp, {
+      eventId: youthEventId,
+    });
+    expect(res).toEqual({ ok: false, error: "not_found" });
+    expect(await regsForEvent(t, youthEventId)).toHaveLength(0);
   });
 
   it("a minor's direct RSVP to an adult event is refused server-side and writes nothing", async () => {

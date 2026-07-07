@@ -119,6 +119,10 @@ export function OpportunityEditor({
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null);
   const [confirming, setConfirming] = useState<ConfirmKind>(null);
+  // Saving is propose-then-confirm like every other console write ("no
+  // silent writes"): Save only opens this modal; the mutation fires from
+  // its confirm alone (design sweep blocker, 2026-07-07).
+  const [saveConfirm, setSaveConfirm] = useState(false);
   const [closeReason, setCloseReason] = useState("");
 
   if (
@@ -145,6 +149,17 @@ export function OpportunityEditor({
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // Propose step: validate first so she never confirms a doomed save.
+  const proposeSave = () => {
+    const problem = checkForm(form);
+    if (problem !== null) {
+      setOutcome({ ok: false, message: problem });
+      return;
+    }
+    setOutcome(null);
+    setSaveConfirm(true);
+  };
 
   const onSave = async () => {
     const problem = checkForm(form);
@@ -450,7 +465,7 @@ export function OpportunityEditor({
                 type="button"
                 className="pn-btn"
                 disabled={busy || isSettled}
-                onClick={() => void onSave()}
+                onClick={proposeSave}
               >
                 {busy
                   ? "Working…"
@@ -540,6 +555,30 @@ export function OpportunityEditor({
           )}
         </div>
       </div>
+
+      {saveConfirm ? (
+        <Modal
+          title={
+            effectiveId === undefined
+              ? "Save this listing as a draft?"
+              : "Save these changes?"
+          }
+          sub={
+            detail !== undefined && detail !== null && detail.state === "open"
+              ? `${form.title.trim()} is open - eligible members see the new details the moment you confirm.`
+              : effectiveId === undefined
+                ? "It stays a draft, invisible to members, until you publish it."
+                : "It is not open, so members see nothing yet."
+          }
+          onClose={() => setSaveConfirm(false)}
+          onConfirm={() => {
+            setSaveConfirm(false);
+            void onSave();
+          }}
+          confirmLabel="Yes, save it"
+          footNote="Recorded in the audit log."
+        />
+      ) : null}
 
       {confirming === "publish" && detail !== undefined && detail !== null ? (
         <Modal

@@ -506,6 +506,15 @@ export function Modal({
 }) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
+  // Callers pass inline onClose closures, so the mount effect must not
+  // depend on them: re-running it re-focuses the dialog container and
+  // steals focus from a text field on every keystroke (design sweep
+  // blocker, 2026-07-07). The ref keeps the latest closure for the key
+  // handler while the effect runs exactly once per mount.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
   useEffect(() => {
     // aria-modal promises the background does not exist: trap Tab inside the
     // dialog, lock body scroll, and hand focus back to the opener on close.
@@ -518,7 +527,7 @@ export function Modal({
     boxRef.current?.focus();
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || boxRef.current === null) {
@@ -556,7 +565,9 @@ export function Modal({
       document.body.style.overflow = prevOverflow;
       opener?.focus();
     };
-  }, [onClose]);
+    // Mount-once by design: onClose lives in onCloseRef (see above).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <div
       className="pn-modal-overlay"

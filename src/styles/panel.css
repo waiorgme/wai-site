@@ -357,7 +357,14 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-@media (hover: hover) { .pn-link:hover { color: var(--navy); } }
+@media (hover: hover) { .pn-link:not(:disabled):hover { color: var(--navy); } }
+/* a disabled link must LOOK unavailable - a normal-looking link that
+   swallows clicks is a dishonest interaction state */
+.pn-link:disabled {
+  color: var(--paper-mut);
+  cursor: default;
+  text-decoration: none;
+}
 
 /* plain email/text links inside panel copy (workspace chrome anchors -
    nav items, tabs, filter chips, breadcrumbs - carry their own voice) */

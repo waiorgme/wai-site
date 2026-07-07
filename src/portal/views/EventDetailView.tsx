@@ -278,67 +278,100 @@ function SeatCard({
   return (
     <PanelCard title="Your seat">
       {event.my_state === "registered" ? (
-        <>
+        // A dead event must not keep promising a live seat: the cancelled
+        // and already-run states override the confirmed-seat voice
+        // (design sweep blocker, 2026-07-07).
+        event.state === "cancelled" ? (
           <div className="pn-row-head">
-            <span className="pn-tag pn-tag--ok">Registered ✓</span>
-            <span className="pn-meta">Your seat is confirmed.</span>
+            <span className="pn-tag">Cancelled</span>
+            <span className="pn-meta">
+              This session was cancelled - you don't need to do anything.
+            </span>
           </div>
-          {event.meeting_link !== null && (
-            <p className="pn-meta">
-              Join online:{" "}
-              <a href={event.meeting_link} target="_blank" rel="noopener">
-                open the meeting link
-              </a>
-              .
-            </p>
-          )}
-          <div className="pn-actions">
-            <button
-              type="button"
-              className="pn-btn pn-btn--sm"
-              onClick={() => setShowPass(true)}
-            >
-              My pass
-            </button>
-            <button
-              type="button"
-              className="pn-btn pn-btn--ghost pn-btn--sm"
-              onClick={addToCalendar}
-            >
-              Add to calendar
-            </button>
-            {!closed && (
+        ) : event.is_past ? (
+          <div className="pn-row-head">
+            <span className="pn-tag pn-tag--ok">Registered</span>
+            <span className="pn-meta">
+              This session has run. If you were checked in, it counts toward
+              your standing once attendance is confirmed.
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className="pn-row-head">
+              <span className="pn-tag pn-tag--ok">Registered ✓</span>
+              <span className="pn-meta">Your seat is confirmed.</span>
+            </div>
+            {event.meeting_link !== null && (
+              <p className="pn-meta">
+                Join online:{" "}
+                <a href={event.meeting_link} target="_blank" rel="noopener">
+                  open the meeting link
+                </a>
+                .
+              </p>
+            )}
+            <div className="pn-actions">
+              <button
+                type="button"
+                className="pn-btn pn-btn--sm"
+                onClick={() => setShowPass(true)}
+              >
+                My pass
+              </button>
+              <button
+                type="button"
+                className="pn-btn pn-btn--ghost pn-btn--sm"
+                onClick={addToCalendar}
+              >
+                Add to calendar
+              </button>
+              {!closed && (
+                <button
+                  type="button"
+                  className="pn-link"
+                  disabled={busy}
+                  onClick={() => setCancelling(true)}
+                >
+                  Cancel my RSVP
+                </button>
+              )}
+            </div>
+          </>
+        )
+      ) : event.my_state === "waitlisted" ? (
+        event.state === "cancelled" || event.is_past ? (
+          <div className="pn-row-head">
+            <span className="pn-tag">
+              {event.state === "cancelled" ? "Cancelled" : "Closed"}
+            </span>
+            <span className="pn-meta">
+              {event.state === "cancelled"
+                ? "This session was cancelled - nothing more to do."
+                : "This session has run, so the waitlist closed with it."}
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className="pn-row-head">
+              <span className="pn-tag pn-tag--info">On the waitlist</span>
+              <span className="pn-meta">
+                We'll tell you the moment a seat opens - your spot is saved in
+                order.
+              </span>
+            </div>
+            <div className="pn-actions">
               <button
                 type="button"
                 className="pn-link"
                 disabled={busy}
                 onClick={() => setCancelling(true)}
               >
-                Cancel my RSVP
+                Leave the waitlist
               </button>
-            )}
-          </div>
-        </>
-      ) : event.my_state === "waitlisted" ? (
-        <>
-          <div className="pn-row-head">
-            <span className="pn-tag pn-tag--info">On the waitlist</span>
-            <span className="pn-meta">
-              We'll tell you the moment a seat opens - your spot is saved in
-              order.
-            </span>
-          </div>
-          <div className="pn-actions">
-            <button
-              type="button"
-              className="pn-link"
-              disabled={busy}
-              onClick={() => setCancelling(true)}
-            >
-              Leave the waitlist
-            </button>
-          </div>
-        </>
+            </div>
+          </>
+        )
       ) : event.my_state === "attended" ? (
         <>
           <div className="pn-row-head">

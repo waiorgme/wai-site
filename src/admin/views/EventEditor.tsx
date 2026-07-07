@@ -150,6 +150,10 @@ export function EventEditor({
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null);
   const [confirming, setConfirming] = useState<ConfirmKind>(null);
+  // Saving is propose-then-confirm like every other console write ("no
+  // silent writes" - design sweep blocker, 2026-07-07): the Save button only
+  // opens this modal; upsertEvent fires from its confirm alone.
+  const [saveConfirm, setSaveConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [newStarts, setNewStarts] = useState("");
   const [newEnds, setNewEnds] = useState("");
@@ -172,8 +176,24 @@ export function EventEditor({
 
   const state: EventState | null = detail === undefined || detail === null ? null : detail.state;
   const isClosed = state === "cancelled" || state === "attendance_finalized";
+  // Live = members can see it. Time changes on a live event must go through
+  // Postpone (which notifies every booking holder), never a silent save.
+  const isLive = state === "published" || state === "postponed";
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // Propose step: validate first so she never confirms a doomed save, then
+  // open the confirm modal. The mutation itself runs from onSave below,
+  // called only by the modal's confirm button.
+  const proposeSave = () => {
+    const problem = checkForm(form);
+    if (problem !== null) {
+      setOutcome({ ok: false, message: problem });
+      return;
+    }
+    setOutcome(null);
+    setSaveConfirm(true);
+  };
 
   const onSave = async () => {
     const problem = checkForm(form);
@@ -463,7 +483,7 @@ export function EventEditor({
                   type="datetime-local"
                   className="pn-input"
                   value={form.starts}
-                  disabled={isClosed}
+                  disabled={isClosed || isLive}
                   onChange={(e) => set("starts", e.target.value)}
                 />
               </label>
@@ -473,11 +493,18 @@ export function EventEditor({
                   type="datetime-local"
                   className="pn-input"
                   value={form.ends}
-                  disabled={isClosed}
+                  disabled={isClosed || isLive}
                   onChange={(e) => set("ends", e.target.value)}
                 />
               </label>
             </div>
+            {isLive ? (
+              <p className="pn-hint">
+                To change the date or time of a live event, use Postpone below -
+                it tells everyone holding a booking. Editing here would move the
+                event silently.
+              </p>
+            ) : null}
             <fieldset className="pn-fieldset">
               <legend className="pn-label">Format</legend>
               <label className="pn-check">
@@ -646,7 +673,7 @@ export function EventEditor({
                 type="button"
                 className="pn-btn"
                 disabled={busy || isClosed}
-                onClick={() => void onSave()}
+                onClick={proposeSave}
               >
                 {busy
                   ? "Working…"
@@ -778,6 +805,30 @@ export function EventEditor({
           )}
         </div>
       </div>
+
+      {saveConfirm ? (
+        <Modal
+          title={
+            effectiveId === undefined
+              ? "Save this event as a draft?"
+              : "Save these changes?"
+          }
+          sub={
+            isLive
+              ? `${form.title.trim()} is live - members see the new details the moment you confirm.`
+              : effectiveId === undefined
+                ? "It stays a draft, invisible to members, until you publish it."
+                : "It is not published, so members see nothing yet."
+          }
+          onClose={() => setSaveConfirm(false)}
+          onConfirm={() => {
+            setSaveConfirm(false);
+            void onSave();
+          }}
+          confirmLabel="Yes, save it"
+          footNote="Recorded in the audit log."
+        />
+      ) : null}
 
       {confirming === "publish" && detail !== undefined && detail !== null ? (
         <Modal

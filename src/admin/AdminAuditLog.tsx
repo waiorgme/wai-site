@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { linkBtn, muted } from "../portal/ui";
 import { queueSection, queueTitle, rowMeta } from "./ui";
+import { plainAction } from "./views/shared";
 
 // Audit visibility, read-only (spec criterion 8). Recent admin_fallback audit
 // rows, paginated, so a super admin can see what the panel itself has done.
@@ -27,7 +28,7 @@ export function AdminAuditLog() {
             {page.rows.map((row) => (
               <div key={row.id} className="pn-log-row">
                 <p className={rowMeta}>
-                  <strong>{row.action}</strong> by {row.actor} on{" "}
+                  <strong>{plainAction(row.action)}</strong> by {row.actor} on{" "}
                   {new Date(row.timestamp).toLocaleString()}
                 </p>
                 {row.after_summary && (

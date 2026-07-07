@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ConvexProvider, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { convex } from "./convex";
-import { card, h1, muted, primaryBtn } from "./ui";
+import { card, errorText, h1, muted, primaryBtn } from "./ui";
 
 // The guardian consent page (Under-18 decision: a REAL confirmation step).
 // The emailed link lands here; consent happens only when the guardian presses
@@ -30,6 +30,10 @@ function GuardianConfirm() {
   const [slow, setSlow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<null | "confirmed" | "already_confirmed" | "invalid">(null);
+  // A failed consent press must never fail silently: this is the one button
+  // a guardian came to press, and walking away believing it worked when
+  // nothing was recorded is the worst outcome (design sweep, 2026-07-07).
+  const [error, setError] = useState<string | null>(null);
   const confirm = useMutation(api.guardians.confirmGuardianConsent);
 
   useEffect(() => {
@@ -186,11 +190,14 @@ function GuardianConfirm() {
           disabled={busy}
           onClick={async () => {
             setBusy(true);
+            setError(null);
             try {
               const result = await confirm({ token: token ?? "" });
               setDone(result.state);
             } catch {
-              setDone(null);
+              setError(
+                "That didn't go through - nothing was recorded. Please check your connection and press the button again, or email support@waiorg.me and we will sort it out.",
+              );
             } finally {
               setBusy(false);
             }
@@ -200,6 +207,11 @@ function GuardianConfirm() {
             ? "Confirming…"
             : `Yes, I confirm I'm ${lookup?.applicantFirstName}'s parent or guardian and consent to this membership`}
         </button>
+        {error !== null ? (
+          <p role="status" className={errorText}>
+            {error}
+          </p>
+        ) : null}
       </div>
     </>
   );

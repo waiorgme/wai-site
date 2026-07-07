@@ -3,7 +3,7 @@ import { api } from "../../../convex/_generated/api";
 import type { AdminOverviewCounts } from "../../../convex/admin/overview";
 import { EmptyState, PageHeader, PanelCard, ProgressBar, StatTile } from "../../panel/kit";
 import type { Go } from "./shared";
-import { greetingForHour, gstYear, localDateEyebrow, plural } from "./shared";
+import { greetingForHour, gstYear, localDateEyebrow, plainAction, plural } from "./shared";
 
 // The console Overview v2 (panel-experience spec H17): a time-of-day greeting
 // (no name - we do not store the admin's name for this surface), a narrative
@@ -333,7 +333,7 @@ function LatestActions({ onSeeAll }: { onSeeAll: () => void }) {
                 {new Date(row.timestamp).toLocaleString()}
               </span>
               <p className="pn-meta">
-                <strong>{row.action}</strong> by {row.actor}
+                <strong>{plainAction(row.action)}</strong> by {row.actor}
               </p>
               {row.after_summary && <p className="pn-meta">{row.after_summary}</p>}
             </div>

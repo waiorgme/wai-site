@@ -15,6 +15,7 @@ import {
   LIFECYCLE_EXPLAIN,
   LIFECYCLE_WORDS,
   lifecycleTagClass,
+  plainAction,
   STANDING_EXPLAIN,
   STANDING_WORDS,
 } from "./shared";
@@ -714,7 +715,7 @@ function EngagementTab({ dossier }: { dossier: MemberDossier }) {
                 <div key={i} className="pn-log-row">
                   <span className="pn-when">{fmtGstDateTime(row.timestamp)}</span>
                   <p className="pn-meta">
-                    <strong>{row.action}</strong> by {row.actor}
+                    <strong>{plainAction(row.action)}</strong> by {row.actor}
                   </p>
                   {row.after_summary ? (
                     <p className="pn-meta">{row.after_summary}</p>

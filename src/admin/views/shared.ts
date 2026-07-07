@@ -31,6 +31,78 @@ export type AdminViewName =
 
 export type Go = (v: AdminViewName, id?: string) => void;
 
+/* ---------- plain words for audit actions ---------- */
+
+// The audit trail is Mervat's safety net; raw mutation names ("upsertEvent")
+// are developer identifiers she cannot read. Every server action name maps
+// to a plain sentence fragment; unknown names fall back to the raw string so
+// nothing is ever hidden (design sweep blocker, 2026-07-07).
+const PLAIN_ACTION_WORDS: Record<string, string> = {
+  addMemberNote: "Added a note to a member",
+  applyToOpportunity: "Member applied to an opportunity",
+  "applyToOpportunity.refused": "An application was refused by the rules",
+  approveDataRequest: "Approved a data request",
+  archiveConflictRow: "Archived a claim-conflict record",
+  autoCloseOpportunity: "Opportunity closed automatically at its deadline",
+  cancelEvent: "Cancelled an event",
+  cancelMyRsvp: "Member cancelled her RSVP",
+  captureGuardianConsent: "Guardian consent recorded",
+  "captureGuardianConsent.confirmed": "Guardian confirmed consent",
+  "captureGuardianConsent.expired": "A guardian link expired",
+  changeMemberStatus: "Changed a member's status",
+  checkIn: "Marked event attendance",
+  closeOpportunity: "Closed an opportunity",
+  confirmGuardianConsent: "Guardian confirmed consent",
+  confirmMagicLink: "Member confirmed her email",
+  decideOpportunity: "Decided an opportunity",
+  decidePipelineReview: "Decided a pipeline review",
+  finalizeAttendance: "Closed an event's attendance",
+  importBatch: "Imported member records",
+  issueMembershipCertificate: "Issued a membership certificate",
+  matchClaim: "Member claimed her record",
+  "matchClaim.conflict": "A claim needs a human decision",
+  "matchClaim.suppressedMinor": "A claim was held: under-18 record",
+  postponeEvent: "Postponed an event",
+  promoteFromWaitlist: "Moved a member off the waitlist",
+  publishEvent: "Published an event",
+  publishOpportunity: "Published an opportunity",
+  raiseCounterFloor: "Raised the membership-number floor",
+  recordResult: "Recorded an application result",
+  reissueCertificate: "Re-issued a certificate",
+  "resendGuardianEmail.refused": "A guardian email resend was refused",
+  resendGuardianEmailFromPanel: "Resent a guardian email",
+  resolveConflictAsClaimed: "Resolved a claim conflict",
+  revealMemberContact: "Viewed a member's contact details",
+  reveal_contact_email: "Viewed a member's contact details",
+  revokeCertificate: "Revoked a certificate",
+  rsvp: "Member booked a seat",
+  sendGuardianEmail: "Sent a guardian consent email",
+  "sendGuardianEmail.failed": "A guardian email failed to send",
+  "sendGuardianEmail.refused": "A guardian email was refused",
+  setDeliverableStatus: "Updated a partner deliverable",
+  setDirectoryVisible: "Member changed her directory listing",
+  "setDirectoryVisible.refused": "A directory change was refused by the rules",
+  setEventLinks: "Added event recording or materials links",
+  setPartnerLogo: "Set a partner's logo",
+  setPipelineOptIn: "Member changed her pipeline choice",
+  "setPipelineOptIn.refused": "A pipeline choice was refused by the rules",
+  setSeal: "Changed a partner's seal",
+  setShortlisted: "Changed an application shortlist",
+  "standing.promote_active": "Member became an Active Member",
+  submitDataRequest: "Member asked to see or delete her data",
+  submitJoin: "New member joined",
+  updateProfile: "Member updated her profile",
+  upsertEvent: "Saved an event",
+  upsertOpportunity: "Saved an opportunity",
+  upsertPartner: "Saved a partner",
+  withdrawMyApplication: "Member withdrew an application",
+  writeConsent: "Member changed a consent",
+  "writeConsent.refused": "A consent change was refused by the rules",
+};
+
+export const plainAction = (action: string): string =>
+  PLAIN_ACTION_WORDS[action] ?? action;
+
 /* ---------- GST time helpers ---------- */
 
 // GST is UTC+4, fixed, no daylight saving - so the conversion is a constant

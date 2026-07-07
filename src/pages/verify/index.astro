@@ -51,5 +51,17 @@ import { VerifyApp } from "../../portal/VerifyApp";
       inset-block-start: 0;
       inset-inline-start: 0;
     }
+    /* The on-screen certificate is scaled to its container via an INLINE
+       transform (ScaledCertificate); without these overrides a phone prints
+       a third-size certificate in a sea of white. Stylesheet !important
+       beats inline styles, so print always gets the full 1122x794 canvas
+       (A4 landscape above). */
+    :global(.cert-print > div) {
+      height: auto !important;
+      overflow: visible !important;
+    }
+    :global(.cert-print > div > div) {
+      transform: none !important;
+    }
   }
 </style>
