@@ -16,6 +16,19 @@ import { eventDateLabel } from "../events";
 // Events are never deleted: cancel and finalize are the closing moves, and a
 // cancelled/finalized event is read-only history.
 
+// A LIVE event must be attendable: an online session needs its join link, an
+// in-person one needs its venue (Gate 4 round 10 - members were able to RSVP
+// to a confirmed seat with nowhere to go). Drafts may be incomplete; this is
+// checked only when an event goes live (publish) or is saved while live.
+const missingLogistics = (
+  format: "online" | "in_person",
+  meeting_link: string | undefined,
+  venue: string | undefined,
+): boolean =>
+  format === "online"
+    ? meeting_link === undefined || meeting_link.trim() === ""
+    : venue === undefined || venue.trim() === "";
+
 const eventCategory = v.union(
   v.literal("workshop"),
   v.literal("story_session"),
@@ -186,7 +199,8 @@ type UpsertResult =
         | "invalid_state"
         | "lane_locked"
         | "capacity_below_registered"
-        | "times_locked";
+        | "times_locked"
+        | "missing_logistics";
     };
 
 // Create (draft) or edit an event. Edits to published/postponed events are
@@ -332,6 +346,15 @@ export const upsertEvent = mutation({
     if (event.state === "cancelled" || event.state === "attendance_finalized") {
       return { ok: false, error: "invalid_state" };
     }
+    // A LIVE event must stay attendable: an edit cannot strip its join link
+    // (online) or venue (in-person) out from under members already booked
+    // (Gate 4 round 10). A draft may still be incomplete.
+    if (
+      event.state !== "draft" &&
+      missingLogistics(args.format, args.meeting_link, args.venue)
+    ) {
+      return { ok: false, error: "missing_logistics" };
+    }
     // The audience lane FREEZES once the event leaves draft (Gate 4 round 3):
     // members RSVP under a lane promise, and flipping a youth session to
     // adult (or back) would leave bookings the lane rule now forbids. Drafts
@@ -389,7 +412,12 @@ type StateChangeResult =
   | { ok: true; already?: true }
   | {
       ok: false;
-      error: "not_authorized" | "not_found" | "validation" | "invalid_state";
+      error:
+        | "not_authorized"
+        | "not_found"
+        | "validation"
+        | "invalid_state"
+        | "missing_logistics";
     };
 
 // Draft to published: the one move that puts an event on the member board.
@@ -411,6 +439,13 @@ export const publishEvent = mutation({
     }
     if (event.state !== "draft") {
       return { ok: false, error: "invalid_state" };
+    }
+    // Publishing puts the event on the member board and opens RSVPs, so it
+    // must be attendable NOW: an online session needs its join link, an
+    // in-person one its venue (Gate 4 round 10). No member gets a confirmed
+    // seat to nowhere.
+    if (missingLogistics(event.format, event.meeting_link, event.venue)) {
+      return { ok: false, error: "missing_logistics" };
     }
     await ctx.db.patch(event._id, {
       state: "published",

@@ -128,6 +128,9 @@ const upsertArgs = (extra: Record<string, unknown> = {}) => ({
   starts_at: UPSERT_STARTS,
   ends_at: UPSERT_STARTS + 2 * HOUR,
   format: "online" as const,
+  // A live event must be attendable (Gate 4 round 10): the default online
+  // fixture carries its join link so publish tests exercise the real path.
+  meeting_link: "https://meet.example.com/clinic",
   audience_lane: "adult" as const,
   ...extra,
 });
@@ -1418,5 +1421,80 @@ describe("postpone keeps the event bookable + rejects past dates (Gate 4 round 9
         newEndsAt: Date.now() - DAY + HOUR,
       }),
     ).toEqual({ ok: false, error: "validation" });
+  });
+});
+
+describe("a published event must be attendable (Gate 4 round 10)", () => {
+  it("an online draft with no meeting link cannot be published; adding the link unblocks it", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    // Online, no link.
+    const created = await asAdmin.mutation(api.admin.events.upsertEvent, {
+      ...upsertArgs(),
+      meeting_link: undefined,
+    });
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+    expect(
+      await asAdmin.mutation(api.admin.events.publishEvent, { eventId }),
+    ).toEqual({ ok: false, error: "missing_logistics" });
+    // Still a draft, invisible to members.
+    expect(
+      (await t.run(async (ctx) => ctx.db.get(eventId)))!.state,
+    ).toBe("draft");
+
+    // Add the link, then publish succeeds.
+    await asAdmin.mutation(api.admin.events.upsertEvent, {
+      ...upsertArgs(),
+      eventId,
+      meeting_link: "https://meet.example.com/added",
+    });
+    expect(
+      await asAdmin.mutation(api.admin.events.publishEvent, { eventId }),
+    ).toEqual({ ok: true });
+  });
+
+  it("an in-person draft with no venue cannot be published; adding the venue unblocks it", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const created = await asAdmin.mutation(api.admin.events.upsertEvent, {
+      ...upsertArgs(),
+      format: "in_person" as const,
+      meeting_link: undefined,
+    });
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+    expect(
+      await asAdmin.mutation(api.admin.events.publishEvent, { eventId }),
+    ).toEqual({ ok: false, error: "missing_logistics" });
+
+    await asAdmin.mutation(api.admin.events.upsertEvent, {
+      ...upsertArgs(),
+      eventId,
+      format: "in_person" as const,
+      venue: "Emirates Aviation College",
+      city: "Dubai",
+      meeting_link: undefined,
+    });
+    expect(
+      await asAdmin.mutation(api.admin.events.publishEvent, { eventId }),
+    ).toEqual({ ok: true });
+  });
+
+  it("a live event's logistics cannot be stripped by an edit", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const created = await asAdmin.mutation(api.admin.events.upsertEvent, upsertArgs());
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+    await asAdmin.mutation(api.admin.events.publishEvent, { eventId });
+    // Clearing the meeting link on the LIVE online event is refused.
+    expect(
+      await asAdmin.mutation(api.admin.events.upsertEvent, {
+        ...upsertArgs(),
+        eventId,
+        meeting_link: undefined,
+      }),
+    ).toEqual({ ok: false, error: "missing_logistics" });
+    expect(
+      (await t.run(async (ctx) => ctx.db.get(eventId)))!.meeting_link,
+    ).toBe("https://meet.example.com/clinic");
   });
 });

@@ -179,6 +179,10 @@ branch); PlacementLog; partner-facing portal.
   age belongs in neither an adult session nor an under-18 one, so the lane is locked out
   of event listing, detail and RSVP until the date of birth is confirmed (Stage 0 safety
   default). The portal words the lock honestly and points at support@waiorg.me.
+- **A published event must be attendable** (round-10 required fix): an online event
+  needs its meeting link and an in-person event its venue before publish (and a live edit
+  cannot strip either) - no member gets a confirmed seat to nowhere. Drafts may still be
+  incomplete.
 - **Certificate-issued notification lives in the shared issuer** (round-4 required fix):
   every issuance path - activation, migrated claim, guardian confirmation, the fallback
   mutation - notifies exactly once, past the idempotency return.

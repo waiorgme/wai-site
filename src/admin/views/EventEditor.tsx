@@ -288,7 +288,9 @@ export function EventEditor({
                   ? "Capacity can't go below the number of members already registered - they hold confirmed seats. If the session must shrink, cancel it and create a smaller one."
                   : res.error === "times_locked"
                     ? "To change the date or time of a live event, use Postpone below - it tells everyone holding a booking."
-                    : res.error === "validation"
+                    : res.error === "missing_logistics"
+                      ? "A live event must stay attendable: keep the meeting link (online) or the venue (in-person)."
+                      : res.error === "validation"
                   ? "Some details could not be saved. Check the times, capacity, links, the host email and text lengths."
                   : "That did not go through. Please try again.",
         });
@@ -331,7 +333,9 @@ export function EventEditor({
                 message:
                   res.error === "invalid_state"
                     ? "Only a draft can be published."
-                    : "That did not go through. Please try again.",
+                    : res.error === "missing_logistics"
+                      ? "Add the details members need before publishing: an online session needs its meeting link, an in-person one needs its venue."
+                      : "That did not go through. Please try again.",
               },
         );
       } else if (kind === "cancel") {
