@@ -525,6 +525,11 @@ export const postponeEvent = mutation({
     if (args.newEndsAt <= args.newStartsAt) {
       return { ok: false, error: "validation" };
     }
+    // A postpone moves the event FORWARD; a past-dated new start would land
+    // it already-over (hunt, 2026-07-07).
+    if (args.newStartsAt <= Date.now()) {
+      return { ok: false, error: "validation" };
+    }
     const event = await ctx.db.get(args.eventId);
     if (event === null) {
       return { ok: false, error: "not_found" };
@@ -533,10 +538,31 @@ export const postponeEvent = mutation({
       return { ok: false, error: "invalid_state" };
     }
     const before = event.state;
+    // The registration cutoff and priority window were set on the OLD
+    // timeline. A cutoff normally sits just before the event start, so the
+    // test is not "before the new start" but "already ELAPSED": one now in
+    // the past would silently block RSVPs on a future event (the postpone
+    // promise is "keeps taking RSVPs on the new date"). Clear an elapsed
+    // cutoff; keep a still-future one (the admin's intent). The priority
+    // window is a PAIR - cleared as a whole once its end has passed.
+    const now = Date.now();
+    const staleCutoff =
+      event.registration_closes_at !== undefined &&
+      event.registration_closes_at < now;
+    const staleWindow =
+      event.priority_window_end !== undefined &&
+      event.priority_window_end <= now;
     await ctx.db.patch(event._id, {
       state: "postponed",
       starts_at: args.newStartsAt,
       ends_at: args.newEndsAt,
+      registration_closes_at: staleCutoff
+        ? undefined
+        : event.registration_closes_at,
+      priority_window_start: staleWindow
+        ? undefined
+        : event.priority_window_start,
+      priority_window_end: staleWindow ? undefined : event.priority_window_end,
     });
     const holders = await liveRegistrations(ctx, event._id);
     for (const reg of holders) {

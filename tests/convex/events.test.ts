@@ -1353,3 +1353,70 @@ describe("check-in is seat-holders only (Gate 4 round 8)", () => {
     ).toEqual({ ok: true, state: "attended" });
   });
 });
+
+describe("postpone keeps the event bookable + rejects past dates (Gate 4 round 9 hunt)", () => {
+  it("an ELAPSED registration cutoff and priority window are cleared so RSVPs keep flowing", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    // Event still upcoming, but its registration already closed and its
+    // priority window is entirely in the past (the old timeline elapsed).
+    const eventId = await insertEvent(t, {
+      starts_at: Date.now() + 6 * HOUR,
+      ends_at: Date.now() + 7 * HOUR,
+      registration_closes_at: Date.now() - HOUR,
+      priority_window_start: Date.now() - 3 * HOUR,
+      priority_window_end: Date.now() - 2 * HOUR,
+    });
+    const newStart = Date.now() + 30 * DAY;
+    expect(
+      await asAdmin.mutation(api.admin.events.postponeEvent, {
+        eventId,
+        newStartsAt: newStart,
+        newEndsAt: newStart + HOUR,
+      }),
+    ).toEqual({ ok: true, notified: 0 });
+
+    const event = await t.run(async (ctx) => ctx.db.get(eventId));
+    // The stale windows are cleared (they would have blocked the future event).
+    expect(event!.registration_closes_at).toBeUndefined();
+    expect(event!.priority_window_start).toBeUndefined();
+    expect(event!.priority_window_end).toBeUndefined();
+
+    // A plain member can still RSVP to the moved event.
+    const asMember = await signIn(t, "postpone-rsvp@example.com");
+    expect(await asMember.mutation(api.events.rsvp, { eventId })).toEqual({
+      ok: true,
+      state: "registered",
+    });
+  });
+
+  it("a future cutoff still ahead of the new start is kept", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const newStart = Date.now() + 30 * DAY;
+    const keptCutoff = newStart - HOUR;
+    const eventId = await insertEvent(t, {
+      registration_closes_at: keptCutoff,
+    });
+    await asAdmin.mutation(api.admin.events.postponeEvent, {
+      eventId,
+      newStartsAt: newStart,
+      newEndsAt: newStart + HOUR,
+    });
+    const event = await t.run(async (ctx) => ctx.db.get(eventId));
+    expect(event!.registration_closes_at).toBe(keptCutoff);
+  });
+
+  it("a past-dated new start is refused", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const eventId = await insertEvent(t);
+    expect(
+      await asAdmin.mutation(api.admin.events.postponeEvent, {
+        eventId,
+        newStartsAt: Date.now() - DAY,
+        newEndsAt: Date.now() - DAY + HOUR,
+      }),
+    ).toEqual({ ok: false, error: "validation" });
+  });
+});

@@ -622,4 +622,56 @@ describe("certificates admin", () => {
       }),
     ).toEqual({ ok: false, error: "not_authorized" });
   });
+
+  it("re-issue enforces the full-name rule the claim path holds (Gate 4 round 9 hunt)", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const certId = await t.run(async (ctx) => {
+      const memberId = await ctx.db.insert(
+        "members",
+        memberRow("holder@example.com"),
+      );
+      return ctx.db.insert("certificates", {
+        member_id: memberId,
+        type: "membership",
+        verify_token: "tok-reissue",
+        membership_number: 2001,
+        recipient_name: "Holder Name",
+        issued_at: Date.now(),
+        issued_date_label: "1 July 2026",
+        is_founding: true,
+        status: "valid",
+        template_version: "membership-2026-06",
+        idempotency_key: "membership:reissue-test",
+      });
+    });
+    // A single word (a dropped family name) is refused - the corrected name
+    // prints on the public verify page, so it holds the same rule as claim.
+    expect(
+      await asAdmin.mutation(api.admin.certificates.reissueCertificate, {
+        certificateId: certId,
+        correctedName: "Sara",
+      }),
+    ).toEqual({ ok: false, error: "validation" });
+    // An over-long run is refused too (claim caps at 90).
+    expect(
+      await asAdmin.mutation(api.admin.certificates.reissueCertificate, {
+        certificateId: certId,
+        correctedName: `Sara ${"x".repeat(90)}`,
+      }),
+    ).toEqual({ ok: false, error: "validation" });
+    // The original certificate is untouched by the refusals.
+    const still = await t.run(async (ctx) => ctx.db.get(certId));
+    expect(still!.status).toBe("valid");
+    expect(still!.recipient_name).toBe("Holder Name");
+    // A proper full name is accepted.
+    expect(
+      (
+        await asAdmin.mutation(api.admin.certificates.reissueCertificate, {
+          certificateId: certId,
+          correctedName: "Sara Haddad",
+        })
+      ).ok,
+    ).toBe(true);
+  });
 });

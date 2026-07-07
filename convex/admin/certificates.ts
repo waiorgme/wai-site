@@ -156,8 +156,19 @@ export const reissueCertificate = mutation({
     } catch {
       return { ok: false, error: "not_authorized" };
     }
+    // The corrected name is printed verbatim on the fresh certificate and
+    // served on the PUBLIC verify page, so it must clear the SAME full-name
+    // rule the claim path enforces (Issam, 2026-07-07): first + family name,
+    // 2..90 chars. Server-side, because the UI is not the only enforcer
+    // (Stage 0 §5; Gate 4 round 9 hunt).
     const correctedName = args.correctedName.trim();
-    if (correctedName.length === 0 || correctedName.length > NAME_MAX) {
+    const nameParts = correctedName.split(/\s+/);
+    if (
+      correctedName.length < 2 ||
+      correctedName.length > 90 ||
+      nameParts.length < 2 ||
+      nameParts.length > 6
+    ) {
       return { ok: false, error: "validation" };
     }
     const cert = await ctx.db.get(args.certificateId);

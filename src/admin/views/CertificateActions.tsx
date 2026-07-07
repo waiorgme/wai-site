@@ -113,7 +113,7 @@ export function CertificateRowActions({
             res.error === "ineligible"
               ? "Only the live certificate in a chain can be corrected."
               : res.error === "validation"
-                ? "The corrected name is required and can be up to 120 characters."
+                ? "Please enter the member's full name - first and family name - as it should read on the certificate."
                 : "That did not go through. Please try again.",
         });
         setOpen(null);
