@@ -146,6 +146,8 @@ describe("lane gating (switched off, not supervised)", () => {
     expect(minorList).not.toBeNull();
     expect(minorList!.map((e) => e.title)).toEqual(["Girls in Aviation Day"]);
 
+    // restricted_unknown sees NOTHING (Gate 4 round 4): an unconfirmed age
+    // could be anyone, so she belongs in neither room until DOB is confirmed.
     const asUnknown = await signIn(t, "unknown@example.com", {
       member_lane: "restricted_unknown",
       date_of_birth: undefined,
@@ -153,7 +155,13 @@ describe("lane gating (switched off, not supervised)", () => {
       date_of_birth_source: "unknown",
     });
     const unknownList = await asUnknown.query(api.events.listEvents, {});
-    expect(unknownList!.map((e) => e.title)).toEqual(["Girls in Aviation Day"]);
+    expect(unknownList).toEqual([]);
+    expect(
+      await asUnknown.query(api.events.getEvent, { eventId: youthEventId }),
+    ).toBeNull();
+    expect(
+      await asUnknown.mutation(api.events.rsvp, { eventId: youthEventId }),
+    ).toEqual({ ok: false, error: "not_found" });
 
     // Two-way rule (2026-07-07): an under-18 session takes no bookings from
     // adult members - the youth board is hers alone, and vice versa.

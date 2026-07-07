@@ -199,6 +199,13 @@ describe("confirming", () => {
     expect(certs).toHaveLength(1);
     expect(certs[0].member_id).toBe(memberId);
 
+    // Spec E12 (Gate 4 round 4): issuing her certificate notifies her, on
+    // this path too - not only the fallback mutation.
+    const notifs = await t.run(async (ctx) => ctx.db.query("notifications").collect());
+    const certNotifs = notifs.filter((n) => n.type === "certificate_issued");
+    expect(certNotifs).toHaveLength(1);
+    expect(certNotifs[0].member_id).toBe(memberId);
+
     const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
     const confirmAudit = audits.filter((a) => a.action === "confirmGuardianConsent");
     expect(confirmAudit).toHaveLength(1);
@@ -220,6 +227,9 @@ describe("confirming", () => {
     expect(
       await t.run(async (ctx) => ctx.db.query("certificates").collect()),
     ).toHaveLength(1);
+    // One issuance, one notification - a repeat press stays silent.
+    const notifs = await t.run(async (ctx) => ctx.db.query("notifications").collect());
+    expect(notifs.filter((n) => n.type === "certificate_issued")).toHaveLength(1);
   });
 
   it("an unknown token is neutral: invalid, no member data, nothing changes", async () => {

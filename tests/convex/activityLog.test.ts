@@ -118,6 +118,13 @@ describe("join funnel (spec §B): the three steps write once, through the real m
     expect(next).toBe("active");
     expect(await rowsOfType(t, "email_confirmed")).toHaveLength(1);
 
+    // Spec E12 (Gate 4 round 4): the activation path's certificate issuance
+    // notifies her - the shared issuer carries the notification.
+    const notifs = await t.run(async (ctx) =>
+      ctx.db.query("notifications").collect(),
+    );
+    expect(notifs.filter((n) => n.type === "certificate_issued")).toHaveLength(1);
+
     // A second confirm attempt is a no-op (not at email_unverified anymore).
     await t.run(async (ctx) => {
       const member = await ctx.db

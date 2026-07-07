@@ -172,9 +172,16 @@ support tickets (email is the decided channel; Help page states it plainly); Act
 (§4.6, next recorded slice; DELIVERED 2026-07-07 as specs/activity-log.spec.md on this
 branch); PlacementLog; partner-facing portal.
 
-## Dated rulings (2026-07-07, Gate 4 rounds 2-3; flagged for Issam's ratification)
+## Dated rulings (2026-07-07, Gate 4 rounds 2-4; flagged for Issam's ratification)
 - **Youth lane is TWO-WAY:** adult lanes neither see nor book `audience_lane=youth`
   events. The editor copy promised it; the server now enforces it.
+- **restricted_unknown sees NO events at all** (round-4 required fix): an unconfirmed
+  age belongs in neither an adult session nor an under-18 one, so the lane is locked out
+  of event listing, detail and RSVP until the date of birth is confirmed (Stage 0 safety
+  default). The portal words the lock honestly and points at support@waiorg.me.
+- **Certificate-issued notification lives in the shared issuer** (round-4 required fix):
+  every issuance path - activation, migrated claim, guardian confirmation, the fallback
+  mutation - notifies exactly once, past the idempotency return.
 - **Audience immutability:** an event's `audience_lane` freezes once it leaves draft,
   and an opportunity's `audience` freezes once it opens - members book/apply under an
   eligibility promise, so changing the pool means cancel/close and create anew. Same-value

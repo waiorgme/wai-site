@@ -204,9 +204,18 @@ export function MyMembershipView({
                 <strong className={tookPart ? "done" : undefined}>
                   Take part once
                 </strong>
-                {lane === "youth"
-                  ? " - attend an event."
-                  : " - attend an event, or apply for an opportunity."}
+                {lane === "youth" ? (
+                  " - attend an event."
+                ) : restricted ? (
+                  <>
+                    {" - events and opportunities open once we confirm your"}
+                    {" date of birth. Email "}
+                    <a href="mailto:support@waiorg.me">support@waiorg.me</a>
+                    {" and we will sort it out together."}
+                  </>
+                ) : (
+                  " - attend an event, or apply for an opportunity."
+                )}
                 {tookPart ? <span className="sr-only"> Done.</span> : null}
               </span>
             </li>
@@ -235,7 +244,7 @@ export function MyMembershipView({
           <p className="pn-meta">
             {membership.standing === "active_member"
               ? restricted
-                ? "You're an Active Member - early event seats are open to you. Ambassador comes by invitation, when the recognition programme opens."
+                ? "You're an Active Member. Events, opportunities and the directory open once we confirm your date of birth - email support@waiorg.me and we will sort it out together. Ambassador comes by invitation, when the recognition programme opens."
                 : "You're an Active Member - the member directory and early event seats are open to you. Ambassador comes by invitation, when the recognition programme opens, for members who lift the community."
               : "You're among the community's recognised voices. There's nothing to chase here - thank you for lifting others."}
           </p>

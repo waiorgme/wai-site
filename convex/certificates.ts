@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
 import { issueMembershipCertificate } from "./lib/certificates";
-import { notify } from "./lib/notify";
 
 // What a certificate row exposes for display (no internal ids). verify_token is
 // the unguessable key the holder uses to build her own share/verify link; the
@@ -82,24 +81,10 @@ export const ensureMyMembershipCertificate = mutation({
     if (member === null || member.lifecycle_state !== "active") {
       return { ok: false };
     }
-    // Notify only on a FIRST issuance (issueMembershipCertificate is
-    // idempotent and returns the existing row on re-runs).
-    const existing = await ctx.db
-      .query("certificates")
-      .withIndex("by_member", (q) => q.eq("member_id", member._id))
-      .first();
+    // The shared issuer notifies on a FIRST issuance itself (it is
+    // idempotent: a re-run returns the existing row and stays silent).
     const certId = await issueMembershipCertificate(ctx, member);
     const cert = await ctx.db.get(certId);
-    if (existing === null && cert !== null) {
-      await notify(
-        ctx,
-        member._id,
-        "certificate_issued",
-        "Your membership certificate is ready",
-        "Your WAI-ME membership certificate has been issued. Open your dashboard to view and share it.",
-        "/portal",
-      );
-    }
     return { ok: true, verify_token: cert?.verify_token };
   },
 });

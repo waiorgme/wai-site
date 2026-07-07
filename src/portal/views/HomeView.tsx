@@ -417,12 +417,10 @@ function StandingCard({
           </p>
           {membership.standing === "member" ? (
             <p className="pn-meta">
-              {membership.qualifying_progress.profile_complete
-                ? restricted
-                  ? "Next step: take part once - attend an event - and you become an Active Member automatically. That unlocks early event seats."
-                  : "Next step: take part once - attend an event or apply for an opportunity - and you become an Active Member automatically. That unlocks the member directory and early event seats."
-                : restricted
-                  ? "Next step: finish your profile basics, then take part once - attend an event - and you become an Active Member automatically."
+              {restricted
+                ? "Next step: confirm your date of birth with us - write to support@waiorg.me. Events and opportunities open then, and taking part once makes you an Active Member automatically."
+                : membership.qualifying_progress.profile_complete
+                  ? "Next step: take part once - attend an event or apply for an opportunity - and you become an Active Member automatically. That unlocks the member directory and early event seats."
                   : "Next step: finish your profile basics, then take part once - attend an event or apply for an opportunity - and you become an Active Member automatically."}
             </p>
           ) : null}

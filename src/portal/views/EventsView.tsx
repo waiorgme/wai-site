@@ -19,8 +19,9 @@ export function EventsView({
   go,
 }: {
   lane: PortalLane;
-  // restricted_unknown accounts riding the full lane: adult sessions are
-  // server-hidden until the date of birth is confirmed.
+  // restricted_unknown accounts riding the full lane: ALL events are
+  // server-hidden until the date of birth is confirmed - an unconfirmed age
+  // belongs in neither an adult session nor an under-18 one.
   restricted: boolean;
   go: PortalGo;
 }) {
@@ -39,8 +40,9 @@ export function EventsView({
             : restricted
               ? (
                   <>
-                    Adult sessions open once we confirm your date of birth;
-                    sessions for members under 18 appear here. Write to{" "}
+                    Events open once we confirm your date of birth - until then
+                    we can't seat you in an adult session or an under-18 one.
+                    Write to{" "}
                     <a href="mailto:support@waiorg.me">support@waiorg.me</a> and
                     we will sort it out together.
                   </>

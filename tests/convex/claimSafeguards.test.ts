@@ -225,5 +225,12 @@ describe("certificate name integrity (full name required at claim)", () => {
     const certs = await t.run(async (ctx) => ctx.db.query("certificates").collect());
     expect(certs).toHaveLength(1);
     expect(certs[0].recipient_name).toBe("Amal Haddad");
+
+    // Spec E12 (Gate 4 round 4): the claim path's certificate issuance
+    // notifies her too - the shared issuer carries the notification.
+    const notifs = await t.run(async (ctx) =>
+      ctx.db.query("notifications").collect(),
+    );
+    expect(notifs.filter((n) => n.type === "certificate_issued")).toHaveLength(1);
   });
 });

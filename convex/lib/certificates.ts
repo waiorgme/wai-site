@@ -1,6 +1,7 @@
 import type { MutationCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { writeAudit } from "./audit";
+import { notify } from "./notify";
 
 // The membership certificate engine (MVP). Membership type auto-issues once,
 // idempotently, when a member reaches `active`. The render template + assets are
@@ -90,6 +91,19 @@ export const issueMembershipCertificate = async (
     after_summary: `cert=WAIME-MEM-${number} number=${number}`,
     source: "system",
   });
+
+  // Spec E12: certificate issued = notification, on EVERY issuance path
+  // (activation, migrated claim, guardian confirmation, the fallback
+  // mutation) - it lives here, past the idempotency return, so it fires
+  // exactly once per real issuance (Gate 4 round 4).
+  await notify(
+    ctx,
+    member._id,
+    "certificate_issued",
+    "Your membership certificate is ready",
+    "Your WAI-ME membership certificate has been issued. Open your dashboard to view and share it.",
+    "/portal",
+  );
 
   return certId;
 };
