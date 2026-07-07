@@ -391,9 +391,14 @@ export const rsvp = mutation({
   },
 });
 
-// When a registered seat frees, the EARLIEST waitlisted member (by created_at)
-// auto-promotes: audited and notified (PRD §7.5 acceptance). Shared by the
-// member cancel path; runs only for a live, upcoming, published event.
+// When a registered seat frees, the earliest ELIGIBLE waitlisted member (by
+// created_at) auto-promotes: audited and notified (PRD §7.5 acceptance).
+// Shared by the member cancel path; runs only for a live, upcoming event.
+// Gate 4 round 5: promotion re-checks everything a direct RSVP would -
+// a real free seat (capacity may have been edited down since she queued),
+// active lifecycle, lane visibility, and Active Member standing while a
+// priority window is open. Ineligible rows are SKIPPED, never cancelled: a
+// suspended member reinstated tomorrow keeps her place in line.
 const promoteEarliestWaitlisted = async (
   ctx: MutationCtx,
   event: Doc<"events">,
@@ -405,39 +410,68 @@ const promoteEarliestWaitlisted = async (
   ) {
     return;
   }
+  // The freed seat may no longer exist (a live capacity edit shrinks the
+  // room): recount before filling anything.
+  if (event.capacity !== undefined) {
+    const registered = await countByState(ctx, event._id, "registered");
+    if (registered >= event.capacity) {
+      return;
+    }
+  }
   const waitlisted = await ctx.db
     .query("eventRegistrations")
     .withIndex("by_event_state", (q) =>
       q.eq("event_id", event._id).eq("state", "waitlisted"),
     )
     .collect();
-  if (waitlisted.length === 0) {
+  const inPriorityWindow =
+    event.priority_window_start !== undefined &&
+    event.priority_window_end !== undefined &&
+    now >= event.priority_window_start &&
+    now < event.priority_window_end;
+  const ordered = [...waitlisted].sort((a, b) => a.created_at - b.created_at);
+  for (const row of ordered) {
+    const candidate = await ctx.db.get(row.member_id);
+    const eligible =
+      candidate !== null &&
+      candidate.lifecycle_state === "active" &&
+      laneSeesEvent(candidate.member_lane, event.audience_lane) &&
+      (!inPriorityWindow || currentStanding(candidate) !== "member");
+    if (!eligible) {
+      // PII-free trail so a skipped promotion is always explainable.
+      await writeAudit(ctx, {
+        actor: "system",
+        role: "system",
+        action: "promoteFromWaitlist.skipped",
+        target_id: row.member_id,
+        after_summary: `event=${event._id} waitlisted member currently ineligible; kept in line`,
+        source: "system",
+      });
+      continue;
+    }
+    await ctx.db.patch(row._id, {
+      state: "registered",
+      promoted_from_waitlist_at: now,
+      updated_at: now,
+    });
+    await writeAudit(ctx, {
+      actor: "system",
+      role: "system",
+      action: "promoteFromWaitlist",
+      target_id: row.member_id,
+      after_summary: `event=${event._id} waitlisted -> registered`,
+      source: "system",
+    });
+    await notify(
+      ctx,
+      row.member_id,
+      "event_waitlist_promoted",
+      `A seat opened: ${event.title}`,
+      `Good news. A seat opened up and you're now registered for ${event.title} on ${eventDateLabel(event.starts_at)}. Open the session in Events to see your pass.`,
+      "/portal#events",
+    );
     return;
   }
-  const next = waitlisted.reduce((a, b) =>
-    b.created_at < a.created_at ? b : a,
-  );
-  await ctx.db.patch(next._id, {
-    state: "registered",
-    promoted_from_waitlist_at: now,
-    updated_at: now,
-  });
-  await writeAudit(ctx, {
-    actor: "system",
-    role: "system",
-    action: "promoteFromWaitlist",
-    target_id: next.member_id,
-    after_summary: `event=${event._id} waitlisted -> registered`,
-    source: "system",
-  });
-  await notify(
-    ctx,
-    next.member_id,
-    "event_waitlist_promoted",
-    `A seat opened: ${event.title}`,
-    `Good news. A seat opened up and you're now registered for ${event.title} on ${eventDateLabel(event.starts_at)}. Open the session in Events to see your pass.`,
-    "/portal#events",
-  );
 };
 
 type CancelRsvpResult =

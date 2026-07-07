@@ -64,6 +64,8 @@ const PLAIN_ACTION_WORDS: Record<string, string> = {
   "matchClaim.suppressedMinor": "A claim was held: under-18 record",
   postponeEvent: "Postponed an event",
   promoteFromWaitlist: "Moved a member off the waitlist",
+  "promoteFromWaitlist.skipped":
+    "A waitlisted member was passed over (currently ineligible), kept in line",
   publishEvent: "Published an event",
   publishOpportunity: "Published an opportunity",
   raiseCounterFloor: "Raised the membership-number floor",

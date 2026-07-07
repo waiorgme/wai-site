@@ -184,7 +184,8 @@ type UpsertResult =
         | "not_found"
         | "validation"
         | "invalid_state"
-        | "lane_locked";
+        | "lane_locked"
+        | "capacity_below_registered";
     };
 
 // Create (draft) or edit an event. Edits to published/postponed events are
@@ -337,6 +338,20 @@ export const upsertEvent = mutation({
     // stay free.
     if (event.state !== "draft" && args.audience_lane !== event.audience_lane) {
       return { ok: false, error: "lane_locked" };
+    }
+    // A live room cannot shrink below the seats already confirmed (Gate 4
+    // round 5): registered members hold real seats, and the waitlist
+    // promoter must never be handed an overbooked event.
+    if (event.state !== "draft" && args.capacity !== undefined) {
+      const registered = await ctx.db
+        .query("eventRegistrations")
+        .withIndex("by_event_state", (q) =>
+          q.eq("event_id", event._id).eq("state", "registered"),
+        )
+        .collect();
+      if (args.capacity < registered.length) {
+        return { ok: false, error: "capacity_below_registered" };
+      }
     }
     await ctx.db.patch(event._id, fields);
     await writeAudit(ctx, {

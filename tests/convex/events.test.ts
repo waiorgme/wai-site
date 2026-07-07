@@ -1082,3 +1082,119 @@ describe("audience lane freezes once live (Gate 4 round 3)", () => {
     ).toBe(true);
   });
 });
+
+describe("waitlist promotion integrity (Gate 4 round 5)", () => {
+  it("a live capacity edit below the registered count is refused; at or above passes", async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await signIn(t, ADMIN_EMAIL);
+    const created = await asAdmin.mutation(
+      api.admin.events.upsertEvent,
+      upsertArgs({ capacity: 2 }),
+    );
+    const eventId = (created as { ok: true; eventId: Id<"events"> }).eventId;
+    await asAdmin.mutation(api.admin.events.publishEvent, { eventId });
+    const asA = await signIn(t, "cap-a@example.com");
+    const asB = await signIn(t, "cap-b@example.com");
+    await asA.mutation(api.events.rsvp, { eventId });
+    await asB.mutation(api.events.rsvp, { eventId });
+
+    expect(
+      await asAdmin.mutation(
+        api.admin.events.upsertEvent,
+        upsertArgs({ eventId, capacity: 1 }),
+      ),
+    ).toEqual({ ok: false, error: "capacity_below_registered" });
+    expect(
+      (
+        await asAdmin.mutation(
+          api.admin.events.upsertEvent,
+          upsertArgs({ eventId, capacity: 3 }),
+        )
+      ).ok,
+    ).toBe(true);
+  });
+
+  it("promotion recounts the room: a shrunken capacity never overbooks", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t, { capacity: 2 });
+    const asA = await signIn(t, "ob-a@example.com");
+    const asB = await signIn(t, "ob-b@example.com");
+    const asC = await signIn(t, "ob-c@example.com");
+    await asA.mutation(api.events.rsvp, { eventId }); // registered
+    await asB.mutation(api.events.rsvp, { eventId }); // registered
+    await asC.mutation(api.events.rsvp, { eventId }); // waitlisted
+    // Simulate a stale shrink that slipped past the admin guard.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(eventId, { capacity: 1 });
+    });
+    await asA.mutation(api.events.cancelMyRsvp, { eventId });
+    // 1 registered remains against capacity 1: no seat is actually free,
+    // so no one is promoted.
+    const regs = await regsForEvent(t, eventId);
+    expect(regs.filter((r) => r.state === "registered")).toHaveLength(1);
+    expect(regs.filter((r) => r.state === "waitlisted")).toHaveLength(1);
+  });
+
+  it("an ineligible waitlisted member is skipped (kept in line, audited) and the next eligible one promotes", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t, { capacity: 1 });
+    const asA = await signIn(t, "el-a@example.com");
+    const asB = await signIn(t, "el-b@example.com");
+    const asC = await signIn(t, "el-c@example.com");
+    await asA.mutation(api.events.rsvp, { eventId }); // registered
+    await asB.mutation(api.events.rsvp, { eventId }); // waitlisted first
+    await asC.mutation(api.events.rsvp, { eventId }); // waitlisted second
+    // B is suspended before a seat frees.
+    const memberB = await memberByEmail(t, "el-b@example.com");
+    await t.run(async (ctx) => {
+      await ctx.db.patch(memberB!._id, { lifecycle_state: "suspended" as const });
+    });
+    await asA.mutation(api.events.cancelMyRsvp, { eventId });
+
+    const regs = await regsForEvent(t, eventId);
+    const byMember = new Map(regs.map((r) => [r.member_id, r.state]));
+    const memberC = await memberByEmail(t, "el-c@example.com");
+    expect(byMember.get(memberB!._id)).toBe("waitlisted"); // kept in line
+    expect(byMember.get(memberC!._id)).toBe("registered"); // promoted past her
+    const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+    expect(
+      audits.some((a) => a.action === "promoteFromWaitlist.skipped"),
+    ).toBe(true);
+  });
+
+  it("during an open priority window a plain member is not promoted into the freed seat", async () => {
+    const t = convexTest(schema, modules);
+    const eventId = await insertEvent(t, { capacity: 1 });
+    const asA = await signIn(t, "pw-a@example.com");
+    const asB = await signIn(t, "pw-b@example.com"); // plain member
+    await asA.mutation(api.events.rsvp, { eventId }); // registered
+    await asB.mutation(api.events.rsvp, { eventId }); // waitlisted (no window yet)
+    // The window opens after she queued.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(eventId, {
+        priority_window_start: Date.now() - HOUR,
+        priority_window_end: Date.now() + HOUR,
+      });
+    });
+    await asA.mutation(api.events.cancelMyRsvp, { eventId });
+
+    const regs = await regsForEvent(t, eventId);
+    expect(regs.filter((r) => r.state === "registered")).toHaveLength(0);
+    expect(regs.filter((r) => r.state === "waitlisted")).toHaveLength(1);
+    const audits = await t.run(async (ctx) => ctx.db.query("auditLog").collect());
+    expect(
+      audits.some((a) => a.action === "promoteFromWaitlist.skipped"),
+    ).toBe(true);
+
+    // An Active Member in the same queue takes the seat instead.
+    const asActive = await signIn(t, "pw-active@example.com", {
+      standing: "active_member",
+    });
+    await asActive.mutation(api.events.rsvp, { eventId });
+    const after = await regsForEvent(t, eventId);
+    const activeMember = await memberByEmail(t, "pw-active@example.com");
+    expect(
+      after.find((r) => r.member_id === activeMember!._id)?.state,
+    ).toBe("registered");
+  });
+});
