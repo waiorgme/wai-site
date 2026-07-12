@@ -1,11 +1,13 @@
 ---
 import Eyebrow from '../primitives/Eyebrow.astro';
 
-// Leadership: the board. Cards render name + title + LinkedIn + photo. The photos are REAL
-// board members but harvested from the previous live site, so they are DATED: a staging
-// allowance (see STAGING-CHECKLIST.md SA-ABOUT-BOARD-PHOTOS), flagged on the page and to be
-// replaced with refreshed, consented portraits before launch. Monogram stays as fallback if
-// an image fails. Bios remain a pre-launch fill slot (no invented bios).
+// Leadership: the board. Portrait-led cards (wow-elevation C5): photo on top in a 3:4
+// crop area, name + role below, LinkedIn demoted to a small icon link (aria-label keeps
+// it accessible). The photos are REAL board members but harvested from the previous live
+// site, so they are DATED: a staging allowance (see STAGING-CHECKLIST.md
+// SA-ABOUT-BOARD-PHOTOS), flagged on the page and to be replaced with refreshed,
+// consented portraits before launch. Monogram stays as fallback if an image fails.
+// Bios remain a pre-launch fill slot (no invented bios).
 const board = [
   { name: 'Ms. Mervat Sultan', title: 'President', linkedin: 'https://www.linkedin.com/in/mervat-sultan-61950639/', photo: '/assets/team/mervat.webp' },
   { name: 'Ms. Dina Bel Jaflah', title: 'Vice President', linkedin: 'https://www.linkedin.com/in/dina-beljaflah-1951082a/', photo: '/assets/team/dina.webp' },
@@ -16,8 +18,10 @@ const board = [
 ];
 
 // Ambassadors: STAGING TEST DATA ONLY (see STAGING-CHECKLIST.md SA-ABOUT-AMBASSADORS).
-// These are illustrative sample cards so the team can see the section layout. They are NOT
-// real members. The vault has no launch Ambassadors yet; Mervat picks them pre-launch, then
+// Collapsed to one quiet single-strip presentation (wow-elevation C5): the three sample
+// entries render compactly inside one dashed strip, names/roles verbatim; the repeated
+// identical placeholder line is not duplicated on screen. They are NOT real members.
+// The vault has no launch Ambassadors yet; Mervat picks them pre-launch, then
 // this test data is replaced with vault-sourced names, photos, and one-line bios.
 const ambassadorsTest = [
   { name: 'Sample Ambassador One', role: 'Community Lead, Sample City', line: 'Sample one-line description. Real Ambassador bio to follow.' },
@@ -42,14 +46,13 @@ const ambassadorsTest = [
 
           <div class="avatar" aria-hidden="true">
             <span class="monogram">{m.name.replace(/^(Ms\.|Mr\.|Eng\.|Dr\.|Captain)\s+/, '').charAt(0)}</span>
-            <img class="portrait" src={m.photo} alt={`${m.name}, ${m.title} of WAI-ME`} loading="lazy" decoding="async" width="60" height="60" />
+            <img class="portrait" src={m.photo} alt={`${m.name}, ${m.title} of WAI-ME`} loading="lazy" decoding="async" width="480" height="640" />
           </div>
           <div class="info">
             <h3 class="name">{m.name}</h3>
             <div class="role">{m.title}</div>
             <a class="li" href={m.linkedin} target="_blank" rel="noopener noreferrer" aria-label={`${m.name} on LinkedIn`}>
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
-              <span>LinkedIn</span>
             </a>
           </div>
         </li>
@@ -63,21 +66,22 @@ const ambassadorsTest = [
         <p class="intro">Beyond the board, WAI-ME is carried by its Ambassadors: active members across the region who help run the community, host and mentor, and open the door for the women coming up behind them. Ambassadors are invited from within the community as members step forward to help.</p>
         <p class="staging-mark" role="note">Sample cards below - real Ambassadors to follow.</p>
       </div>
-      <ul class="amb-grid" role="list">
-        {ambassadorsTest.map((a, i) => (
-          <li class="amb-card" style={`--i:${i % 3}`}>
-            <span class="amb-tag">Sample</span>
-            <div class="avatar" aria-hidden="true">
-              <span class="monogram">{a.name.charAt(0)}</span>
-            </div>
-            <div class="info">
-              <h3 class="name">{a.name}</h3>
-              <div class="role">{a.role}</div>
-              <p class="amb-line">{a.line}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div class="amb-strip reveal">
+        <span class="amb-tag">Sample</span>
+        <ul class="amb-list" role="list">
+          {ambassadorsTest.map((a) => (
+            <li class="amb-entry">
+              <span class="avatar" aria-hidden="true">
+                <span class="monogram">{a.name.charAt(0)}</span>
+              </span>
+              <span class="info">
+                <span class="name">{a.name}</span>
+                <span class="role">{a.role}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   </div>
 </section>

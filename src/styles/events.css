@@ -65,7 +65,7 @@
 }
 .recent-grid{
   list-style:none; margin:0; padding:0;
-  display:grid; grid-template-columns:repeat(3,1fr); gap:18px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:stretch;
 }
 .recent-card{
   position:relative; display:flex; flex-direction:column; gap:14px;
@@ -75,15 +75,19 @@
   transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
 }
 @media (hover:hover){ .recent-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+/* the year carries the card as a large display numeral (wow-elevation C4), so a
+   highlight whose body copy is not yet on the record still reads composed */
 .recent-card .when{
-  font-family:var(--mono); font-weight:700; font-variant-numeric:tabular-nums;
-  font-size:13px; letter-spacing:0.16em; color:var(--sky-core);
+  font-family:var(--display); font-weight:700; font-variant-numeric:tabular-nums;
+  font-size:clamp(30px,3.4vw,44px); letter-spacing:-0.03em; line-height:1;
+  color:var(--sky-core);
 }
 .recent-card h3{
   font-family:var(--display); font-weight:700; letter-spacing:-0.015em;
   font-size:clamp(20px,2.3vw,26px); color:var(--paper-ink); line-height:1.12;
+  margin-block-end:auto;
 }
-.recent-card p{ font-size:clamp(15px,1.7vw,17px); line-height:1.6; color:var(--paper-mut); }
+.recent-card p{ font-size:clamp(15px,1.7vw,17px); line-height:1.6; color:var(--paper-mut); margin-block-start:auto; }
 .recent-card p .fig{ font-family:var(--mono); font-weight:700; font-variant-numeric:tabular-nums; color:var(--paper-ink); }
 
 /* ============================================================
@@ -113,10 +117,12 @@
   border-block-start:1px solid var(--hair-l);
 }
 .tl-item:last-child{ border-block-end:1px solid var(--hair-l); }
+/* Years as large display numerals (wow-elevation C4): Bricolage via --display,
+   clamped so year ranges ("2015 to 2016") wrap cleanly inside their column. */
 .tl-year{
-  font-family:var(--mono); font-weight:700; font-variant-numeric:tabular-nums;
-  font-size:clamp(22px,3vw,40px); letter-spacing:-0.01em;
-  color:var(--paper-ink); line-height:1; white-space:nowrap;
+  font-family:var(--display); font-weight:700; font-variant-numeric:tabular-nums;
+  font-size:clamp(34px,4.6vw,64px); letter-spacing:-0.03em;
+  color:var(--paper-ink); line-height:1.04;
 }
 .tl-text{
   font-family:var(--display); font-weight:500;

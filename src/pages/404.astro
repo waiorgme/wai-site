@@ -34,6 +34,12 @@ import Footer from '../components/home/Footer.astro';
 
   <main id="main">
     <div class="notfound">
+      {/* The diverted flight path (wow-elevation C7): climbs, kinks off course,
+          then recovers. Decorative only; .flightline/.draw come from home.css and
+          home-motion.js draws it in (reduced motion renders it fully drawn). */}
+      <svg class="nf-route" viewBox="0 0 1440 620" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <path class="flightline draw" d="M-40 520 C 240 484, 440 420, 620 330 S 860 216, 940 258 C 1020 300, 1120 210, 1230 128 S 1420 16, 1500 -12" pathLength="1" stroke-opacity="0.5"/>
+      </svg>
       <p class="code">404</p>
       <h1>Off the flight path</h1>
       <p>
@@ -42,13 +48,30 @@ import Footer from '../components/home/Footer.astro';
       </p>
       <p class="ar-line" lang="ar">هذه الصفحة غير موجودة. عودي إلى الصفحة الرئيسية.</p>
       <div class="links">
-        <a href="/">Home</a>
-        <a href="/join">Join WAI-ME</a>
-        <a href="/contact">Contact</a>
-        <a href="/ar/" lang="ar">الصفحة الرئيسية بالعربية</a>
+        <a class="btn" href="/">Home</a>
+        <a class="btn ghost" href="/join">Join WAI-ME</a>
+        <a class="btn ghost" href="/contact">Contact</a>
+        <a class="btn ghost" href="/ar/" lang="ar">الصفحة الرئيسية بالعربية</a>
       </div>
     </div>
   </main>
 
   <Footer />
+
+  <script src="../scripts/home-motion.js"></script>
 </Base>
+
+<style>
+  /* wow-elevation C7, local to this page (legal.css and home.css stay untouched):
+     anchor the diverted route behind the hero copy and let the recovery links
+     wear the shared pill button language from home.css. */
+  .notfound{ position:relative; overflow:hidden; isolation:isolate; }
+  .nf-route{
+    position:absolute; inset:0; inline-size:100%; block-size:100%;
+    z-index:-1; pointer-events:none; opacity:.55;
+  }
+  /* undo the legal.css underlined-link treatment on the pills; the arrow-less
+     pill keeps symmetric padding */
+  .notfound .links{ gap:14px; }
+  .notfound .links a.btn{ text-decoration:none; color:var(--fg); padding-inline:24px; }
+</style>

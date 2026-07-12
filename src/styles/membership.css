@@ -4,7 +4,7 @@
    Membership-specific sections live here; shared bits (eyebrow, buttons,
    flight-data strip, join band, reveal, line-mask) come from home.css.
    Locks: real logo asset only; gold is recognition-only (here: solely the
-   Ambassador + Leadership Circle rungs); every dash is a regular hyphen.
+   Leadership Circle rung at the top of the climb); every dash is a regular hyphen.
    ===================================================================== */
 
 /* gradient-clipped accent must never disappear */
@@ -58,14 +58,22 @@
 .mbr-who .head{ margin-block-end:18px; }
 .mbr-who h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block-start:18px; max-width:16ch; }
 .mbr-who .intro{ max-width:62ch; color:var(--paper-mut); font-size:clamp(16px,1.9vw,20px); margin-block-end:46px; }
-.who-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.who-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:stretch; }
 .who-card{
+  display:flex; flex-direction:column;
   border-radius:var(--r-card); padding:clamp(26px,3vw,36px);
   background:#fff; border:1px solid var(--hair-l);
   box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
   transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
 }
 @media (hover:hover){ .who-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+/* persona roundel: same roundel language as the home pillars (sky on light) */
+.who-card .roundel{
+  inline-size:48px; block-size:48px; border-radius:50%;
+  display:grid; place-items:center; color:var(--sky-core);
+  background:rgba(1,139,225,.1); border:1px solid rgba(1,139,225,.22); margin-block-end:22px;
+}
+.who-card .roundel svg{ inline-size:24px; block-size:24px; }
 .who-card p{ font-size:clamp(16px,1.85vw,18px); line-height:1.62; color:var(--paper-mut); }
 
 /* ============================================================
@@ -74,25 +82,30 @@
 .mbr-get{ background:var(--paper-2); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
 .mbr-get .head{ margin-block-end:46px; }
 .mbr-get h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block-start:18px; max-width:16ch; }
-.get-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.get-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:stretch; }
 .get-card{
-  position:relative; border-radius:var(--r-card); padding:30px;
+  position:relative; display:flex; flex-direction:column;
+  border-radius:var(--r-card); padding:30px;
   background:#fff; border:1px solid var(--hair-l);
   box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
   transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
 }
 @media (hover:hover){ .get-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
+/* numbered roundel: same circular language as the join steps, sky on light */
 .get-card .num{
-  display:block; font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.14em;
-  color:var(--sky-core); margin-block-end:16px;
+  display:grid; place-items:center; inline-size:38px; block-size:38px; border-radius:50%;
+  font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.08em;
+  color:var(--sky-core); background:rgba(1,139,225,.1); border:1px solid rgba(1,139,225,.22);
+  margin-block-end:16px;
 }
 .get-card p{ font-size:16px; color:var(--paper-mut); line-height:1.6; }
 
 /* ============================================================
-   4 · HOW RECOGNITION WORKS  (PAPER, explainer paragraph + ladder)
+   4 · HOW RECOGNITION WORKS  (PAPER, "The Climb" ladder)
    Verbatim paragraph, then the four level names each with their vault-sourced
-   "what it unlocks" hint line. Gold (recognition-only) on the Ambassador and
-   Leadership Circle rungs only. No point totals or qualification mechanics.
+   "what it unlocks" hint line, stepping upward along a drawn flight path
+   (wow-elevation C1). Gold (recognition-only) on the Leadership Circle rung
+   only, at the top. No point totals or qualification mechanics.
    ============================================================ */
 .mbr-recognition{ background:var(--paper); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
 .mbr-recognition .head{ margin-block-end:24px; }
@@ -104,9 +117,22 @@
   color:var(--paper-ink);
 }
 
+/* The Climb: the ladder wrapper carries the drawn flight path behind the rungs
+   (same .flightline/.draw language as the heroes, stroke var(--sky)); headroom
+   above and below absorbs the stepped offsets so nothing overlaps neighbours. */
+.ladder-climb{
+  position:relative; margin-block-start:clamp(40px,5vw,64px);
+  padding-block:clamp(20px,3vw,36px) clamp(40px,5vw,66px);
+}
+.ladder-route{
+  position:absolute; inset:0; inline-size:100%; block-size:100%;
+  z-index:0; pointer-events:none; opacity:.7;
+}
+[dir="rtl"] .ladder-route{ transform:scaleX(-1); }
 .ladder{
-  list-style:none; margin-block-start:clamp(40px,5vw,64px); padding:0;
-  display:grid; grid-template-columns:repeat(4,1fr); gap:14px;
+  position:relative; z-index:1;
+  list-style:none; margin:0; padding:0;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:stretch;
 }
 .rung{
   position:relative; display:flex; flex-direction:column; gap:12px;
@@ -114,8 +140,8 @@
   background:#fff; border:1px solid var(--hair-l);
   box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
 }
-/* visual climb: each rung sits a little higher than the last */
-.rung{ transform:translateY(calc((3 - var(--i)) * 10px)); }
+/* visual climb: each rung steps upward along the flight path */
+.rung{ transform:translateY(calc((3 - var(--i)) * 22px)); }
 .rung .rung-hint{
   font-size:14px; line-height:1.5; color:var(--paper-mut);
 }
@@ -167,6 +193,8 @@
   .get-grid{ grid-template-columns:1fr 1fr; }
   .steps{ grid-template-columns:1fr; }
   .ladder{ grid-template-columns:1fr 1fr; }
+  .ladder-climb{ padding-block:0; }
+  .ladder-route{ display:none; }
   .rung{ transform:none; }
 }
 @media (max-width:880px){
@@ -177,6 +205,5 @@
   .get-grid{ grid-template-columns:1fr; }
   .ladder{ grid-template-columns:1fr; }
 }
-@media (prefers-reduced-motion: reduce){
-  .rung{ transform:none; }
-}
+/* The rung offsets are a static arrangement, not motion, so they hold under
+   prefers-reduced-motion (the route line renders fully drawn there via home.css). */

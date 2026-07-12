@@ -2,10 +2,15 @@
 // Contact hero: compact dark opener. Heading + intro are VERBATIM from the
 // vault "# 7. Contact" section. No invented wrapper copy (no eyebrow). The dark
 // band gives the shared floating glass nav its contrast at the top of the page,
-// matching the established Membership pattern.
+// matching the established Membership pattern. The flight-path motif fills the
+// hero's inline-end half (wow-elevation C6): decorative, same .flightline/.draw
+// language as the other heroes; home-motion.js draws it in.
 ---
 <section class="ct-hero" aria-labelledby="ct-h">
   <span class="glow-orb" aria-hidden="true"></span>
+  <svg class="flight-svg" viewBox="0 0 720 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="flightline draw" d="M-20 500 C 180 460, 320 360, 460 240 S 660 60, 750 6" pathLength="1" stroke-opacity="0.55"/>
+  </svg>
   <div class="inner">
     <h1 id="ct-h" class="reveal">Talk to us.</h1>
     <div class="lede reveal" style="--i:1">

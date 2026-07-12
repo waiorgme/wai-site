@@ -78,8 +78,10 @@
   padding-block:clamp(72px,10vw,130px);
   border-radius:40px 40px 0 0; margin-block-start:-20px;
 }
+/* The 2013 archive photos are promoted (wow-elevation C5): the media column
+   now leads the split so the history reads as evidence, not a sidebar. */
 .about-story .story-grid{
-  display:grid; grid-template-columns:1.05fr 0.95fr; gap:clamp(32px,5vw,72px); align-items:start;
+  display:grid; grid-template-columns:0.9fr 1.1fr; gap:clamp(32px,5vw,72px); align-items:start;
 }
 .about-story .prose{ max-width:58ch; display:flex; flex-direction:column; gap:22px; }
 .about-story .prose p{ font-size:clamp(17px,2vw,21px); line-height:1.66; color:var(--paper-ink); }
@@ -142,10 +144,13 @@
 .leadership h2{ font-size:clamp(34px,5.4vw,68px); color:var(--paper-ink); margin-block:18px 18px; }
 .leadership .intro{ color:var(--paper-mut); font-size:clamp(16px,1.8vw,19px); max-width:62ch; }
 
-.board-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+/* Portrait-led board cards (wow-elevation C5): the photo leads in a 3:4 crop
+   area at the top of the card, name + role below, LinkedIn demoted to a small
+   icon link (its aria-label carries the name). */
+.board-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:stretch; }
 .board-card{
-  display:flex; gap:18px; align-items:center;
-  border-radius:var(--r-card); padding:24px;
+  display:flex; flex-direction:column;
+  border-radius:var(--r-card); padding:0; overflow:hidden;
   background:#fff; border:1px solid var(--hair-l);
   box-shadow:0 30px 60px -48px rgba(15,35,63,.5);
   transition:transform .5s var(--ease-out), box-shadow .5s var(--ease-out);
@@ -153,27 +158,30 @@
 @media (hover:hover){ .board-card:hover{ transform:translateY(-6px); box-shadow:0 40px 70px -42px rgba(15,35,63,.55); } }
 .board-card .avatar{
   position:relative; overflow:hidden;
-  flex:0 0 auto; inline-size:60px; block-size:60px; border-radius:50%;
+  inline-size:100%; aspect-ratio:3 / 4;
   display:grid; place-items:center;
   background:
     radial-gradient(120% 120% at 30% 20%, rgba(42,164,239,.22), transparent 60%),
     linear-gradient(160deg,#0c2a4d,#091a36);
-  color:#fff; border:1px solid var(--hair-l);
+  color:#fff; border-block-end:1px solid var(--hair-l);
 }
-.board-card .avatar .monogram{ font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:-0.02em; }
+.board-card .avatar .monogram{ font-family:var(--display); font-weight:700; font-size:64px; letter-spacing:-0.02em; }
 /* Real (but dated) board portrait sits over the monogram fallback. See SA-ABOUT-BOARD-PHOTOS. */
 .board-card .avatar .portrait{ position:absolute; inset:0; inline-size:100%; block-size:100%; object-fit:cover; }
-.board-card .info{ min-width:0; }
-.board-card .name{ font-size:19px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.15; }
+.board-card .info{ min-width:0; position:relative; padding:20px 22px 22px; }
+.board-card .name{ font-size:20px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.15;
+  padding-inline-end:46px; /* clears the corner icon link */ }
 .board-card .role{ font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
-  color:var(--paper-mut); margin-block:8px 12px; }
+  color:var(--paper-mut); margin-block-start:8px; }
 .board-card .li{
-  display:inline-flex; align-items:center; gap:7px;
-  font-size:13px; font-weight:600; color:var(--sky-core);
-  transition:color .25s var(--ease-out);
+  position:absolute; inset-block-start:18px; inset-inline-end:18px;
+  display:grid; place-items:center;
+  inline-size:36px; block-size:36px; border-radius:50%;
+  color:var(--sky-core); background:rgba(1,139,225,.08); border:1px solid rgba(1,139,225,.22);
+  transition:color .25s var(--ease-out), background .25s var(--ease-out);
 }
 .board-card .li svg{ inline-size:16px; block-size:16px; }
-@media (hover:hover){ .board-card .li:hover{ color:var(--sky-deep); } }
+@media (hover:hover){ .board-card .li:hover{ color:#fff; background:var(--sky-core); } }
 
 /* Ambassadors: STAGING TEST DATA (see STAGING-CHECKLIST.md SA-ABOUT-AMBASSADORS).
    Mirrors the Leadership head (eyebrow + heading + intro) so the two read as siblings. */
@@ -188,33 +196,39 @@
   color:var(--paper-mut); background:rgba(15,35,63,.06); border:1px dashed rgba(15,35,63,.3);
   padding:7px 13px; border-radius:var(--r-chip); margin-block-end:20px;
 }
-.amb-grid{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
-.amb-card{
-  position:relative; display:flex; gap:18px; align-items:center;
-  border-radius:var(--r-card); padding:24px;
+/* One quiet single strip (wow-elevation C5): the three sample entries share a
+   single dashed placeholder card instead of three loud ones. */
+.amb-strip{
+  position:relative;
+  display:flex; align-items:center;
+  border-radius:var(--r-card); padding:clamp(20px,2.6vw,28px) clamp(22px,3vw,32px);
   background:#fff; border:1px dashed rgba(15,35,63,.28);
   box-shadow:0 30px 60px -50px rgba(15,35,63,.5);
 }
-.amb-card .amb-tag{
+.amb-strip .amb-tag{
   position:absolute; inset-block-start:14px; inset-inline-end:14px;
   font-family:var(--mono); font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase;
   color:var(--paper-mut); background:rgba(15,35,63,.06); border:1px solid rgba(15,35,63,.22);
   padding:4px 9px; border-radius:var(--r-chip);
 }
-.amb-card .avatar{
-  flex:0 0 auto; inline-size:60px; block-size:60px; border-radius:50%;
+.amb-list{
+  list-style:none; margin:0; padding:0;
+  display:flex; flex-wrap:wrap; gap:16px clamp(28px,4vw,56px);
+}
+.amb-entry{ display:flex; gap:14px; align-items:center; min-width:0; }
+.amb-entry .avatar{
+  flex:0 0 auto; inline-size:44px; block-size:44px; border-radius:50%;
   display:grid; place-items:center;
   background:
     radial-gradient(120% 120% at 30% 20%, rgba(42,164,239,.22), transparent 60%),
     linear-gradient(160deg,#0c2a4d,#091a36);
   color:#fff; border:1px solid var(--hair-l);
 }
-.amb-card .avatar .monogram{ font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:-0.02em; }
-.amb-card .info{ min-width:0; }
-.amb-card .name{ font-size:18px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.15; }
-.amb-card .role{ font-family:var(--mono); font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase;
-  color:var(--paper-mut); margin-block:8px 10px; }
-.amb-card .amb-line{ font-size:14px; color:var(--paper-mut); line-height:1.55; }
+.amb-entry .avatar .monogram{ font-family:var(--display); font-weight:700; font-size:18px; letter-spacing:-0.02em; }
+.amb-entry .info{ min-width:0; display:flex; flex-direction:column; }
+.amb-entry .name{ font-family:var(--display); font-weight:700; font-size:16px; color:var(--paper-ink); letter-spacing:-0.01em; line-height:1.2; }
+.amb-entry .role{ font-family:var(--mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--paper-mut); margin-block-start:5px; }
 
 /* ============================================================
    5 · IMPACT  (PAPER, pillar-card visual weight)
@@ -246,5 +260,7 @@
 @media (max-width:680px){
   :root{ --gutter:20px; }
   .board-grid{ grid-template-columns:1fr; }
+  /* full-width single column: square crop keeps the portrait from towering */
+  .board-card .avatar{ aspect-ratio:1 / 1; }
   .impact-grid{ grid-template-columns:1fr; }
 }

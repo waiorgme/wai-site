@@ -8,12 +8,12 @@ import Eyebrow from '../primitives/Eyebrow.astro';
 // point totals, thresholds, or "how you reach it" mechanics added. This satisfies the
 // plain-language lock (01.02 Recognition Thresholds (Decision), line 224): every place
 // the level names appear as labels, a jargon-free on-screen explanation appears with them.
-// Lock 2 (gold = recognition only): gold is applied SOLELY to Ambassador and Leadership
-// Circle, which are genuine recognition tiers; Member and Active Member stay paper/ink.
+// Lock 2 (gold = recognition only): gold is applied SOLELY to Leadership Circle, the
+// top of the climb and the page's one recognition moment; the other rungs stay paper/ink.
 const levels = [
   { name: 'Member', hint: 'Receives all the core value.', gold: false },
   { name: 'Active Member', hint: 'Directory visibility, opportunity eligibility, and priority RSVP to workshops.', gold: false },
-  { name: 'Ambassador', hint: 'A badge, a voice, early access, and the right to vouch for others.', gold: true },
+  { name: 'Ambassador', hint: 'A badge, a voice, early access, and the right to vouch for others.', gold: false },
   { name: 'Leadership Circle', hint: 'Top recognition, an advisory role, and anchoring events.', gold: true },
 ];
 ---
@@ -25,13 +25,20 @@ const levels = [
     </div>
     <p class="rec-body reveal" style="--i:1">As you take part, host, mentor, and help others, you earn standing in the community, from Member to Active Member to Ambassador, and a small Leadership Circle at the top. Standing is earned only by contribution, never bought, because we handle no money. It is how we say thank you, and how members supporting members becomes the engine that grows WAI-ME.</p>
 
-    <ol class="ladder reveal" style="--i:2" aria-label="Recognition levels, from Member to Leadership Circle">
-      {levels.map((l, i) => (
-        <li class={`rung${l.gold ? ' is-gold' : ''}`} style={`--i:${i}`}>
-          <span class="rung-hint">{l.hint}</span>
-          <span class="rung-name">{l.name}</span>
-        </li>
-      ))}
-    </ol>
+    {/* The Climb: the four rungs step upward along a drawn flight path (decorative,
+        same .flightline/.draw language as the heroes; home-motion.js draws it in). */}
+    <div class="ladder-climb">
+      <svg class="ladder-route" viewBox="0 0 1200 340" preserveAspectRatio="none" aria-hidden="true">
+        <path class="flightline draw" d="M-10 320 C 240 302, 470 244, 690 162 S 1080 34, 1210 4" pathLength="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <ol class="ladder reveal" style="--i:2" aria-label="Recognition levels, from Member to Leadership Circle">
+        {levels.map((l, i) => (
+          <li class={`rung${l.gold ? ' is-gold' : ''}`} style={`--i:${i}`}>
+            <span class="rung-hint">{l.hint}</span>
+            <span class="rung-name">{l.name}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
   </div>
 </section>

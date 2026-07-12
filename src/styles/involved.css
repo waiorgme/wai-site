@@ -3,8 +3,9 @@
    Built on tokens.css + the same primitives/motion as home.css. Only the
    Get-Involved-specific sections live here; shared bits (eyebrow, buttons,
    join band, reveal, line-mask) come from home.css.
-   Locks: real logo asset only; NO gold anywhere on this page (no awards or
-   certificates, so --gold must not appear); every dash is a regular hyphen;
+   Locks: real logo asset only; gold is recognition-only (here: solely the
+   Champion tier, the recognition moment that funds the pilot licence, per the
+   wow-elevation C3 ruling); every dash is a regular hyphen;
    no AED figures; email is the only partner path.
    ===================================================================== */
 
@@ -73,7 +74,10 @@
 }
 
 /* ============================================================
-   4 · THE THREE TIERS  (PAPER, data-style cards, NO gold, NO AED)
+   4 · THE THREE TIERS  (PAPER, escalating cards, NO AED)
+   Visual escalation (wow-elevation C3): Supporter = outline card,
+   Partner = filled navy, Champion = gold recognition treatment
+   (it funds the pilot licence - a genuine recognition moment).
    ============================================================ */
 .inv-tiers{ background:var(--paper); color:var(--paper-ink); padding-block:clamp(72px,10vw,130px); }
 .inv-tiers .head{ margin-block-end:46px; }
@@ -98,6 +102,28 @@
   letter-spacing:-0.015em; color:var(--paper-ink); line-height:1.1;
 }
 .tier-card p{ font-size:16px; color:var(--paper-mut); line-height:1.62; }
+
+/* Supporter: the outline card (transparent on paper, hairline border). */
+.tier-card.tier-supporter{ background:transparent; box-shadow:none; border-color:rgba(15,35,63,.22); }
+
+/* Partner: filled brand navy, white text. */
+.tier-card.tier-partner{
+  background:linear-gradient(180deg, #0e2450, var(--navy));
+  border-color:rgba(255,255,255,.14);
+  box-shadow:0 30px 60px -44px rgba(10,29,63,.75);
+}
+.tier-card.tier-partner .tier-label{ color:var(--sky-glow); }
+.tier-card.tier-partner .tier-name{ color:#fff; }
+.tier-card.tier-partner p{ color:var(--mist-mut); }
+
+/* Champion: the gold recognition treatment (matches the recognition surfaces;
+   --gold-deep for text on the light card, WCAG AA). */
+.tier-card.tier-champion{
+  background:radial-gradient(120% 120% at 90% 10%, rgba(212,162,76,.18), transparent 55%), #fff;
+  border-color:rgba(212,162,76,.45);
+}
+.tier-card.tier-champion .tier-label{ color:var(--gold-deep); }
+.tier-card.tier-champion .tier-name{ color:var(--gold-deep); }
 .inv-tiers .tier-closing{
   margin-block-start:clamp(40px,5vw,60px); max-width:64ch;
   font-family:var(--display); font-weight:600; font-size:clamp(18px,2.2vw,24px);
