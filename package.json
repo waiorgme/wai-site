@@ -21,6 +21,7 @@
     "@astrojs/sitemap": "^3.7.3",
     "@auth/core": "^0.41.2",
     "@convex-dev/auth": "0.0.94",
+    "@fontsource-variable/alexandria": "^5.2.8",
     "@fontsource-variable/bricolage-grotesque": "^5.2.10",
     "@fontsource/hanken-grotesk": "^5.2.8",
     "@fontsource/ibm-plex-sans-arabic": "^5.2.9",

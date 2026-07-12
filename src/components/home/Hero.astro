@@ -6,10 +6,13 @@ import ConceptMark from '../primitives/ConceptMark.astro';
 <section class="hero" aria-labelledby="hero-h">
   <div class="hero-photo par-slow">
     {/* LCP element: loads eagerly with high priority (PERF-1); the onload
-        class swap keeps the same fade-in the design system expects. The
-        Unsplash source stays until Mervat supplies a real member photo. */}
-    <img src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=2000&q=80&auto=format&fit=crop"
-         alt="Concept image: a commercial airliner climbing above a deck of clouds into a dawn sky. Placeholder, a real WAI-ME member photo will replace it."
+        class swap keeps the same fade-in the design system expects.
+        REAL photograph from the vault archive (2017 Airport Show, WAI-ME's
+        own audience): real members, no concept marker needed per the events
+        archive ruling. Publication clearance for new archive pulls sits with
+        Mervat (staging preview). */}
+    <img src="/assets/photos/hero-front-row.webp"
+         alt="Members of Women in Aviation Middle East in the front rows of a WAI-ME conference session, smiling and talking before the start."
          loading="eager"
          fetchpriority="high"
          decoding="async"
@@ -18,7 +21,6 @@ import ConceptMark from '../primitives/ConceptMark.astro';
   <div class="veil" aria-hidden="true"></div>
   <div class="dawn" aria-hidden="true"></div>
   <div class="glow-orb a" aria-hidden="true"></div>
-  <ConceptMark corner text="Concept image, real member photo to follow" />
   <svg class="flight-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <path class="flightline draw" d="M-40 760 C 360 720, 620 560, 880 380 S 1280 120, 1520 40" pathLength="1" stroke-opacity="0.55"/>
     <circle r="4" fill="#6cc8ff"><animateMotion dur="0" /></circle>

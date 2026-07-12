@@ -1,9 +1,14 @@
-/* Self-hosted Arabic face (polish slice): imported here so only /ar visitors
-   download it. Vite resolves the bare package specifiers at build time. */
+/* Self-hosted Arabic faces: imported here so only /ar visitors download them.
+   Vite resolves the bare package specifiers at build time.
+   Body/UI: IBM Plex Sans Arabic (unchanged). Display: Alexandria, a geometric
+   kufi-leaning face with true heavy weights, closing the v3 follow-on "pick an
+   Arabic display face to pair with Bricolage Grotesque" (proposal for Issam's
+   sign-off; one variable file, display lines only). */
 @import "@fontsource/ibm-plex-sans-arabic/400.css";
 @import "@fontsource/ibm-plex-sans-arabic/500.css";
 @import "@fontsource/ibm-plex-sans-arabic/600.css";
 @import "@fontsource/ibm-plex-sans-arabic/700.css";
+@import "@fontsource-variable/alexandria/index.css";
 
 /* =====================================================================
    Arabic front-door — RTL adjustments (preview build)
@@ -11,10 +16,11 @@
    The /ar pages set dir="rtl" via Base (lang="ar").
    ===================================================================== */
 
-/* All text renders in IBM Plex Sans Arabic. The front-door pages carry no
-   tabular/numeric strips, so remapping --mono here is safe. */
+/* Body and labels render in IBM Plex Sans Arabic; display lines get their own
+   Arabic voice (Alexandria) instead of borrowing the body face, the same
+   display-vs-body contrast the Latin pages get from Bricolage vs Hanken. */
 [dir="rtl"] {
-  --display: var(--arabic);
+  --display: "Alexandria Variable", var(--arabic);
   --body:    var(--arabic);
   --mono:    var(--arabic);
 }
@@ -34,11 +40,11 @@
 /* Bricolage's typographic italic ("opens doors.") has no Arabic cut. */
 [dir="rtl"] em { font-style: normal; }
 
-/* Display lines: the Latin scale asks for weight 800, but IBM Plex Sans Arabic
-   ships 400-700 only, so 800 silently falls back; pin 700 explicitly. Leading
-   1.3 clears vocalized Arabic (hamza above alef, shadda) on big display lines.
+/* Display lines: Alexandria is variable 100-900, so the Latin scale's heavy
+   display weights now exist for real in Arabic. Leading 1.3 clears vocalized
+   Arabic (hamza above alef, shadda) on big display lines.
    html[dir] + tag outweighs the page sheets' class+tag hero rules. */
-html[dir="rtl"] :is(h1, h2) { font-weight: 700; line-height: 1.3; }
+html[dir="rtl"] :is(h1, h2) { font-weight: 800; line-height: 1.3; }
 
 /* CTA arrows must fly with the reading direction: mirror the glyph, and flip
    the home.css hover nudge (translate(3px,-1px)) toward the RTL end. */
