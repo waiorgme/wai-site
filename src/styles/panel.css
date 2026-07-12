@@ -24,10 +24,11 @@
   min-height: 100dvh;
 }
 
+/* the outline follows each element's own radius; the old border-radius: 6px
+   here overrode the pill controls' radius while focused (wow-elevation D6) */
 .panel-scope :focus-visible {
   outline: 3px solid var(--sky-core);
   outline-offset: 2px;
-  border-radius: 6px;
 }
 
 .panel-scope input[type="checkbox"],
@@ -252,7 +253,8 @@
   cursor: pointer;
   text-decoration: none;
   box-shadow: 0 12px 30px -12px rgba(1, 139, 225, .7);
-  transition: transform .2s var(--ease-out), box-shadow .25s var(--ease-out);
+  /* one 200ms hover clock for buttons (D6); background-color covers --ghost */
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out), background-color .2s var(--ease-out);
 }
 .pn-btn:active { transform: scale(.97); }
 .pn-btn:disabled { opacity: .55; cursor: default; box-shadow: none; }
@@ -289,6 +291,7 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
+  transition: color .2s var(--ease-out);
 }
 @media (hover: hover) { .pn-link:not(:disabled):hover { color: var(--navy); } }
 /* a disabled link must LOOK unavailable - a normal-looking link that
@@ -630,11 +633,11 @@
   font-family: var(--body);
 }
 
-/* self-sufficient focus ring (matches .panel-scope, works without it) */
+/* self-sufficient focus ring (matches .panel-scope, works without it);
+   no border-radius override - the ring follows each control's own radius */
 .pn-app :focus-visible {
   outline: 3px solid var(--sky-core);
   outline-offset: 2px;
-  border-radius: 6px;
 }
 .pn-app-side :focus-visible { outline-color: var(--sky-glow); }
 
@@ -1242,7 +1245,7 @@
   border-radius: 2px;
   background: var(--sky-core);
   transform: scaleX(0);
-  transition: transform .3s var(--ease-spring);
+  transition: transform .2s var(--ease-spring);
 }
 @media (hover: hover) { .pn-tab:not([aria-current="true"]):hover { color: var(--paper-ink); } }
 .pn-tab[aria-current="true"] { color: var(--navy); }
@@ -1521,6 +1524,7 @@ button.pn-notif { cursor: pointer; transition: background .2s var(--ease-out); }
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--sky-glow);
+  transition: color .2s var(--ease-out);
 }
 @media (hover: hover) { .pn-side-id .who .out:hover { color: var(--white); } }
 
@@ -1651,6 +1655,7 @@ button.pn-notif { cursor: pointer; transition: background .2s var(--ease-out); }
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--sky-glow);
+  transition: color .2s var(--ease-out);
 }
 @media (hover: hover) { .pn-side-out:hover { color: var(--white); } }
 
@@ -1826,4 +1831,37 @@ button.pn-notif { cursor: pointer; transition: background .2s var(--ease-out); }
   font-weight: 700;
   font-size: 15px;
   color: var(--paper-ink);
+}
+
+/* =====================================================================
+   ADMIN GATE WALL (wow-elevation D5, additive)
+   The deep navy console band behind the admin sign-in card: the console
+   language (the shell's navy chrome) starts at the door, so the admin
+   wall reads apart from the portal's plain light card. The page stays on
+   paper (.panel-scope background untouched); card markup unchanged.
+   ===================================================================== */
+
+.pn-wall--console {
+  position: relative;
+  inline-size: min(520px, 100%);
+  display: grid;
+  justify-items: center;
+  padding: clamp(26px, 5vw, 38px) clamp(14px, 3vw, 20px) 0;
+}
+.pn-wall--console::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 150px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--hair-d);
+  background:
+    radial-gradient(420px 240px at 22% -30%, var(--ink-3), transparent 62%),
+    linear-gradient(180deg, var(--navy), var(--ink-2));
+}
+/* the gate card paints above the band and overlaps its lower edge */
+.pn-wall--console > .pn-card {
+  position: relative;
+  box-shadow: var(--shadow-3);
 }

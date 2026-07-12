@@ -26,6 +26,22 @@ import { JoinApp } from '../portal/JoinApp';
       its p/h2 rules would restyle the island's copy. */}
   <main id="main" class="join-shell">
     <span id="top"></span>
+    {/* The Climb hero band (wow-elevation D1): the ascending flight path
+        draws in above the paper seam. Decorative only - the page h1 stays
+        inside the form card, which overlaps the seam below. */}
+    <div class="join-hero" aria-hidden="true">
+      <svg class="join-flight" viewBox="0 0 720 190" fill="none" preserveAspectRatio="xMidYMax meet">
+        <path class="trail" d="M-8 182 C 170 178, 390 150, 706 26" stroke="url(#join-climb)" stroke-width="2" stroke-linecap="round" />
+        <circle class="mark" cx="706" cy="26" r="4" fill="var(--sky-glow)" />
+        <defs>
+          <linearGradient id="join-climb" x1="0" y1="190" x2="720" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="var(--sky)" stop-opacity="0" />
+            <stop offset=".45" stop-color="var(--sky)" stop-opacity=".55" />
+            <stop offset="1" stop-color="var(--sky-glow)" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
     <section class="panel-scope join-sec">
       <noscript>
         <p class="nojs">
@@ -42,22 +58,115 @@ import { JoinApp } from '../portal/JoinApp';
 </Base>
 
 <style>
-  /* A slim ink strip stays above the paper section so the fixed glass nav
+  /* An ink hero band stays above the paper section so the fixed glass nav
      reads against dark, then the join section breaks into daylight - the
      same dark-hero-to-paper transition as membership (.mbr-who). */
   .join-shell{
     background:var(--ink);
     padding-block-start:clamp(96px,12vw,150px);
   }
+  .join-hero{
+    position:relative;
+    max-width:var(--maxw);
+    margin-inline:auto;
+    block-size:clamp(120px,16vw,190px);
+    padding-inline:var(--gutter);
+  }
+  .join-flight{ display:block; inline-size:100%; block-size:100%; }
+  /* one-time draw on load; end-state forced for reduced motion and print */
+  .join-flight .trail{
+    stroke-dasharray:780;
+    stroke-dashoffset:780;
+    animation:join-draw 1.2s var(--ease-out) .2s forwards;
+  }
+  .join-flight .mark{
+    opacity:0;
+    animation:join-mark .4s var(--ease-out) 1.15s forwards;
+  }
+  @keyframes join-draw{ to{ stroke-dashoffset:0; } }
+  @keyframes join-mark{ to{ opacity:1; } }
+  @media (prefers-reduced-motion: reduce){
+    .join-flight .trail{ animation:none; stroke-dashoffset:0; }
+    .join-flight .mark{ animation:none; opacity:1; }
+  }
+  @media print{
+    .join-flight .trail{ animation:none; stroke-dashoffset:0; }
+    .join-flight .mark{ animation:none; opacity:1; }
+  }
   .join-sec{
-    min-height:100vh;
+    min-height:70vh;
     display:grid;
-    place-items:center;
+    justify-items:center;
+    align-content:start;
     border-radius:40px 40px 0 0;
-    padding-block:clamp(56px,8vw,96px) clamp(72px,10vw,130px);
+    padding-block:clamp(24px,4vw,44px) clamp(72px,10vw,130px);
     padding-inline:var(--gutter);
   }
   /* panel.css centers .nojs with a 30vh offset for full-page shells; this
-     section is already centered between the nav band and the footer. */
+     section sits directly under the hero band. */
   .join-sec .nojs{ padding-block-start:0; }
+</style>
+
+<style is:global>
+  /* The island's stage cards are React-rendered, out of scoped-style reach;
+     every rule stays under .join-sec so nothing leaks to other panel pages. */
+
+  /* the commitment card overlaps the dark/paper seam (wow-elevation D1) */
+  .join-sec .pn-card{
+    margin-block-start:calc(-1 * clamp(80px, 11vw, 124px));
+    box-shadow:var(--shadow-3);
+  }
+
+  /* consent block: custom 20px rendering of the SAME inputs (D2) */
+  .join-sec .pn-check input[type="checkbox"]{
+    appearance:none;
+    -webkit-appearance:none;
+    inline-size:20px;
+    block-size:20px;
+    margin:0;
+    margin-block-start:1px;
+    display:inline-grid;
+    place-items:center;
+    border:1px solid rgba(15,35,63,.35);
+    border-radius:6px;
+    background:var(--white);
+    cursor:pointer;
+    transition:background-color .2s var(--ease-out), border-color .2s var(--ease-out);
+  }
+  .join-sec .pn-check input[type="checkbox"]::before{
+    content:"";
+    inline-size:12px;
+    block-size:12px;
+    background:center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.6 4.7 9.2 10 3.2' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    transform:scale(0);
+    transition:transform .2s var(--ease-out);
+  }
+  .join-sec .pn-check input[type="checkbox"]:checked{
+    background:var(--sky-core);
+    border-color:var(--sky-core);
+  }
+  .join-sec .pn-check input[type="checkbox"]:checked::before{ transform:scale(1); }
+
+  /* the labelled container around the Turnstile widget (D2) */
+  .join-sec .join-secure{
+    display:grid;
+    gap:8px;
+    padding:12px 14px;
+    border:1px solid var(--hair-l);
+    border-radius:14px;
+    background:rgba(15,35,63,.03);
+  }
+  .join-sec .join-secure-label{
+    margin:0;
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--paper-mut);
+  }
+
+  /* the inline email hint sits tight under its field (D3) */
+  .join-sec .pn-label + .pn-error{ margin-block-start:-8px; }
+  .join-sec .pn-input[aria-invalid="true"]{ border-color:var(--err); }
 </style>

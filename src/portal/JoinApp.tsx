@@ -102,6 +102,7 @@ function JoinForm() {
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailInvalid, setEmailInvalid] = useState(false);
 
   const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) =>
     setValues((v) => ({ ...v, [key]: value }));
@@ -335,10 +336,27 @@ function JoinForm() {
             autoComplete="email"
             placeholder="you@example.com"
             value={values.email}
-            onChange={(e) => set("email", e.target.value)}
+            aria-invalid={emailInvalid || undefined}
+            aria-describedby={emailInvalid ? "join-email-error" : undefined}
+            onBlur={(e) =>
+              // Native validity only (D3): flag a filled-in address the
+              // browser itself rejects; an empty field stays `required`'s job.
+              setEmailInvalid(e.target.value !== "" && !e.target.validity.valid)
+            }
+            onChange={(e) => {
+              set("email", e.target.value);
+              if (e.target.validity.valid) {
+                setEmailInvalid(false);
+              }
+            }}
             className={input}
           />
         </label>
+        {emailInvalid && (
+          <p id="join-email-error" className={errorText}>
+            Enter a valid email address.
+          </p>
+        )}
 
         <label className={label}>
           Country
@@ -505,6 +523,10 @@ function JoinForm() {
           </label>
         </div>
 
+        {/* consent block, set apart from the interests above (D2); the
+            inputs, labels and order are unchanged */}
+        <hr className="pn-div" aria-hidden="true" />
+
         <label className={checkboxRow}>
           <input
             type="checkbox"
@@ -559,7 +581,10 @@ function JoinForm() {
           </label>
         )}
 
-        <Turnstile onToken={setToken} />
+        <div className="join-secure">
+          <p className="join-secure-label">Security check</p>
+          <Turnstile onToken={setToken} />
+        </div>
 
         <button type="submit" disabled={busy} className={primaryBtn}>
           Continue

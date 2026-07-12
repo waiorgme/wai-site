@@ -551,66 +551,73 @@ function AdminSignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Both sign-in states sit on the deep navy console band (wow-elevation D5):
+  // the console language starts at the door, so the admin wall reads apart
+  // from the portal's plain light card. Card contents unchanged.
   if (sentTo !== null) {
     return (
-      <div className={card}>
-        <p className="pn-eyebrow on-paper">Admin console</p>
-        <h1 className={h1}>Check your email</h1>
-        <p className={muted}>
-          We sent a sign-in link to <strong>{sentTo}</strong>. It expires in 15
-          minutes and can be used once.
-        </p>
-        <button type="button" className={linkBtn} onClick={() => setSentTo(null)}>
-          Use a different email
-        </button>
+      <div className="pn-wall--console">
+        <div className={card}>
+          <p className="pn-eyebrow on-paper">Admin console</p>
+          <h1 className={h1}>Check your email</h1>
+          <p className={muted}>
+            We sent a sign-in link to <strong>{sentTo}</strong>. It expires in 15
+            minutes and can be used once.
+          </p>
+          <button type="button" className={linkBtn} onClick={() => setSentTo(null)}>
+            Use a different email
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={card}>
-      <p className="pn-eyebrow on-paper">Admin console</p>
-      <h1 className={h1}>Admin sign-in</h1>
-      <p className={muted}>
-        Enter your email and we'll send you a secure sign-in link - no password
-        needed.
-      </p>
-      <form
-        className="pn-stack"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          const email = String(
-            new FormData(event.currentTarget).get("email") ?? "",
-          ).trim();
-          if (email === "") {
-            return;
-          }
-          setBusy(true);
-          setError(null);
-          try {
-            await signIn("resend", { email, redirectTo: "/admin" });
-            setSentTo(email);
-          } catch (err) {
-            setError(sendLinkErrorMessage(err));
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          aria-label="Email address"
-          placeholder="you@example.com"
-          className={input}
-        />
-        <button type="submit" disabled={busy} className={primaryBtn}>
-          {busy ? "Sending…" : "Send sign-in link"}
-        </button>
-        {error !== null && <p role="alert" className={errorText}>{error}</p>}
-      </form>
+    <div className="pn-wall--console">
+      <div className={card}>
+        <p className="pn-eyebrow on-paper">Admin console</p>
+        <h1 className={h1}>Admin sign-in</h1>
+        <p className={muted}>
+          Enter your email and we'll send you a secure sign-in link - no password
+          needed.
+        </p>
+        <form
+          className="pn-stack"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const email = String(
+              new FormData(event.currentTarget).get("email") ?? "",
+            ).trim();
+            if (email === "") {
+              return;
+            }
+            setBusy(true);
+            setError(null);
+            try {
+              await signIn("resend", { email, redirectTo: "/admin" });
+              setSentTo(email);
+            } catch (err) {
+              setError(sendLinkErrorMessage(err));
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            aria-label="Email address"
+            placeholder="you@example.com"
+            className={input}
+          />
+          <button type="submit" disabled={busy} className={primaryBtn}>
+            {busy ? "Sending…" : "Send sign-in link"}
+          </button>
+          {error !== null && <p role="alert" className={errorText}>{error}</p>}
+        </form>
+      </div>
     </div>
   );
 }

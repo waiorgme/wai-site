@@ -10,7 +10,18 @@ import { VerifyApp } from "../../portal/VerifyApp";
   noindex
   path="/verify/"
 >
-  <main id="main" class="panel-scope">
+  <main id="main" class="panel-scope verify-shell">
+    {/* The designed field behind the card (wow-elevation D4): a quiet paper
+        gradient plus a seal-adjacent ring motif in plain SVG geometry - never
+        a redrawn logo. Decorative only; the print rules already hide it. */}
+    <div class="vf" aria-hidden="true">
+      <svg class="vf-seal" viewBox="0 0 360 360" fill="none">
+        <circle cx="180" cy="180" r="168" stroke="currentColor" />
+        <circle cx="180" cy="180" r="150" stroke="currentColor" stroke-dasharray="1.5 7" />
+        <circle cx="180" cy="180" r="118" stroke="currentColor" />
+        <circle cx="180" cy="180" r="112" stroke="currentColor" />
+      </svg>
+    </div>
     <div class="pn-center">
       <noscript>
         <p class="nojs">
@@ -26,6 +37,38 @@ import { VerifyApp } from "../../portal/VerifyApp";
 </Base>
 
 <style>
+  /* The institutional field (D4): background-image layers only - the main's
+     computed background-color stays --paper (test-pinned rgb(246,241,232)). */
+  .verify-shell {
+    position: relative;
+    overflow: clip;
+  }
+  .vf {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(1100px 520px at 50% -8%, var(--paper-2), transparent 68%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 320px);
+  }
+  .vf-seal {
+    position: absolute;
+    inset-block-start: clamp(56px, 12vh, 140px);
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    inline-size: clamp(300px, 42vw, 460px);
+    color: rgba(10, 29, 63, 0.07);
+  }
+  /* the card layer paints above the positioned field */
+  .verify-shell .pn-center {
+    position: relative;
+  }
+  @media print {
+    .vf {
+      display: none;
+    }
+  }
+
   /* Print only the certificate: everything on the page hides except the
      .cert-print block VerifyApp renders around the certificate. */
   @media print {
