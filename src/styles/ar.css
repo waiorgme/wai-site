@@ -19,18 +19,33 @@
   --mono:    var(--arabic);
 }
 
-/* Arabic joins cursively and has no letter case: neutralise the Latin scale's
-   tracking and uppercasing, which would otherwise break the glyph joins. */
-[dir="rtl"] :where(h1, h2, h3, h4, p, a, span, cite, li, em, strong, div, button, blockquote) {
-  letter-spacing: normal;
+/* Arabic joins cursively and has no letter case: ANY Latin tracking, whether
+   negative display tightening (.hero h1, .mission .q, .m-link) or positive
+   label spacing (.role, .badge, .photo-tag, footer .col h4), severs the glyph
+   joins. Those rules are class-scoped, up to three classes deep across six
+   page sheets, so a zero-specificity :where() reset loses everywhere; this
+   reset is !important by design: no Arabic run may ever carry tracking.
+   text-transform:uppercase is left alone since it is a no-op on Arabic glyphs. */
+[dir="rtl"] :is(h1, h2, h3, h4, h5, h6, p, a, span, cite, li, em, strong, div, button, blockquote, figcaption) {
+  letter-spacing: 0 !important;
 }
-[dir="rtl"] .eyebrow { font-family: var(--arabic); letter-spacing: normal; text-transform: none; }
+[dir="rtl"] .eyebrow { font-family: var(--arabic); text-transform: none; }
 
 /* Bricolage's typographic italic ("opens doors.") has no Arabic cut. */
 [dir="rtl"] em { font-style: normal; }
 
-/* A touch more leading for Arabic ascenders/descenders on big display lines. */
-[dir="rtl"] h1, [dir="rtl"] h2 { line-height: 1.2; }
+/* Display lines: the Latin scale asks for weight 800, but IBM Plex Sans Arabic
+   ships 400-700 only, so 800 silently falls back; pin 700 explicitly. Leading
+   1.3 clears vocalized Arabic (hamza above alef, shadda) on big display lines.
+   html[dir] + tag outweighs the page sheets' class+tag hero rules. */
+html[dir="rtl"] :is(h1, h2) { font-weight: 700; line-height: 1.3; }
+
+/* CTA arrows must fly with the reading direction: mirror the glyph, and flip
+   the home.css hover nudge (translate(3px,-1px)) toward the RTL end. */
+[dir="rtl"] .btn .ico svg { transform: scaleX(-1); }
+@media (hover: hover) {
+  [dir="rtl"] .btn:hover .ico { transform: translate(-3px, -1px); }
+}
 
 /* "The Climb" flight-path ascends left-to-right; mirror it for RTL reading. */
 [dir="rtl"] .flight-svg { transform: scaleX(-1); }

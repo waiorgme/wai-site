@@ -1,18 +1,20 @@
 ---
 // Flight-data strip for the Arabic Membership page. Count-up numbers keep Latin digits
-// with sr-only fallbacks. Cell 3 ("مجّاناً") is a static label.
+// with sr-only fallbacks; each number and its "+" sit in an LTR <bdi> so the plus
+// renders trailing ("1,300+") inside the RTL line, matching the English strip.
+// Cell 3 ("مجّاناً") is a static label.
 ---
 <section class="flightdata" aria-label="عضوية المرأة في الطيران – الشرق الأوسط باختصار">
   <div class="wrap">
     <div class="fd-panel reveal">
       <div class="fd-cell">
         <div class="label">المجتمع</div>
-        <div class="val"><span class="count" data-to="1300" data-format="comma" aria-hidden="true">1,300</span><span class="sr-only">1,300</span>+ عضوة</div>
+        <div class="val"><bdi dir="ltr" aria-hidden="true"><span class="count" data-to="1300" data-format="comma">1,300</span>+</bdi><span class="sr-only">1,300+</span> عضوة</div>
         <div class="sub">في أنحاء الشرق الأوسط وخارجه</div>
       </div>
       <div class="fd-cell">
         <div class="label">الانتشار</div>
-        <div class="val"><span class="count" data-to="40" aria-hidden="true">40</span><span class="sr-only">40</span>+ دولة</div>
+        <div class="val"><bdi dir="ltr" aria-hidden="true"><span class="count" data-to="40">40</span>+</bdi><span class="sr-only">40+</span> دولة</div>
         <div class="sub">حيث تعيش عضواتنا ويعملن</div>
       </div>
       <div class="fd-cell">
