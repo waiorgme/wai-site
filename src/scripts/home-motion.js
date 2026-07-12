@@ -42,7 +42,9 @@
     var to = parseInt(el.dataset.to, 10);
     var comma = el.dataset.format === "comma";
     if(RM){ el.textContent = fmt(to, comma); return; }
-    var start = null, dur = 1600;
+    /* fast enough that a screenshot or a quick scroll never catches a
+       half-counted figure (wow-elevation A2) */
+    var start = null, dur = 600;
     function step(ts){
       if(start === null) start = ts;
       var p = Math.min((ts - start)/dur, 1);
