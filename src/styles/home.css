@@ -391,8 +391,13 @@ body.menu-open .mobile-menu .m-cta{ opacity:1; transform:none; }
   background:rgba(212,162,76,.12); border:1px solid rgba(212,162,76,.4);
 }
 .out-card.feature .award-ring svg{ inline-size:22px; block-size:22px; }
-.out-card .photo-mini{ position:absolute; inset-block-end:0; inset-inline:0; block-size:42%; opacity:.5;
-  -webkit-mask-image:linear-gradient(transparent, #000 70%); mask-image:linear-gradient(transparent,#000 70%); }
+.out-card .photo-mini{ position:absolute; inset-block-end:0; inset-inline:0; block-size:42%; opacity:.48;
+  -webkit-mask-image:linear-gradient(transparent, #000 78%); mask-image:linear-gradient(transparent,#000 78%); }
+.out-card .photo-mini img{ inline-size:100%; block-size:100%; object-fit:cover; object-position:center 62%;
+  opacity:0; transition:opacity 1.1s var(--ease-out); filter:saturate(.85) contrast(1.05); }
+.out-card .photo-mini img.loaded{ opacity:1; }
+/* the caption sits above the masked photo */
+.out-card.feature > div:not(.photo-mini){ position:relative; z-index:1; }
 
 /* ============================================================
    7 · WHAT WE DO  (PAPER, breaking into daylight)

@@ -127,6 +127,31 @@ join funnel, Arabic mirror, product-surface reachability), the vault brand brief
   display face decision (v3 follow-on, owner sign-off); patronage strip as a new
   content object (needs copy extraction sign-off).
 
+## Round 2 - "The room that was waiting for you" (2026-07-12, Issam: "a whole lot more")
+
+Issam judged round 1 incremental. Round 2 is a reimagining built on three research
+findings (vault deep-mine, world-class benchmarks, asset inventory):
+
+1. **The site advertised with stock photos while the vault holds 700+ frames of real
+   professional photography** of real members at real WAI-ME events (2017 Airport Show
+   DSLR set, 2025 Riyadh General Assembly set). The events-archive ruling already
+   states real event photography needs no concept marker. Every stock frame is
+   replaced with the org's own archive, graded to one editorial navy film look:
+   hero (2017 front rows), mission (the 2025 certificate stage, the mission line over
+   the moment it describes), spotlight portrait, home event cards, the ATPL feature
+   card (the very stage where the award was made), events timeline, about, involved.
+2. **Arabic display face decided (v3 follow-on): Alexandria** (variable, true heavy
+   weights, kufi-leaning geometry that answers Bricolage). AR display lines get their
+   own voice instead of borrowing the body face. Proposal for Issam's sign-off.
+3. **The 13-year photographic timeline** as the signature section: the events page
+   milestone wall built from the 32 cleared archive images.
+
+Owner gates created by round 2: (a) Mervat's publication clearance for the newly
+pulled archive photos (list in scripts/prepare-photos.mjs; staging preview only until
+cleared); (b) Issam's sign-off on Alexandria; (c) the new Arabic hero alt sentence
+for Mervat's language review; (d) photographer attribution for the 2017/2022/2025
+shoots is undocumented - confirm with Mervat before production.
+
 ## Verification gate for this branch
 
 - `npm run build` clean; `astro check` clean; full vitest suite green; all Playwright
