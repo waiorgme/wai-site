@@ -50,6 +50,11 @@ html[dir="rtl"] :is(h1, h2) { font-weight: 700; line-height: 1.3; }
 /* "The Climb" flight-path ascends left-to-right; mirror it for RTL reading. */
 [dir="rtl"] .flight-svg { transform: scaleX(-1); }
 
+/* The EN hero's drop-shadow on the gradient-clipped accent forces a filter
+   layer that can flash unclipped mid line-mask reveal on Arabic glyph runs;
+   Plex's heavier strokes over the deepened veil don't need the shadow. */
+[dir="rtl"] .hero h1 .accent { filter: none; }
+
 /* Latin brand names (partners) and the email keep their LTR run inside RTL. */
 [dir="rtl"] .logo-cell span,
 [dir="rtl"] a[href^="mailto"] { direction: ltr; unicode-bidi: isolate; display: inline-block; }
