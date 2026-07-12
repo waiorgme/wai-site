@@ -131,6 +131,47 @@
   font-variant-numeric:tabular-nums; /* keeps the embedded figures aligned */
 }
 
+/* ---- milestone wall: real archive photography per era ----
+   Small editorial frames under each era's sentence (UCLA-100 milestone-wall
+   pattern). They reuse the .photo gradient-underlay + one-film grade from
+   home.css; the collage offsets below are static layout (margins, not
+   transforms), so they never fight the .reveal transform and reduced-motion
+   users get the identical composition. Eras with no photos on record simply
+   have no .tl-photos block. No gold anywhere: hover glow is brand sky. */
+.tl-photos{
+  grid-column:2;
+  display:flex; flex-wrap:wrap; align-items:flex-start;
+  gap:clamp(12px,1.6vw,18px);
+  margin-block-start:clamp(14px,2vw,24px);
+}
+.tl-tile{
+  flex:0 1 auto;
+  inline-size:clamp(150px,17vw,216px);
+  aspect-ratio:8 / 5;
+  border:1px solid var(--hair-l);
+  box-shadow:0 22px 44px -34px rgba(15,35,63,.55);
+  /* .tl-tile is also .reveal: restate its opacity/transform pair so this
+     shorthand does not drop the reveal fade; the .reveal transition-delay
+     (driven by the per-tile --i) still applies as a separate property */
+  transition:opacity .55s var(--ease-out), transform .55s var(--ease-out),
+             border-color .5s var(--ease-out), box-shadow .5s var(--ease-out);
+}
+/* the era's lead frame reads slightly larger, like the pasted-down keeper */
+.tl-tile:first-child{ inline-size:clamp(172px,19vw,244px); }
+/* stagger the tops so the wall reads as a collage, not a grid; alternate the
+   drop on even eras so the page does not stripe */
+.tl-tile:nth-child(2){ margin-block-start:clamp(12px,1.8vw,26px); }
+.tl-tile:nth-child(3){ margin-block-start:clamp(4px,0.8vw,10px); }
+.tl-item:nth-child(even) .tl-tile:nth-child(2){ margin-block-start:clamp(4px,0.8vw,10px); }
+.tl-item:nth-child(even) .tl-tile:first-child{ margin-block-start:clamp(12px,1.8vw,26px); }
+@media (hover:hover){
+  .tl-tile:hover{
+    transform:translateY(-4px);
+    border-color:rgba(108,200,255,.55);
+    box-shadow:0 30px 56px -30px rgba(15,35,63,.6);
+  }
+}
+
 /* ============================================================
    4 · FULL ARCHIVE  (DARK, the interactive deep-dive)
    Sits after the paper-2 prose timeline and flows into the dark Join band:
@@ -285,6 +326,8 @@
 }
 @media (max-width:760px){
   .tl-item{ grid-template-columns:1fr; gap:12px; }
+  .tl-photos{ grid-column:1; margin-block-start:6px; }
+  .tl-tile, .tl-tile:first-child{ inline-size:clamp(128px,42vw,190px); }
 }
 @media (max-width:640px){
   .ev-arch-grid{ grid-template-columns:1fr; }

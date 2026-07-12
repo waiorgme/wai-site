@@ -1,5 +1,6 @@
 ---
 import Eyebrow from '../primitives/Eyebrow.astro';
+import Photo from '../primitives/Photo.astro';
 
 // Impact: "What this adds up to." Pillar-card visual weight (short heading in display
 // type, body in muted text), matching the home What-we-do pillars (Open Question 5).
@@ -32,6 +33,16 @@ const items = [
     <div class="head reveal">
       <Eyebrow onPaper>Impact</Eyebrow>
       <h2 id="imp-h">What this adds up to.</h2>
+    </div>
+    <div class="impact-photo reveal">
+      {/* REAL photograph: the moment the numbers below add up to - the 2025
+          General Assembly stage in Riyadh, certificates in hand. */}
+      <Photo
+        src="/assets/photos/assembly-certificates.webp"
+        alt="Seven women holding certificates on stage at the 2025 Women in Aviation General Assembly in Riyadh."
+        scrim
+        mark="2025 General Assembly, Riyadh"
+      />
     </div>
     <div class="impact-grid">
       {items.map((it, i) => (

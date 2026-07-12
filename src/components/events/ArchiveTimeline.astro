@@ -5,13 +5,65 @@
 // figures (750, 26, 12, 400-plus) keep tabular figures. Gold is
 // NOT used: this is history, not recognition. Hyphenation preserved verbatim
 // ("2015 to 2016", "400-plus"); regular hyphens only, no em/en dashes.
+// Each era now carries a small collage of REAL cleared archive photography from
+// public/assets/events/ (matched by filename year to the milestones the sentence
+// names). Alt text is purely factual. Eras with no photos on record would simply
+// render text-only; nothing is faked.
 const entries = [
-  { year: '2013', text: 'First participation at the Dubai Airport Show (May), the first board meeting that founded the chapter (October), and the Dubai Airshow (November).' },
-  { year: '2014', text: 'Abu Dhabi Air Show, the Global Aviation Aerospace Summit, the WAI International Conference in Florida, and the first MEBAA appearance.' },
-  { year: '2015 to 2016', text: 'The first annual general assembly at the Dubai Airport Show, the Global Airport Leaders Forum, WETEX, and the IAWA lunch at the Global Aerospace Summit.' },
-  { year: '2017 to 2019', text: 'The conference grew year on year, reaching the fourth General Assembly in 2019 with more than 750 attendees, 26 international speakers, and 12 sponsors.' },
-  { year: '2020 to 2022', text: 'The first Biennial Conference in Kuwait, hybrid conferences through the pandemic, and 400-plus attendees at the Abu Dhabi Air Expo in 2022.' },
-  { year: '2023 to 2024', text: 'The conference at the Airport Show in Dubai, the inaugural Women in Aviation assembly in Riyadh aligned with Saudi Vision 2030, and the 2024 Annual Conference and Awards.' },
+  {
+    year: '2013',
+    text: 'First participation at the Dubai Airport Show (May), the first board meeting that founded the chapter (October), and the Dubai Airshow (November).',
+    photos: [
+      { src: '/assets/events/2013_Dubai_Airport.webp', alt: 'Members at the 2013 Dubai Airport Show' },
+      { src: '/assets/events/2013_first_meeting.webp', alt: 'The first board meeting of the chapter in 2013' },
+      { src: '/assets/events/2013_dubai.webp', alt: 'Members at the 2013 Dubai Airshow' },
+    ],
+  },
+  {
+    year: '2014',
+    text: 'Abu Dhabi Air Show, the Global Aviation Aerospace Summit, the WAI International Conference in Florida, and the first MEBAA appearance.',
+    photos: [
+      { src: '/assets/events/2014_AUH.webp', alt: 'Members at the 2014 Abu Dhabi Air Show' },
+      { src: '/assets/events/2014_WAI_Conference.webp', alt: 'Members at the 2014 WAI International Conference in Florida' },
+      { src: '/assets/events/2014_MEBA.webp', alt: 'Members at MEBAA 2014' },
+    ],
+  },
+  {
+    year: '2015 to 2016',
+    text: 'The first annual general assembly at the Dubai Airport Show, the Global Airport Leaders Forum, WETEX, and the IAWA lunch at the Global Aerospace Summit.',
+    photos: [
+      { src: '/assets/events/2016_Dubai_Airport_Show.webp', alt: 'Members at the 2016 Dubai Airport Show' },
+      { src: '/assets/events/2015_GALF.webp', alt: 'Members at the Global Airport Leaders Forum in 2015' },
+      { src: '/assets/events/2016_Wetex.webp', alt: 'Members at WETEX 2016' },
+    ],
+  },
+  {
+    year: '2017 to 2019',
+    text: 'The conference grew year on year, reaching the fourth General Assembly in 2019 with more than 750 attendees, 26 international speakers, and 12 sponsors.',
+    photos: [
+      { src: '/assets/events/2017_Dubai_Airshow.webp', alt: 'Members at the 2017 Dubai Airshow' },
+      { src: '/assets/events/2018_WAI_Conference.webp', alt: 'Attendees at the 2018 annual conference' },
+      { src: '/assets/events/2019_Annual_conference.webp', alt: 'Attendees at the 2019 annual conference and fourth General Assembly' },
+    ],
+  },
+  {
+    year: '2020 to 2022',
+    text: 'The first Biennial Conference in Kuwait, hybrid conferences through the pandemic, and 400-plus attendees at the Abu Dhabi Air Expo in 2022.',
+    photos: [
+      { src: '/assets/events/2020_Kuwait_Aviation_Show.webp', alt: 'The first Biennial Conference in Kuwait in 2020' },
+      { src: '/assets/events/2021_Annual_Conference_Dubai_Airport_Show.webp', alt: 'The 2021 annual conference at the Dubai Airport Show' },
+      { src: '/assets/events/2022_Abu_Dhabi_Air_Expo.webp', alt: 'Members at the 2022 Abu Dhabi Air Expo' },
+    ],
+  },
+  {
+    year: '2023 to 2024',
+    text: 'The conference at the Airport Show in Dubai, the inaugural Women in Aviation assembly in Riyadh aligned with Saudi Vision 2030, and the 2024 Annual Conference and Awards.',
+    photos: [
+      { src: '/assets/events/2023_Annual_Conference.webp', alt: 'The 2023 conference at the Airport Show in Dubai' },
+      { src: '/assets/events/2023_KSA.webp', alt: 'The inaugural Women in Aviation assembly in Riyadh in 2023' },
+      { src: '/assets/events/2024_Annual_Conference_Dubai.webp', alt: 'The 2024 Annual Conference and Awards in Dubai' },
+    ],
+  },
 ];
 ---
 <section class="ev-archive" aria-labelledby="archive-h">
@@ -26,6 +78,15 @@ const entries = [
         <li class="tl-item reveal" style={`--i:${i}`}>
           <div class="tl-year">{e.year}</div>
           <p class="tl-text">{e.text}</p>
+          {e.photos && e.photos.length > 0 && (
+            <div class="tl-photos">
+              {e.photos.map((p, j) => (
+                <div class="photo tl-tile reveal" style={`--i:${j + 1}`}>
+                  <img data-src={p.src} alt={p.alt} />
+                </div>
+              ))}
+            </div>
+          )}
         </li>
       ))}
     </ol>

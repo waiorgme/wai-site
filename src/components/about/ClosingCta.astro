@@ -6,7 +6,14 @@ import JoinFlightPath from '../primitives/JoinFlightPath.astro';
 // gradient beat). Copy is verbatim from the About spec; button labels match the home
 // join band (Become a member -> /membership ; Support as a partner -> /get-involved).
 ---
-<section class="join" id="join" aria-labelledby="cta-h">
+<section class="join about-close" id="join" aria-labelledby="cta-h">
+  <div class="close-bg" aria-hidden="true">
+    {/* REAL photograph, heavily veiled per the home mission pattern: two women
+        in the audience at the 2017 conference. The closing line lands on real
+        faces instead of flat navy. */}
+    <img data-src="/assets/photos/audience-profile.webp" alt="" />
+    <div class="grad"></div>
+  </div>
   <div class="dawn" aria-hidden="true"></div>
   <div class="glow-orb" aria-hidden="true"></div>
   <JoinFlightPath />

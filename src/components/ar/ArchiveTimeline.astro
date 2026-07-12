@@ -1,12 +1,64 @@
 ---
 // Archive timeline: "الحكاية حتى الآن". Six year-grouped entries. Figures stay Latin.
+// Each era carries a small collage of REAL cleared archive photography from
+// public/assets/events/ (matched by filename year). Arabic alt text reuses the
+// event names from src/data/events-archive-ar.json verbatim. Eras with no photos
+// on record would simply render text-only; nothing is faked.
 const entries = [
-  { year: '2013', text: 'أول مشاركة في معرض مطار دبي (مايو)، وأول اجتماعٍ لمجلس الإدارة الذي أسّس الفرع (أكتوبر)، ومعرض دبي للطيران (نوفمبر).' },
-  { year: '2014', text: 'معرض أبوظبي للطيران، والقمة العالمية للطيران والفضاء الجوي، والمؤتمر الدولي للمرأة في الطيران في فلوريدا، وأول حضورٍ في ميبا (MEBAA).' },
-  { year: '2015 إلى 2016', text: 'أول جمعيةٍ عمومية سنوية في معرض مطار دبي، ومنتدى قادة المطارات العالمي، ومعرض ويتيكس (WETEX)، وغداء IAWA في القمة العالمية للفضاء الجوي.' },
-  { year: '2017 إلى 2019', text: 'نما المؤتمر عاماً بعد عام، حتى بلغ الجمعية العمومية الرابعة في 2019 بأكثر من 750 حاضرة، و26 متحدثاً دولياً، و12 راعياً.' },
-  { year: '2020 إلى 2022', text: 'المؤتمر الأول لكل عامين في الكويت، ومؤتمراتٌ مدمجة خلال الجائحة، وأكثر من 400 حاضرة في معرض أبوظبي للطيران في 2022.' },
-  { year: '2023 إلى 2024', text: 'المؤتمر في معرض المطارات بدبي، وأول ملتقى للمرأة في الطيران في الرياض انسجاماً مع رؤية السعودية 2030، والمؤتمر والجوائز السنوية لعام 2024.' },
+  {
+    year: '2013',
+    text: 'أول مشاركة في معرض مطار دبي (مايو)، وأول اجتماعٍ لمجلس الإدارة الذي أسّس الفرع (أكتوبر)، ومعرض دبي للطيران (نوفمبر).',
+    photos: [
+      { src: '/assets/events/2013_Dubai_Airport.webp', alt: 'خطوةٌ أولى مع معرض مطار دبي' },
+      { src: '/assets/events/2013_first_meeting.webp', alt: 'أول اجتماعٍ لمجلس الإدارة' },
+      { src: '/assets/events/2013_dubai.webp', alt: 'تواصلٌ في معرض دبي للطيران' },
+    ],
+  },
+  {
+    year: '2014',
+    text: 'معرض أبوظبي للطيران، والقمة العالمية للطيران والفضاء الجوي، والمؤتمر الدولي للمرأة في الطيران في فلوريدا، وأول حضورٍ في ميبا (MEBAA).',
+    photos: [
+      { src: '/assets/events/2014_AUH.webp', alt: 'مشاركةٌ في معرض أبوظبي للطيران' },
+      { src: '/assets/events/2014_WAI_Conference.webp', alt: 'المؤتمر الدولي السنوي للمرأة في الطيران' },
+      { src: '/assets/events/2014_MEBA.webp', alt: 'تحليقٌ عالٍ في ميبا 2014' },
+    ],
+  },
+  {
+    year: '2015 إلى 2016',
+    text: 'أول جمعيةٍ عمومية سنوية في معرض مطار دبي، ومنتدى قادة المطارات العالمي، ومعرض ويتيكس (WETEX)، وغداء IAWA في القمة العالمية للفضاء الجوي.',
+    photos: [
+      { src: '/assets/events/2016_Dubai_Airport_Show.webp', alt: 'أول مشاركة في معرض مطار دبي' },
+      { src: '/assets/events/2015_GALF.webp', alt: 'منتدى قادة المطارات العالمي' },
+      { src: '/assets/events/2016_Wetex.webp', alt: 'تواصلٌ في معرض ويتيكس (WETEX)' },
+    ],
+  },
+  {
+    year: '2017 إلى 2019',
+    text: 'نما المؤتمر عاماً بعد عام، حتى بلغ الجمعية العمومية الرابعة في 2019 بأكثر من 750 حاضرة، و26 متحدثاً دولياً، و12 راعياً.',
+    photos: [
+      { src: '/assets/events/2017_Dubai_Airshow.webp', alt: 'حضورٌ أكبر في معرض دبي للطيران' },
+      { src: '/assets/events/2018_WAI_Conference.webp', alt: 'المؤتمر السنوي' },
+      { src: '/assets/events/2019_Annual_conference.webp', alt: 'المؤتمر السنوي' },
+    ],
+  },
+  {
+    year: '2020 إلى 2022',
+    text: 'المؤتمر الأول لكل عامين في الكويت، ومؤتمراتٌ مدمجة خلال الجائحة، وأكثر من 400 حاضرة في معرض أبوظبي للطيران في 2022.',
+    photos: [
+      { src: '/assets/events/2020_Kuwait_Aviation_Show.webp', alt: 'المؤتمر الأول لكل عامين في الكويت' },
+      { src: '/assets/events/2021_Annual_Conference_Dubai_Airport_Show.webp', alt: 'المؤتمر السنوي - معرض مطار دبي' },
+      { src: '/assets/events/2022_Abu_Dhabi_Air_Expo.webp', alt: 'في صدارة معرض أبوظبي للطيران' },
+    ],
+  },
+  {
+    year: '2023 إلى 2024',
+    text: 'المؤتمر في معرض المطارات بدبي، وأول ملتقى للمرأة في الطيران في الرياض انسجاماً مع رؤية السعودية 2030، والمؤتمر والجوائز السنوية لعام 2024.',
+    photos: [
+      { src: '/assets/events/2023_Annual_Conference.webp', alt: 'طموحاتٌ ترتقي: مؤتمر المرأة في الطيران – الشرق الأوسط يحلّق في معرض المطارات' },
+      { src: '/assets/events/2023_KSA.webp', alt: 'حدثٌ بارز يرتقي بمستقبل المرأة في قطاع الطيران السعودي' },
+      { src: '/assets/events/2024_Annual_Conference_Dubai.webp', alt: 'تمكين المرأة في الطيران: المؤتمر والجوائز السنوية للشرق الأوسط' },
+    ],
+  },
 ];
 ---
 <section class="ev-archive" aria-labelledby="archive-h">
@@ -21,6 +73,15 @@ const entries = [
         <li class="tl-item reveal" style={`--i:${i}`}>
           <div class="tl-year">{e.year}</div>
           <p class="tl-text">{e.text}</p>
+          {e.photos && e.photos.length > 0 && (
+            <div class="tl-photos">
+              {e.photos.map((p, j) => (
+                <div class="photo tl-tile reveal" style={`--i:${j + 1}`}>
+                  <img data-src={p.src} alt={p.alt} />
+                </div>
+              ))}
+            </div>
+          )}
         </li>
       ))}
     </ol>
