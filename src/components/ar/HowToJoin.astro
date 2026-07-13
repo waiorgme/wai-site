@@ -1,5 +1,6 @@
 ---
 import Button from '../primitives/Button.astro';
+import EmailChip from '../primitives/EmailChip.astro';
 
 // How to join as a partner: emotional CTA beat reusing the shared "join" band.
 // Email is the only path (mailto CTA, no form).
@@ -13,6 +14,7 @@ import Button from '../primitives/Button.astro';
       <p class="reveal" style="--i:1">تُبرَم الشراكات بمذكّرة تفاهمٍ بسيطة توقّعها رئيستنا. لا عقد مُلزِم ولا مبالغ تُدفع للمنظمة. ولبدء الحديث، راسلنا عبر البريد الإلكتروني وسنرافقك في كلّ خطوة.</p>
       <div class="cta-row reveal" style="--i:2">
         <Button href="mailto:support@waiorg.me" magnetic>تحدّث إلينا حول الشراكة</Button>
+        <EmailChip copyLabel="نسخ" copiedLabel="تم النسخ ✓" />
       </div>
     </div>
   </div>

@@ -1,6 +1,7 @@
 ---
 import Eyebrow from '../primitives/Eyebrow.astro';
 import Button from '../primitives/Button.astro';
+import EmailChip from '../primitives/EmailChip.astro';
 
 // Get Involved hero: dark "climb" opener. Aimed at partners/companies, so neutral
 // institutional Arabic. Email is the only path (mailto CTA, no form).
@@ -22,6 +23,7 @@ import Button from '../primitives/Button.astro';
 
     <div class="cta-row reveal" style="--i:3">
       <Button href="mailto:support@waiorg.me" magnetic>تحدّث إلينا حول الشراكة</Button>
+      <EmailChip copyLabel="نسخ" copiedLabel="تم النسخ ✓" />
     </div>
   </div>
 </section>

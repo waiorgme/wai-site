@@ -1,0 +1,58 @@
+---
+// Click-to-copy address beside every mailto CTA. A mailto link opens a dead
+// blank tab in browsers with no registered mail app (privacy browsers like
+// Dia, managed corporate machines, webmail-only users) - exactly the people
+// the partner page targets. Email stays the ONLY contact path (LOCK 7);
+// this just makes the same channel reachable when the protocol handler
+// isn't. Labels are props so the Arabic mirror reads Arabic.
+interface Props {
+  email?: string;
+  copyLabel?: string;
+  copiedLabel?: string;
+}
+const {
+  email = 'support@waiorg.me',
+  copyLabel = 'copy',
+  copiedLabel = 'copied ✓',
+} = Astro.props;
+---
+<button
+  type="button"
+  class="email-chip"
+  data-email={email}
+  data-copy={copyLabel}
+  data-copied={copiedLabel}
+>
+  <span class="ec-addr" dir="ltr">{email}</span>
+  <span class="ec-act" aria-hidden="true">{copyLabel}</span>
+</button>
+
+<script>
+  // Bundled once by Astro however many chips render. Clipboard failure (very
+  // old browsers) falls back to selecting the text so it can be copied by hand.
+  const chips = document.querySelectorAll<HTMLButtonElement>('.email-chip');
+  chips.forEach((chip) => {
+    chip.addEventListener('click', async () => {
+      const email = chip.dataset.email ?? '';
+      const act = chip.querySelector('.ec-act');
+      try {
+        await navigator.clipboard.writeText(email);
+        if (act !== null) {
+          act.textContent = chip.dataset.copied ?? 'copied';
+          setTimeout(() => {
+            act.textContent = chip.dataset.copy ?? 'copy';
+          }, 2000);
+        }
+      } catch {
+        const addr = chip.querySelector('.ec-addr');
+        if (addr !== null) {
+          const range = document.createRange();
+          range.selectNodeContents(addr);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }
+    });
+  });
+</script>
