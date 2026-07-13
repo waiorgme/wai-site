@@ -47,6 +47,7 @@ import {
   type PipelineDecideResult,
 } from "./lib/pipelineDecide";
 import { writeAudit } from "./lib/audit";
+import { isSafeHttpsUrl } from "./lib/url";
 import { performGuardianSend } from "./guardians";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -149,6 +150,8 @@ export const whoami = query({
         "listPendingPipelineReviews",
         "searchMembers",
         "listEvents",
+        "getEventDetail",
+        "updateEventDetails",
         "recentAudit",
         "resendGuardianEmail",
         "decidePipelineReview",
@@ -323,6 +326,33 @@ export const listEvents = query({
   },
 });
 
+export const getEventDetail = query({
+  args: { agentKey: v.string(), eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    await requireAgentAdmin(ctx, args.agentKey);
+    const e = await ctx.db.get(args.eventId);
+    if (e === null) {
+      return null;
+    }
+    return {
+      eventId: e._id,
+      title: e.title,
+      category: e.category,
+      state: e.state,
+      short_description: e.short_description,
+      starts_at: new Date(e.starts_at).toISOString(),
+      ends_at: new Date(e.ends_at).toISOString(),
+      timezone: e.timezone,
+      format: e.format,
+      venue: e.venue ?? null,
+      city: e.city ?? null,
+      meeting_link: e.meeting_link ?? null,
+      audience_lane: e.audience_lane,
+      capacity: e.capacity ?? null,
+    };
+  },
+});
+
 export const recentAudit = query({
   args: { agentKey: v.string(), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
@@ -368,6 +398,136 @@ export const decidePipelineReview = mutation({
       reason: args.reason,
       source: "agent",
     });
+  },
+});
+
+// Narrow event-details editor: the fields Mervat actually maintains between
+// events (title, when, where, registration/meeting link, blurb). Deliberately
+// NOT create/publish/cancel - those carry lifecycle invariants (audience/time
+// freeze once live, meeting-link rules at publish) that stay panel-only. Link
+// validation is the SAME isSafeHttpsUrl every stored member-facing link uses.
+export const updateEventDetails = mutation({
+  args: {
+    agentKey: v.string(),
+    eventId: v.id("events"),
+    title: v.optional(v.string()),
+    short_description: v.optional(v.string()),
+    starts_at: v.optional(v.string()), // ISO datetime
+    ends_at: v.optional(v.string()),
+    timezone: v.optional(v.string()),
+    venue: v.optional(v.string()),
+    city: v.optional(v.string()),
+    meeting_link: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    | { ok: true; updated: string[] }
+    | { ok: false; error: "not_authorized" | "not_found" | "validation"; detail?: string }
+  > => {
+    let email: string;
+    let keyId: Id<"agentKeys">;
+    try {
+      ({ email, keyId } = await requireAgentAdmin(ctx, args.agentKey));
+    } catch {
+      return { ok: false, error: "not_authorized" };
+    }
+    const event = await ctx.db.get(args.eventId);
+    if (event === null) {
+      return { ok: false, error: "not_found" };
+    }
+    const patch: Record<string, string | number> = {};
+    const updated: string[] = [];
+    const fail = (detail: string) =>
+      ({ ok: false, error: "validation", detail }) as const;
+
+    if (args.title !== undefined) {
+      const title = args.title.trim();
+      if (title.length === 0 || title.length > 200) {
+        return fail("title must be 1-200 characters");
+      }
+      patch.title = title;
+      updated.push("title");
+    }
+    if (args.short_description !== undefined) {
+      const blurb = args.short_description.trim();
+      if (blurb.length === 0 || blurb.length > 500) {
+        return fail("short_description must be 1-500 characters");
+      }
+      patch.short_description = blurb;
+      updated.push("short_description");
+    }
+    let starts = event.starts_at;
+    let ends = event.ends_at;
+    if (args.starts_at !== undefined) {
+      const t = Date.parse(args.starts_at);
+      if (Number.isNaN(t)) {
+        return fail("starts_at is not a valid ISO datetime");
+      }
+      starts = t;
+      patch.starts_at = t;
+      updated.push("starts_at");
+    }
+    if (args.ends_at !== undefined) {
+      const t = Date.parse(args.ends_at);
+      if (Number.isNaN(t)) {
+        return fail("ends_at is not a valid ISO datetime");
+      }
+      ends = t;
+      patch.ends_at = t;
+      updated.push("ends_at");
+    }
+    if (ends <= starts) {
+      return fail("ends_at must be after starts_at");
+    }
+    if (args.timezone !== undefined) {
+      const tz = args.timezone.trim();
+      if (tz.length === 0 || tz.length > 40) {
+        return fail("timezone must be 1-40 characters");
+      }
+      patch.timezone = tz;
+      updated.push("timezone");
+    }
+    if (args.venue !== undefined) {
+      const venue = args.venue.trim();
+      if (venue.length > 200) {
+        return fail("venue must be at most 200 characters");
+      }
+      patch.venue = venue;
+      updated.push("venue");
+    }
+    if (args.city !== undefined) {
+      const city = args.city.trim();
+      if (city.length > 100) {
+        return fail("city must be at most 100 characters");
+      }
+      patch.city = city;
+      updated.push("city");
+    }
+    if (args.meeting_link !== undefined) {
+      const link = args.meeting_link.trim();
+      if (link !== "" && !isSafeHttpsUrl(link)) {
+        return fail("meeting_link must be a plain https URL");
+      }
+      patch.meeting_link = link;
+      updated.push("meeting_link");
+    }
+    if (updated.length === 0) {
+      return fail("no fields to update");
+    }
+    await ctx.db.patch(keyId, { last_used_at: Date.now() });
+    await ctx.db.patch(event._id, patch);
+    await writeAudit(ctx, {
+      actor: email,
+      role: "agent",
+      action: "updateEventDetails",
+      target_id: event._id,
+      before_summary: `event "${event.title}" (${event.state})`,
+      after_summary: `updated via agent: ${updated.join(", ")}`,
+      source: "agent",
+    });
+    return { ok: true, updated };
   },
 });
 

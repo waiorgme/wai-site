@@ -99,6 +99,75 @@ describe("agent access keys", () => {
     expect(note).toEqual({ ok: false, error: "not_authorized" });
   });
 
+  const insertEvent = async (t: ReturnType<typeof convexTest>) =>
+    t.run(async (ctx) =>
+      ctx.db.insert("events", {
+        title: "Original Title",
+        category: "meetup",
+        short_description: "A meetup.",
+        starts_at: Date.parse("2026-09-14T17:00:00Z"),
+        ends_at: Date.parse("2026-09-14T19:00:00Z"),
+        timezone: "GST",
+        format: "in_person",
+        audience_lane: "adult",
+        state: "published",
+        created_at: Date.now(),
+      }),
+    );
+
+  it("updateEventDetails patches allowed fields and audits as agent", async () => {
+    const t = convexTest(schema, modules);
+    const { key } = await t.mutation(internal.agent.issueAgentKey, {
+      email: ADMIN,
+    });
+    const eventId = await insertEvent(t);
+    const res = await t.mutation(api.agent.updateEventDetails, {
+      agentKey: key,
+      eventId,
+      venue: "Jumeirah Creekside Hotel",
+      meeting_link: "https://example.org/register",
+    });
+    expect(res).toEqual({ ok: true, updated: ["venue", "meeting_link"] });
+    const event = await t.run(async (ctx) => ctx.db.get(eventId));
+    expect(event?.venue).toBe("Jumeirah Creekside Hotel");
+    expect(event?.meeting_link).toBe("https://example.org/register");
+    const audit = await t.run(async (ctx) => {
+      const rows = await ctx.db.query("auditLog").collect();
+      return rows.filter((r) => r.action === "updateEventDetails");
+    });
+    expect(audit).toHaveLength(1);
+    expect(audit[0].source).toBe("agent");
+  });
+
+  it("updateEventDetails rejects unsafe links, bad times, and bad keys", async () => {
+    const t = convexTest(schema, modules);
+    const { key } = await t.mutation(internal.agent.issueAgentKey, {
+      email: ADMIN,
+    });
+    const eventId = await insertEvent(t);
+    const badLink = await t.mutation(api.agent.updateEventDetails, {
+      agentKey: key,
+      eventId,
+      meeting_link: "http://insecure.example.org",
+    });
+    expect(badLink).toMatchObject({ ok: false, error: "validation" });
+    const badTimes = await t.mutation(api.agent.updateEventDetails, {
+      agentKey: key,
+      eventId,
+      ends_at: "2026-09-14T16:00:00Z",
+    });
+    expect(badTimes).toMatchObject({ ok: false, error: "validation" });
+    const badKey = await t.mutation(api.agent.updateEventDetails, {
+      agentKey: "nope",
+      eventId,
+      title: "Hijacked",
+    });
+    expect(badKey).toEqual({ ok: false, error: "not_authorized" });
+    const event = await t.run(async (ctx) => ctx.db.get(eventId));
+    expect(event?.title).toBe("Original Title");
+    expect(event?.meeting_link).toBeUndefined();
+  });
+
   it("agent notes attribute to the key owner with source agent", async () => {
     const t = convexTest(schema, modules);
     const { key } = await t.mutation(internal.agent.issueAgentKey, {
