@@ -418,8 +418,12 @@ body.menu-open .mobile-menu .m-cta{ opacity:1; transform:none; }
 .out-card .photo-mini img{ inline-size:100%; block-size:100%; object-fit:cover; object-position:center 62%;
   opacity:0; transition:opacity 1.1s var(--ease-out); filter:saturate(.85) contrast(1.05); }
 .out-card .photo-mini img.loaded{ opacity:1; }
-/* the caption sits above the masked photo */
-.out-card.feature > div:not(.photo-mini){ position:relative; z-index:1; }
+/* the caption sits above the masked photo. :not(.award-ring) is load-bearing:
+   this selector outranks .out-card.feature .award-ring, and without the
+   exclusion its position:relative overrides the ring's position:absolute,
+   dropping the medal into the text flow on top of the RECOGNITION label. */
+.out-card.feature > div:not(.photo-mini):not(.award-ring){ position:relative; z-index:1; }
+.out-card.feature .award-ring{ z-index:1; }
 
 /* ============================================================
    7 · WHAT WE DO  (PAPER, breaking into daylight)
