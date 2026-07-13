@@ -26,6 +26,21 @@ import { JoinApp } from '../portal/JoinApp';
       its p/h2 rules would restyle the island's copy. */}
   <main id="main" class="join-shell">
     <span id="top"></span>
+    {/* The two other doors, visible BEFORE the form (Issam 2026-07-13): a
+        member who landed here by habit gets a real sign-in affordance, and a
+        visitor who wants the details first gets the membership page - no one
+        has to scroll a long form to find either. Placed ABOVE the flight
+        band: the form card overlaps the seam below and would cover them. */}
+    <div class="join-doors">
+      <a class="jd jd-signin" href="/portal">
+        <span class="jd-k">Already a member?</span>
+        <span class="jd-v">Sign in <span class="jd-arrow" aria-hidden="true">&rarr;</span></span>
+      </a>
+      <a class="jd jd-learn" href="/membership">
+        <span class="jd-k">Not sure yet?</span>
+        <span class="jd-v">What membership includes <span class="jd-arrow" aria-hidden="true">&rarr;</span></span>
+      </a>
+    </div>
     {/* The Climb hero band (wow-elevation D1): the ascending flight path
         draws in above the paper seam. Decorative only - the page h1 stays
         inside the form card, which overlaps the seam below. */}
@@ -73,6 +88,29 @@ import { JoinApp } from '../portal/JoinApp';
     padding-inline:var(--gutter);
   }
   .join-flight{ display:block; inline-size:100%; block-size:100%; }
+  /* the two doors: readable pills on the ink band, above the paper seam */
+  .join-doors{
+    max-width:var(--maxw); margin-inline:auto; padding-inline:var(--gutter);
+    display:flex; flex-wrap:wrap; gap:12px;
+  }
+  /* the flight band doubles as breathing room; trim it so the doors don't
+     push the form below the fold */
+  .join-doors + .join-hero{ block-size:clamp(90px,11vw,140px); }
+  .jd{
+    display:flex; align-items:baseline; gap:10px;
+    padding:13px 20px; border-radius:14px; text-decoration:none;
+    border:1px solid rgba(255,255,255,.14); background:rgba(8,18,38,.5);
+    transition:border-color .3s var(--ease-out), background .3s var(--ease-out), transform .3s var(--ease-out);
+  }
+  .jd:hover{ transform:translateY(-2px); }
+  .jd-k{ font-size:14px; color:var(--mist); }
+  .jd-v{ font-size:15.5px; font-weight:700; color:#fff; }
+  .jd-arrow{ display:inline-block; transition:transform .3s var(--ease-out); }
+  .jd:hover .jd-arrow{ transform:translateX(4px); }
+  .jd-signin:hover{ border-color:rgba(108,200,255,.55); background:rgba(42,164,239,.14); }
+  .jd-signin .jd-v{ color:var(--sky-glow); }
+  .jd-learn:hover{ border-color:rgba(255,193,116,.45); background:rgba(255,193,116,.08); }
+  @media (max-width:560px){ .jd{ flex-direction:column; gap:2px; } }
   /* one-time draw on load; end-state forced for reduced motion and print */
   .join-flight .trail{
     stroke-dasharray:780;
@@ -94,6 +132,8 @@ import { JoinApp } from '../portal/JoinApp';
     .join-flight .mark{ animation:none; opacity:1; }
   }
   .join-sec{
+    position:relative; z-index:1; /* the paper section (and the overlapping
+    form card) paints ABOVE the decorative flight trail behind it */
     min-height:70vh;
     display:grid;
     justify-items:center;

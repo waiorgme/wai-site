@@ -30,7 +30,8 @@ const isActive = (href: string) => href.startsWith('/') && path === href.replace
     </div>
     <LangToggle lang="en" />
     <div class="cta-d">
-      <Button href="/membership" magnetic>Become a member</Button>
+      <a class="nav-signin" href="/portal">Sign in</a>
+      <Button href="/join" magnetic>Become a member</Button>
     </div>
     <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
       <span></span><span></span><span></span>
@@ -44,7 +45,8 @@ const isActive = (href: string) => href.startsWith('/') && path === href.replace
   <a class="m-link" href="/get-involved">Get Involved</a>
   <a class="m-link" href="/events">Events</a>
   <a class="m-link" href="/contact">Contact</a>
+  <a class="m-link" href="/portal">Sign in</a>
   <div class="m-cta">
-    <Button href="/membership">Become a member</Button>
+    <Button href="/join">Become a member</Button>
   </div>
 </div>

@@ -47,6 +47,84 @@
   padding: clamp(28px, 6vw, 72px) var(--gutter) clamp(48px, 8vw, 96px);
 }
 
+/* ---------- signed-out portal: the split welcome (2026-07-13) ----------
+   Ink visual panel with real archive photography on one side, the form on
+   paper on the other. Mobile stacks: a short branded band above the form. */
+.signin {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+.signin-visual {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(28px, 4vw, 56px);
+}
+.signin-photo {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  z-index: -2;
+  opacity: .55;
+  filter: saturate(.8) contrast(1.05);
+}
+.signin-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(6,13,28,.5) 0%, rgba(6,13,28,.25) 42%, rgba(6,13,28,.88) 100%);
+}
+.signin-copy { max-width: 46ch; display: grid; gap: 14px; }
+.signin-logo { inline-size: auto; block-size: 44px; justify-self: start; margin-block-end: 8px; }
+.signin-copy h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(30px, 3.4vw, 46px);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.signin-copy p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--mist); }
+.signin-horizon {
+  block-size: 3px;
+  inline-size: min(240px, 60%);
+  border-radius: 2px;
+  margin-block-start: 10px;
+  background: linear-gradient(90deg, var(--sky) 0 55%, var(--dawn-1) 55% 85%, var(--dawn-2) 85% 100%);
+}
+.signin-side {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: clamp(40px, 6vw, 88px) var(--gutter);
+}
+.signin-back {
+  position: absolute;
+  inset-block-start: 22px;
+  inset-inline-start: clamp(20px, 4vw, 44px);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--paper-mut);
+  text-decoration: none;
+}
+.signin-back:hover { color: var(--sky-deep); text-decoration: underline; }
+.signin-box { inline-size: 100%; max-width: 400px; display: grid; gap: 14px; }
+@media (max-width: 880px) {
+  .signin { grid-template-columns: 1fr; }
+  .signin-visual { min-height: 34dvh; padding-block-start: 72px; }
+  .signin-copy h2 { font-size: clamp(26px, 7vw, 34px); }
+  .signin-side { padding-block-start: 44px; align-items: start; }
+  .signin-back { position: static; justify-self: start; margin-block-end: 4px; }
+}
+
 /* small brand row above centered cards */
 .pn-brand {
   display: inline-flex;

@@ -195,6 +195,14 @@ body.scrolled .nav{
 }
 .nav .brand{ display:flex; align-items:center; margin-inline-end:auto; }
 .nav .brand img{ block-size:34px; inline-size:auto; }
+.nav .cta-d{ display:flex; align-items:center; gap:6px; }
+.nav .nav-signin{
+  padding:9px 14px; border-radius:var(--r-chip);
+  font-size:14px; font-weight:600; color:var(--mist); text-decoration:none;
+  border:1px solid rgba(255,255,255,.14); white-space:nowrap;
+  transition:color .3s var(--ease-out), border-color .3s var(--ease-out), background .3s var(--ease-out);
+}
+.nav .nav-signin:hover{ color:#fff; border-color:rgba(108,200,255,.5); background:rgba(42,164,239,.12); }
 .nav .links{ position:relative; display:flex; align-items:center; gap:4px; }
 .nav .links a{
   position:relative; z-index:1;

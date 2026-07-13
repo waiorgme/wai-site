@@ -11,7 +11,11 @@ const PAPER = "rgb(246, 241, 232)";
 
 test("portal sign-in shell renders on the light panel system", async ({ page }) => {
   await page.goto("/portal");
-  await expect(page.getByRole("heading", { name: "Member sign-in" })).toBeVisible();
+  // 2026-07-13 signed-out redesign: split shell, h1 "Sign in" beside the
+  // "Welcome back." visual panel; still the light panel system on the form side.
+  await expect(
+    page.getByRole("heading", { name: "Sign in", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /Send sign-in link/ })).toBeVisible();
   await expect(page.locator("main#main")).toHaveClass(/panel-scope/);
   await expect(page.locator("main#main")).toHaveCSS("background-color", PAPER);
