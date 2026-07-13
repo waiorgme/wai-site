@@ -9,6 +9,7 @@ import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { confirmEmailForMember } from "./lib/activation";
+import { emailLink, emailP, renderBrandedEmail } from "./lib/emailTemplate";
 import { consumeKey } from "./rateLimit";
 import {
   GLOBAL_DAY,
@@ -94,6 +95,19 @@ WaiMagicLink.sendVerificationRequest = (async ({
       `Sign in to WAI-ME:\n${url}\n\n` +
       `This link expires in 15 minutes and can be used once. ` +
       `If you didn't request it, you can ignore this email.`,
+    html: renderBrandedEmail({
+      preheader:
+        "Your single-use sign-in link. It expires in 15 minutes.",
+      heading: "Sign in to WAI-ME",
+      bodyHtml: emailP(
+        "Use the button below to open your member portal.",
+      ),
+      cta: { label: "Sign in to WAI-ME", url },
+      footnote:
+        `This link expires in 15 minutes and can be used once. ` +
+        `If you didn&#39;t request it, you can ignore this email.<br><br>` +
+        `If the button doesn&#39;t work, copy this link into your browser:<br>${emailLink(url)}`,
+    }),
   });
   if (error) {
     throw new Error("Could not send sign-in link");

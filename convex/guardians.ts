@@ -17,6 +17,7 @@ import { issueMembershipCertificate } from "./lib/certificates";
 import {
   GUARDIAN_EMAIL_SUBJECT,
   renderGuardianEmail,
+  renderGuardianEmailHtml,
 } from "./lib/guardianEmail";
 import {
   GUARDIAN_TOKEN_TTL_MS,
@@ -88,6 +89,7 @@ export const prepareGuardianSend = internalMutation({
         to: string;
         subject: string;
         text: string;
+        html: string;
       }
     | { ok: false; reason: "not_eligible" | "rate_limited" }
   > => {
@@ -275,6 +277,11 @@ export const prepareGuardianSend = internalMutation({
         applicantFirstName: firstName,
         confirmUrl: `${siteUrl}/guardian-confirm/?token=${token}`,
       }),
+      html: renderGuardianEmailHtml({
+        guardianName: consent.guardian_name,
+        applicantFirstName: firstName,
+        confirmUrl: `${siteUrl}/guardian-confirm/?token=${token}`,
+      }),
     };
   },
 });
@@ -380,6 +387,7 @@ const performGuardianSend = async (
       to: [prepared.to],
       subject: prepared.subject,
       text: prepared.text,
+      html: prepared.html,
     });
     if (error) {
       throw new Error("Resend returned an error");
