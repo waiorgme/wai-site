@@ -561,4 +561,19 @@ export default defineSchema({
     text: v.string(),
     created_at: v.number(),
   }).index("by_member_time", ["member_id", "created_at"]),
+
+  // Agent access keys: a per-super-admin bearer secret that lets that admin's
+  // OWN AI agent (Codex or any MCP client) call the curated agent surface in
+  // convex/agent.ts - and nothing else. Only the SHA-256 hash is stored
+  // (guardian-token precedent); the plain key exists once, at issue time. A
+  // key is valid only while its owner is STILL on SUPER_ADMIN_EMAILS (checked
+  // on every call), so removing an admin silently revokes her agent too.
+  agentKeys: defineTable({
+    admin_email: v.string(), // lower-cased owner; the audit actor for agent writes
+    key_hash: v.string(),
+    label: v.string(),
+    created_at: v.number(),
+    revoked_at: v.optional(v.number()),
+    last_used_at: v.optional(v.number()),
+  }).index("by_hash", ["key_hash"]),
 });

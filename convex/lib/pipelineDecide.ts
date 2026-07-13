@@ -26,7 +26,7 @@ export const applyPipelineDecision = async (
     decision: "approved" | "rejected";
     reviewer: string;
     reason?: string;
-    source: "admin_fallback";
+    source: "admin_fallback" | "agent";
   },
 ): Promise<PipelineDecideResult> => {
   const review = await ctx.db.get(args.reviewId);
@@ -72,7 +72,7 @@ export const applyPipelineDecision = async (
   // to the append-only log, only whether one was supplied (Stage 0 §8).
   await writeAudit(ctx, {
     actor: args.reviewer,
-    role: "admin_fallback",
+    role: args.source === "agent" ? "agent" : "admin_fallback",
     action: "decidePipelineReview",
     target_id: member._id,
     after_summary: `decision=${args.decision} reason_present=${args.reason !== undefined && args.reason.trim() !== ""}`,

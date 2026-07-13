@@ -364,7 +364,9 @@ export const expireGuardianToken = internalMutation({
 
 // Sends the prepared email via Resend, with truthful failure handling.
 // Returns what actually happened so callers never claim an unsent email.
-const performGuardianSend = async (
+// Exported for the agent surface (convex/agent.ts), which must reuse THIS
+// path (rotation, throttles, rollback, audit), never fork a second one.
+export const performGuardianSend = async (
   ctx: ActionCtx,
   memberId: Id<"members"> | undefined,
   kind: "first" | "member_resend" | "admin_resend",
